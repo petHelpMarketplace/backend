@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS animal_categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     name_eng TEXT,
+    description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-); 
+);
