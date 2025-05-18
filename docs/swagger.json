@@ -1,0 +1,124 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/v1/specialists/register": {
+            "post": {
+                "description": "Register a new specialist account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new specialist",
+                "parameters": [
+                    {
+                        "description": "Specialist registration payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegisterResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RegistrationRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "family_name",
+                "name",
+                "password",
+                "password_confirmation",
+                "phone"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john.doe@example.com"
+                },
+                "family_name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "example": "Doe"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "example": "John"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "example": "SuperSecret123"
+                },
+                "password_confirmation": {
+                    "type": "string",
+                    "example": "SuperSecret123"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "+12345678901"
+                }
+            }
+        }
+    }
+}

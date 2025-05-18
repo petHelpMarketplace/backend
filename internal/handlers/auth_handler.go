@@ -20,12 +20,12 @@ import (
 const maxBodySize = 1 << 20 // 1 MiB
 
 type RegistrationRequest struct {
-	Name                 string `json:"name" binding:"required,min=2"`
-	FamilyName          string `json:"family_name" binding:"required,min=2"`
-	Phone string `json:"phone" binding:"required,regexp=^\\+[0-9]{1,3}[0-9\\- ()]{7,}$"`
-	Email               string `json:"email" binding:"required,email"`
-	Password            string `json:"password" binding:"required,min=12"`
-	PasswordConfirmation string `json:"password_confirmation" binding:"required,eqfield=Password"`
+	Name                 string `json:"name" binding:"required,min=2" example:"John"`
+	FamilyName           string `json:"family_name" binding:"required,min=2" example:"Doe"`
+	Phone                string `json:"phone" binding:"required,regexp=^\\+[0-9]{1,3}[0-9\\- ()]{7,}$" example:"+12345678901"`
+	Email                string `json:"email" binding:"required,email" example:"john.doe@example.com"`
+	Password             string `json:"password" binding:"required,min=12" example:"SuperSecret123"`
+	PasswordConfirmation string `json:"password_confirmation" binding:"required,eqfield=Password" example:"SuperSecret123"`
 }
 
 func isValidPassword(password string) error {
@@ -95,58 +95,75 @@ func (r *RegistrationRequest) Validate() error {
 	return isValidPassword(r.Password)
 }
 
-// RegisterSpecialistHandler handles register specialist endpoint
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type RegisterResponse struct {
+	Message string `json:"message"`
+	ID      string `json:"id"`
+	Token   string `json:"token"`
+}
+
+// RegisterSpecialist godoc
+// @Summary Register a new specialist
+// @Description Register a new specialist account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegistrationRequest true "Specialist registration payload"
+// @Success 201 {object} RegisterResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/specialists/register [post]
 func RegisterSpecialistHandler(authService *service.AuthService, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Read the raw body first
-		// limit reading to maxBodySize
-        lr := &io.LimitedReader{R: c.Request.Body, N: maxBodySize}
+		lr := &io.LimitedReader{R: c.Request.Body, N: maxBodySize}
 		bodyBytes, err := io.ReadAll(lr)
 		if err != nil {
 			logger.Error("Failed to read request body", zap.Error(err))
-			c.JSON(400, gin.H{"error": "Failed to read request"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request"})
 			return
 		}
 		if lr.N <= 0 {
-            logger.Warn("Request body too large")
-            c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Request body too large"})
-            return
-        }
-		// Restore the body for subsequent reading
+			logger.Warn("Request body too large")
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Request body too large"})
+			return
+		}
 		c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
 		var req RegistrationRequest
-        if err := c.ShouldBindJSON(&req); err != nil {
-            logger.Error("Failed to bind JSON", zap.Error(err))
-            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-            return
-        }
-        if err := req.Validate(); err != nil {
-            logger.Error("Validation failed", zap.Error(err))
-            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-            return
-        }
+		if err := c.ShouldBindJSON(&req); err != nil {
+			logger.Error("Failed to bind JSON", zap.Error(err))
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			return
+		}
+		if err := req.Validate(); err != nil {
+			logger.Error("Validation failed", zap.Error(err))
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-		 // Check uniqueness
 		exists, err := authService.CheckEmailExists(req.Email)
 		if err != nil {
 			logger.Error("Failed to check email existence", zap.Error(err))
-			c.JSON(500, gin.H{"error": "Internal server error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
 		if exists {
-			c.JSON(409, gin.H{"error": "Email already registered"})
+			c.JSON(http.StatusConflict, gin.H{"error": "Email already registered"})
 			return
 		}
 
 		exists, err = authService.CheckPhoneExists(req.Phone)
 		if err != nil {
 			logger.Error("Failed to check phone existence", zap.Error(err))
-			c.JSON(500, gin.H{"error": "Internal server error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
 		if exists {
-			c.JSON(409, gin.H{"error": "Phone number already registered"})
+			c.JSON(http.StatusConflict, gin.H{"error": "Phone number already registered"})
 			return
 		}
 
@@ -156,30 +173,30 @@ func RegisterSpecialistHandler(authService *service.AuthService, logger *zap.Log
 			Phone:      req.Phone,
 			Email:      req.Email,
 			Password:   req.Password,
-			IsBanned:  false,
-			IsDeleted: false,
-			IsActive:  true,
+			IsBanned:   false,
+			IsDeleted:  false,
+			IsActive:   true,
 			IsVerified: false,
 		}
 
 		err = authService.RegisterSpecialist(newSpecialist)
 		if err != nil {
 			logger.Error("Registration failed", zap.Error(err))
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not register specialist"})
-            return
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not register specialist"})
+			return
 		}
 
 		token, err := authService.GenerateToken(newSpecialist)
 		if err != nil {
 			logger.Error("Failed to generate token", zap.Error(err))
-			c.JSON(500, gin.H{"error": "Internal server error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 			return
 		}
 
-		c.JSON(201, gin.H{
+		c.JSON(http.StatusCreated, gin.H{
 			"message": "Specialist registered successfully",
-			"id":     newSpecialist.ID,
-			"token":  token,
+			"id":      newSpecialist.ID,
+			"token":   token,
 		})
 	}
 }

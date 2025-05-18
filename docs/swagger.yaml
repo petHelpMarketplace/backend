@@ -1,0 +1,84 @@
+definitions:
+  handlers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  handlers.RegisterResponse:
+    properties:
+      id:
+        type: string
+      message:
+        type: string
+      token:
+        type: string
+    type: object
+  handlers.RegistrationRequest:
+    properties:
+      email:
+        example: john.doe@example.com
+        type: string
+      family_name:
+        example: Doe
+        minLength: 2
+        type: string
+      name:
+        example: John
+        minLength: 2
+        type: string
+      password:
+        example: SuperSecret123
+        minLength: 12
+        type: string
+      password_confirmation:
+        example: SuperSecret123
+        type: string
+      phone:
+        example: "+12345678901"
+        type: string
+    required:
+    - email
+    - family_name
+    - name
+    - password
+    - password_confirmation
+    - phone
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/specialists/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new specialist account
+      parameters:
+      - description: Specialist registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Register a new specialist
+      tags:
+      - auth
+swagger: "2.0"

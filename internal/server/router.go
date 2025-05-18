@@ -8,10 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
 )
 
 func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server) *gin.Engine {
 	router := gin.Default()
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// lc.Append(fx.Hook{
 	// 	OnStart: func(ctx context.Context) error {
