@@ -49,7 +49,7 @@ jobs:
           file: Dockerfile
           target: runtime
           push: true
-          tags: docker.io/${{ secrets.DOCKER_USERNAME }}/backend:latest
+          tags: docker.io/${{ secrets.DOCKER_USERNAME }}/teammarket-pethelp:latest
 
   test:
     runs-on: ubuntu-latest
