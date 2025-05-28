@@ -69,4 +69,4 @@ jobs:
           target: runtime
           push: true
           tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/teammarket-pethelp:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/pethelp:latest
