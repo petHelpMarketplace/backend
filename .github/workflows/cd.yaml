@@ -31,7 +31,7 @@ jobs:
           target: runtime # ← explicitly build only your final stage
           push: true
           tags: |
-            docker.io/pethelpdev/pethelp:latest
+            docker.io/pethelpdev/teammarket-pethelp:latest
 
   deploy:
     needs: build
@@ -44,7 +44,6 @@ jobs:
           username: ${{ secrets.AMAZON_SERVER_USERNAME }}
           key: ${{ secrets.AMAZON_SERVER_SSH }}
           script: |
-            REGISTRY="docker.io"
             IMAGE_NAME="pethelpdev/pethelp"
             TAG_NAME="latest"
             FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME:$TAG_NAME"
