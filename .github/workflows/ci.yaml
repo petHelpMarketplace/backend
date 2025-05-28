@@ -68,5 +68,4 @@ jobs:
           file: Dockerfile
           target: runtime
           push: true
-          tags: |
-            docker.io/${{ secrets.DOCKER_USERNAME }}/pethelp:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/pethelp:latest
