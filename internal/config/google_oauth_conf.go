@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"pethelp-backend/internal/utils"
+	"pethelp-backend/pkg/utils"
 )
 
 type GoogleOAuthConfig struct {

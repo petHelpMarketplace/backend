@@ -1,9 +1,0 @@
-env: "local" #local, production
-
-http_server:
-  address: "0.0.0.0:3000"
-  timeout: "15s"
-  idle_timeout: "60s"
-  read_timeout: "5s"
-  write_timeout: "10s"
-  shutdown_timeout: "10s"

@@ -1,0 +1,17 @@
+env: "local" #local, prod, test
+
+http_server:
+  address: "0.0.0.0:3000"
+  timeout: "15s"
+  idle_timeout: "60s"
+  read_timeout: "5s"
+  write_timeout: "10s"
+  shutdown_timeout: "10s"
+
+postgres_db:
+  max_pool_size: 9
+  min_pool_size: 3
+  connection_timeout: "30s"
+  idle_timeout: "10m"
+  max_lifetime: "2h"
+

@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"os"
-	"strings"
 
 	"go.uber.org/zap"
 )
@@ -28,12 +27,6 @@ func NewPostgresConfig(logger *zap.Logger) (PostgresConfig, error) {
 	if dsn == "" {
 		logger.Error("Postgres DSN environment variable is not set", zap.String("env_name", dsnEnvName))
 		return nil, ErrMissingRequiredEnvVar
-	}
-
-	// Convert direct connection string to session pooler format if needed
-	if strings.Contains(dsn, "supabase.co:5432") {
-		dsn = strings.Replace(dsn, "supabase.co:5432", "pooler.supabase.com:5432", 1)
-		dsn = strings.Replace(dsn, "postgresql://postgres:", "postgres://postgres.", 1)
 	}
 
 	logger.Info("Postgres DSN loaded successfully")

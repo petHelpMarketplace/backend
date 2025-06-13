@@ -1,0 +1,75 @@
+package app
+
+import (
+	"github.com/gin-gonic/gin"
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+
+	"pethelp-backend/internal/config"
+	"pethelp-backend/internal/core/ports"
+	"pethelp-backend/internal/core/services"
+	"pethelp-backend/internal/handlers"
+	"pethelp-backend/internal/repositories"
+	"pethelp-backend/pkg/database/postgres"
+	redisCache "pethelp-backend/pkg/database/redis"
+)
+
+const SpecialistRoutePath = "/api/v1/specialists"
+
+// ModuleParams holds common dependencies for auth modules.
+// It supplies the Gin router, Postgres pool, Logger, and Redis client.
+type SpecialistModuleParams struct {
+	fx.In
+	Router     *gin.Engine
+	DB         *postgres.DB
+	Cache      *redisCache.DB
+	Logger     *zap.Logger
+	AuthConfig config.AuthConfig
+}
+
+var SpecialistModule = fx.Module("specialists",
+	fx.Provide(
+		fx.Annotate(
+			repositories.NewSpecialistRepository,
+			fx.As(new(ports.SpecialistRepository)),
+		),
+
+		fx.Annotate(
+			services.NewSpecialistService,
+			fx.As(new(ports.SpecialistService)),
+		),
+
+		fx.Annotate(
+			repositories.NewTokenRepository,
+			fx.As(new(ports.TokenRepository)),
+		),
+
+		fx.Annotate(
+			services.NewTokenService,
+			fx.As(new(ports.TokenService)),
+		),
+
+		fx.Annotate(
+			services.NewCustomValidator,
+			fx.As(new(ports.SpecialistValidator)),
+		),
+
+		fx.Annotate(
+			handlers.NewSpecialistHandler,
+			fx.As(new(ports.SpecialistHandlers)),
+		),
+	),
+	fx.Invoke(
+		func(mp SpecialistModuleParams, handler ports.SpecialistHandlers) {
+			specRouterGroup := mp.Router.Group(SpecialistRoutePath)
+
+			specRouterGroup.POST("/register", handler.Registration)
+			specRouterGroup.POST("/login", handler.Login)
+
+			mp.Logger.Info("Registered google OAuth routes",
+				zap.String("base_path", SpecialistRoutePath),
+				zap.String("register_endpoint", "/specialists"),
+				zap.String("method", "POST"))
+		},
+	),
+)

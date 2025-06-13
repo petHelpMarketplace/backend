@@ -1,72 +1,65 @@
 package app
 
 import (
+	"log"
 	"os"
 	"time"
 
-	redisStorage "pethelp-backend/internal/database/redis"
+	"pethelp-backend/pkg/logger"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/joho/godotenv"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 
-	apiauth "pethelp-backend/internal/api/auth"
-	"pethelp-backend/internal/api/health"
-	oauthMod "pethelp-backend/internal/api/oauth"
 	"pethelp-backend/internal/config"
 
-	"pethelp-backend/internal/database/postgres"
-	"pethelp-backend/internal/logger"
-	"pethelp-backend/internal/server"
+	"pethelp-backend/pkg/database/postgres"
+	redisDB "pethelp-backend/pkg/database/redis"
 )
 
 func NewApp() fx.Option {
-	logger, err := logger.New()
-	if err != nil {
-		panic(err)
+
+	envFileName := ".env"
+	stage := os.Getenv("APP_STAGE")
+	if stage == "" || stage == "local" {
+		if _, err := os.Stat(envFileName); err == nil {
+			if err := godotenv.Load(envFileName); err != nil {
+				log.Fatalf("Failed to load .env file: %s - %s", envFileName, err.Error())
+
+			}
+		}
+
+		log.Printf("Loaded .env file path: %s", envFileName)
 	}
 
-	envFile := ".env"
-	if env := os.Getenv("APP_ENV"); env != "" && env == "local" {
-		if err := config.LoadEnv(envFile, logger); err != nil {
-			logger.Fatal("failed to load .env", zap.String("envFile", envFile), zap.Error(err))
-		}
+	logger, err := logger.New(logger.Stage(stage), os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	return fx.Options(
-		// Core providers
+		fx.Supply(logger),
+		// Core services
 		fx.Provide(
-			// Logger
-			func() *zap.Logger { return logger },
-			// Configs
 			config.NewPostgresConfig,
 			config.NewRedisConfig,
+			config.NewServersConfig,
 			config.LoadOAuthConf,
-			// Redis storage
-			redisStorage.New,
-			func(s *redisStorage.Storage) *redis.Client {
-				return s.Client()
-			},
+			config.LoadAuthConfig,
+			NewHTTPServer,
+			NewGinServer,
+		),
 
-			config.LoadHTTPServerConfig,
-			config.NewTLSConfig,
-			// Gin engine
-			server.NewGinServer,
-			// Postgres storage
-			postgres.New,
-			// HTTP servers
-			server.NewHTTPServer,
-		),
+		// Database modules
+		postgres.Module,
+		redisDB.Module,
+
 		// API modules
-		health.Module,
-		apiauth.Module,
-		oauthMod.Module,
-		// Server start/stop hooks
-		fx.Invoke(
-			// Manage postgres storage lifecycle
-			postgres.ManageLifecycle,
-			redisStorage.ManageLifecycle,
-		),
-		fx.StartTimeout(20*time.Second),
+		HealthModule,
+		SpecialistModule,
+		OauthModule,
+		DocsModule,
+		TokenModule,
+
+		fx.StartTimeout(10*time.Second),
 	)
 }
