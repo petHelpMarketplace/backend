@@ -19,7 +19,7 @@ import (
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      localhost:3000
+// @host      petbackend-a2vg.onrender.com
 // @BasePath  /api/v1/
 
 // @securityDefinitions.apiKey Bearer
@@ -28,7 +28,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-// @schemes http
+// @schemes https
 func main() {
 	fx.New(app.NewApp()).Run()
 }

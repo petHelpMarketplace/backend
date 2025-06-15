@@ -18,6 +18,8 @@ dev: ## Start project in the dev mode
 	@docker compose up -d
 	@go run ./cmd/pethelp .
 
+swagger_gen:
+	swag init --dir cmd,internal --generalInfo api/main.go
 
 install-golangci-lint:
 	GOBIN=$(LOCAL_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0

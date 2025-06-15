@@ -35,6 +35,20 @@ func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.
 	}
 }
 
+type successRegistration struct {
+	Message string `json:"message" default:"Registration successful"`
+	ID      string `json:"id"`
+}
+
+// @Summary Registration
+// @Description New specialist registration
+// @Tags specialists
+// @Accept       json
+// @Produce      json
+// @Param request body domain.RegistrationRequest true "Registration request body"
+// @Success 201 {object} successRegistration "Sign in succeeded"
+// @Failure      400,409,500 {object} domain.RequestResponse
+// @Router /specialists/register [post]
 func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	req := &domain.RegistrationRequest{}
@@ -85,9 +99,9 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 	}
 
 	// — Success response
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Registration successful",
-		"id":      strconv.FormatInt(id, 10),
+	c.JSON(http.StatusCreated, successRegistration{
+		Message: "Registration successful",
+		ID:      strconv.FormatInt(id, 10),
 	})
 
 }
@@ -97,6 +111,15 @@ type LoginDTO struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// @Summary Login
+// @Description Login specialist
+// @Tags specialists
+// @Accept       json
+// @Produce      json
+// @Param request body LoginDTO true "Login request body"
+// @Success 200 {object} domain.TokensPair "Login succeeded"
+// @Failure      400,401,500 {object} domain.RequestResponse
+// @Router /specialists/login [post]
 func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	var dto LoginDTO
 

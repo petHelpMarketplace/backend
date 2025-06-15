@@ -1,8 +1,69 @@
 basePath: /api/v1/
+definitions:
+  domain.RegistrationRequest:
+    properties:
+      email:
+        type: string
+      family_name:
+        minLength: 2
+        type: string
+      name:
+        maxLength: 12
+        minLength: 3
+        type: string
+      password:
+        minLength: 12
+        type: string
+      password_confirmation:
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - family_name
+    - name
+    - password
+    - password_confirmation
+    - phone
+    type: object
+  domain.RequestResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      type:
+        type: string
+    type: object
+  domain.TokensPair:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  handlers.LoginDTO:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.successRegistration:
+    properties:
+      id:
+        type: string
+      message:
+        default: Registration successful
+        type: string
+    type: object
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
-host: localhost:3000
+host: petbackend-a2vg.onrender.com
 info:
   contact:
     email: support@swagger.io
@@ -15,9 +76,77 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Swagger Example API
   version: "1.0"
-paths: {}
+paths:
+  /specialists/login:
+    post:
+      consumes:
+      - application/json
+      description: Login specialist
+      parameters:
+      - description: Login request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login succeeded
+          schema:
+            $ref: '#/definitions/domain.TokensPair'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+      summary: Login
+      tags:
+      - specialists
+  /specialists/register:
+    post:
+      consumes:
+      - application/json
+      description: New specialist registration
+      parameters:
+      - description: Registration request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Sign in succeeded
+          schema:
+            $ref: '#/definitions/handlers.successRegistration'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+      summary: Registration
+      tags:
+      - specialists
 schemes:
-- http
+- https
 securityDefinitions:
   Bearer:
     in: header

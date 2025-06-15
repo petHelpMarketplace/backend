@@ -2,11 +2,12 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
+	swaggoFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.uber.org/fx"
 
 	_ "pethelp-backend/docs"
+
+	"go.uber.org/fx"
 )
 
 const (
@@ -22,6 +23,5 @@ func registerDocsRoutes(route *gin.Engine) {
 	docsGroup.Use(gin.BasicAuth(gin.Accounts{
 		"admin": "sysadmin",
 	}))
-
-	docsGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	docsGroup.GET("/swagger/*any", ginSwagger.WrapHandler(swaggoFiles.Handler, ginSwagger.URL("/api/v1/swagger/doc.json")))
 }
