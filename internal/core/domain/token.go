@@ -21,3 +21,25 @@ type TokensPair struct {
 	Access  string `json:"access_token"`
 	Refresh string `json:"refresh_token"`
 }
+
+// ClaimDataAccessor defines methods to access common data from any claims type.
+type ClaimDataAccessor interface {
+	GetUserID() string
+	GetJTI() string
+}
+
+func (c *AccessTokenClaims) GetUserID() string {
+	return c.UserID
+}
+
+func (c *AccessTokenClaims) GetJTI() string {
+	return c.ID
+}
+
+func (c *RefreshTokenClaims) GetUserID() string {
+	return c.UserID
+}
+
+func (c *RefreshTokenClaims) GetJTI() string {
+	return c.ID
+}

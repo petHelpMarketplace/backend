@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 )
 
 type SpecialistValidatorImpl struct {
@@ -24,6 +24,14 @@ func isValidE123(fl validator.FieldLevel) bool {
 	return e123Regex.MatchString(fl.Field().String())
 }
 
+// Custom validation function for allows Unicode letters, spaces, hyphens, and apostrophes.
+func isValidName(fl validator.FieldLevel) bool {
+	// `\p{L}` matches any kind of letter from any language.
+	// `[\p{L}\s\-\']+` means one or more occurrences of (letter OR space OR hyphen OR apostrophe).
+	nameRegex := regexp.MustCompile(`^[\p{L}\s\-\']+$`)
+	return nameRegex.MatchString(fl.Field().String())
+}
+
 func NewCustomValidator() *SpecialistValidatorImpl {
 	v := validator.New()
 	v.RegisterValidation("e123", isValidE123)
@@ -32,10 +40,10 @@ func NewCustomValidator() *SpecialistValidatorImpl {
 }
 
 func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) error {
-	validate := validator.New()
-	validate.RegisterValidation("e123", isValidE123)
+	sv.validator.RegisterValidation("e123", isValidE123)
+	sv.validator.RegisterValidation("custom_name", isValidName)
 
-	if err := validate.Struct(data); err != nil {
+	if err := sv.validator.Struct(data); err != nil {
 		if _, ok := err.(*validator.InvalidValidationError); ok {
 			return err
 		}
@@ -43,7 +51,7 @@ func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) er
 		for _, err := range err.(validator.ValidationErrors) {
 			switch err.Field() {
 			case "Name", "FamilyName":
-				errorMessages = append(errorMessages, fmt.Sprintf("%s must be at least 2 characters", err.Field()))
+				errorMessages = append(errorMessages, fmt.Sprintf("%s must be at least 2 characters %s", err.Field(), err.Error()))
 			case "Phone":
 				errorMessages = append(errorMessages, "Phone must be in E.123 format (e.g., +38 (XXX) XXX-XX-XX)")
 			case "Email":

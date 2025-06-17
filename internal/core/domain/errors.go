@@ -3,10 +3,10 @@ package domain
 import "errors"
 
 var (
+	ErrInternalServer              = errors.New("internal server error")
 	ErrInvalidCredentials          = errors.New("invalid credentials")
-	ErrInvalidToken                = errors.New("invalid token")
 	ErrTokenExpired                = errors.New("token expired")
-	ErrTokenNotProvided            = errors.New("token not provided")
+	ErrTokenRevoked                = errors.New("token status revoked")
 	ErrTokenInvalid                = errors.New("token invalid")
 	ErrAuthFailed                  = errors.New("authentication failed")
 	ErrInvalidEmail                = errors.New("invalid email")

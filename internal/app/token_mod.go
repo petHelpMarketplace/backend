@@ -9,7 +9,7 @@ import (
 	"pethelp-backend/internal/handlers"
 )
 
-const TokenRoutePath = "/api/v1/tokens"
+const TokenRoutePath = "/api/v1/token"
 
 // ModuleParams holds common dependencies for token modules.
 // It supplies the Gin router, Logger.
@@ -19,7 +19,7 @@ type TokenModuleParams struct {
 	Logger *zap.Logger
 }
 
-var TokenModule = fx.Module("tokens",
+var TokenModule = fx.Module("token",
 	fx.Provide(
 		fx.Annotate(
 			handlers.NewTokenHandler,
@@ -34,7 +34,7 @@ var TokenModule = fx.Module("tokens",
 
 			mp.Logger.Info("Registered token routes",
 				zap.String("base_path", TokenRoutePath),
-				zap.String("register_endpoint", "/tokens"),
+				zap.String("register_endpoint", "/token"),
 				zap.String("method", "POST"))
 		},
 	),

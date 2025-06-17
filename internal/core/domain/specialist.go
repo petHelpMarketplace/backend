@@ -20,8 +20,8 @@ type Specialist struct {
 }
 
 type RegistrationRequest struct {
-	Name                 string `json:"name" validate:"required,min=3,max=12,alphanum"`
-	FamilyName           string `json:"family_name" validate:"required,min=2"`
+	Name                 string `json:"name" validate:"required,min=2,max=12,custom_name"`
+	FamilyName           string `json:"family_name" validate:"required,min=2,custom_name"`
 	Phone                string `json:"phone" validate:"required,e123"`
 	Email                string `json:"email" validate:"required,email"`
 	Password             string `json:"password" validate:"required,min=12"`

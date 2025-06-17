@@ -42,13 +42,13 @@ type successRegistration struct {
 
 // @Summary Registration
 // @Description New specialist registration
-// @Tags specialists
+// @Tags Specialist
 // @Accept       json
 // @Produce      json
 // @Param request body domain.RegistrationRequest true "Registration request body"
 // @Success 201 {object} successRegistration "Sign in succeeded"
 // @Failure      400,409,500 {object} domain.RequestResponse
-// @Router /specialists/register [post]
+// @Router /specialist/register [post]
 func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	req := &domain.RegistrationRequest{}
@@ -113,13 +113,13 @@ type LoginDTO struct {
 
 // @Summary Login
 // @Description Login specialist
-// @Tags specialists
+// @Tags Specialist
 // @Accept       json
 // @Produce      json
 // @Param request body LoginDTO true "Login request body"
 // @Success 200 {object} domain.TokensPair "Login succeeded"
 // @Failure      400,401,500 {object} domain.RequestResponse
-// @Router /specialists/login [post]
+// @Router /specialist/login [post]
 func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	var dto LoginDTO
 

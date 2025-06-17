@@ -49,7 +49,7 @@ func (r *TokenRepoImpl) SaveRefreshTokenState(ctx context.Context, jti string, u
 }
 
 // IsRefreshTokenValid checks if a refresh token is valid and not revoked in Redis.
-func (r *TokenRepoImpl) IsRefreshTokenValid(ctx context.Context, jti string, userID string) (bool, error) {
+func (r *TokenRepoImpl) IsRefreshTokenRevoked(ctx context.Context, jti string, userID string) (bool, error) {
 	tokenKey := tokenKeyPrefix + jti
 
 	// Get token state from Redis

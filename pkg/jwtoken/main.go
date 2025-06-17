@@ -77,6 +77,44 @@ func GenerateRefreshToken(userID string, secretKey []byte, expiry time.Duration)
 	return tokenString, jti, timeExp, nil
 }
 
+// ValidateToken is a generic function that validates a JWT string and returns
+// the parsed claims of the specified type T.
+func ValidateTokens(tokenString string, secretKey []byte, isAccessToken bool) (jwt.Claims, error) {
+	var claims jwt.Claims // Declare a variable of the interface type
+
+	if isAccessToken {
+		claims = &domain.AccessTokenClaims{}
+	} else {
+		claims = &domain.RefreshTokenClaims{}
+	}
+
+	// jwt.ParseWithClaims will now unmarshal into the specific struct pointed to by 'claims'
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secretKey, nil
+	})
+
+	switch {
+	case token.Valid:
+		fmt.Println("You look nice today")
+		return claims, nil
+	case errors.Is(err, jwt.ErrTokenMalformed):
+		fmt.Println("That's not even a token")
+		return nil, domain.ErrTokenInvalid
+	case errors.Is(err, jwt.ErrTokenSignatureInvalid):
+		fmt.Println("Invalid signature")
+		return nil, domain.ErrTokenInvalid
+	case errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet):
+		fmt.Println("Timing is everything")
+		return nil, domain.ErrTokenExpired
+	default:
+		fmt.Println("Couldn't handle this token:", err)
+		return nil, fmt.Errorf("access token parsing failed: %w", err)
+	}
+}
+
 // ParseAccessToken parses and validates an access token.
 func ParseAccessToken(tokenString string, secretKey []byte) (*domain.AccessTokenClaims, error) {
 	claims := &domain.AccessTokenClaims{}
@@ -94,25 +132,15 @@ func ParseAccessToken(tokenString string, secretKey []byte) (*domain.AccessToken
 		fmt.Println("That's not even a token")
 		return nil, fmt.Errorf("access token parsing failed: %w", err)
 	case errors.Is(err, jwt.ErrTokenSignatureInvalid):
-		// Invalid signature
 		fmt.Println("Invalid signature")
 		return nil, domain.ErrTokenInvalid
 	case errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet):
-		// Token is either expired or not active yet
 		fmt.Println("Timing is everything")
 		return nil, domain.ErrTokenInvalid
 	default:
 		fmt.Println("Couldn't handle this token:", err)
 		return nil, fmt.Errorf("access token parsing failed: %w", err)
 	}
-
-	// if err != nil {
-	// 	return nil, fmt.Errorf("access token parsing failed: %w", err)
-	// }
-
-	// if !token.Valid {
-	// 	return nil, domain.ErrTokenInvalid
-	// }
 
 	return claims, nil
 }
@@ -138,10 +166,6 @@ func ParseRefreshToken(tokenString string, secretKey []byte) (*domain.RefreshTok
 	if claims.ID == "" {
 		return nil, errors.New("refresh token missing JTI claim")
 	}
-	// Important: Here you would typically check the JTI against a database
-	// or cache (e.g., Redis) to see if this specific refresh token has been
-	// revoked (e.g., due to logout or suspicious activity).
-	// For example: if isRevoked(claims.ID) { return nil, errors.New("refresh token revoked") }
 
 	return claims, nil
 }

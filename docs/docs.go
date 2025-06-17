@@ -24,7 +24,39 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/specialists/login": {
+        "/health": {
+            "get": {
+                "description": "Checks if the application is running and responsive.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Performs a health check on the application",
+                "responses": {
+                    "200": {
+                        "description": "Application is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/app.HealthCheckResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Application is unhealthy or service unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/login": {
             "post": {
                 "description": "Login specialist",
                 "consumes": [
@@ -34,7 +66,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "specialists"
+                    "Specialist"
                 ],
                 "summary": "Login",
                 "parameters": [
@@ -76,7 +108,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/specialists/register": {
+        "/specialist/register": {
             "post": {
                 "description": "New specialist registration",
                 "consumes": [
@@ -86,7 +118,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "specialists"
+                    "Specialist"
                 ],
                 "summary": "Registration",
                 "parameters": [
@@ -127,9 +159,80 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/token/refresh": {
+            "post": {
+                "description": "Exchanges a valid refresh token for a new access token and a new refresh token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Update access and refresh tokens",
+                "parameters": [
+                    {
+                        "description": "Refresh token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RefreshReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully generated new token pair",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TokensPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.RequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Invalid refresh token signature or expired",
+                        "schema": {
+                            "$ref": "#/definitions/domain.RequestResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Refresh token has been revoked",
+                        "schema": {
+                            "$ref": "#/definitions/domain.RequestResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error due to token validation, database lookup, or token generation/revocation issues",
+                        "schema": {
+                            "$ref": "#/definitions/domain.RequestResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "app.HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "healthy"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2023-10-27T10:00:00Z"
+                }
+            }
+        },
         "domain.RegistrationRequest": {
             "type": "object",
             "required": [
@@ -151,7 +254,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 12,
-                    "minLength": 3
+                    "minLength": 2
                 },
                 "password": {
                     "type": "string",
@@ -201,6 +304,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.RefreshReq": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
                     "type": "string"
                 }
             }

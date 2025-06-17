@@ -14,7 +14,7 @@ import (
 	redisCache "pethelp-backend/pkg/database/redis"
 )
 
-const SpecialistRoutePath = "/api/v1/specialists"
+const SpecialistRoutePath = "/api/v1/specialist"
 
 // ModuleParams holds common dependencies for auth modules.
 // It supplies the Gin router, Postgres pool, Logger, and Redis client.
@@ -27,7 +27,7 @@ type SpecialistModuleParams struct {
 	AuthConfig config.AuthConfig
 }
 
-var SpecialistModule = fx.Module("specialists",
+var SpecialistModule = fx.Module("specialist",
 	fx.Provide(
 		fx.Annotate(
 			repositories.NewSpecialistRepository,
@@ -68,7 +68,7 @@ var SpecialistModule = fx.Module("specialists",
 
 			mp.Logger.Info("Registered google OAuth routes",
 				zap.String("base_path", SpecialistRoutePath),
-				zap.String("register_endpoint", "/specialists"),
+				zap.String("register_endpoint", "/specialist"),
 				zap.String("method", "POST"))
 		},
 	),
