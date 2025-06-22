@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -70,6 +72,7 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, family_name,
 	if err != nil {
 		return 0, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
+	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
@@ -115,19 +118,23 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 	if err != nil {
 		return item, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
+	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	})
 	if err != nil {
 		return item, fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
 	}
 	defer tx.Rollback(ctx)
 
-	row := conn.QueryRow(ctx, query, args...)
+	row := tx.QueryRow(ctx, query, args...)
 	err = row.Scan(&item.ID, &item.Name, &item.Email, &item.PasswordHash, &item.CreatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Specialist{}, sql.ErrNoRows
+		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}
 
@@ -160,19 +167,23 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	if err != nil {
 		return item, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
+	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	})
 	if err != nil {
 		return item, fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
 	}
 	defer tx.Rollback(ctx)
 
-	row := conn.QueryRow(ctx, query, args...)
+	row := tx.QueryRow(ctx, query, args...)
 	err = row.Scan(&item.ID, &item.Name, &item.Email, &item.PasswordHash, &item.CreatedAt)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Specialist{}, sql.ErrNoRows
+		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}
 
@@ -205,10 +216,11 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	if err != nil {
 		return false, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
+	defer conn.Release()
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	})
 	if err != nil {
 		return false, fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)

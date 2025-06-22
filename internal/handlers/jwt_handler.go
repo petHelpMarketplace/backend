@@ -58,7 +58,6 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		th.logger.Error("bindJSON failed", zap.Error(bindErr))
 		c.JSON(http.StatusBadRequest, domain.RequestResponse{
 			Code:    http.StatusBadRequest,
-			Type:    "input error",
 			Message: "invalid registration payload",
 		})
 		return
@@ -71,7 +70,6 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			th.logger.Error("token failed", zap.Error(validateErr))
 			c.JSON(http.StatusUnauthorized, domain.RequestResponse{
 				Code:    http.StatusUnauthorized,
-				Type:    "token error",
 				Message: "invalid refresh token",
 			})
 			return
@@ -81,7 +79,6 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			th.logger.Error("token failed", zap.Error(validateErr))
 			c.JSON(http.StatusForbidden, domain.RequestResponse{
 				Code:    http.StatusForbidden,
-				Type:    "token error",
 				Message: "revoked refresh token",
 			})
 			return
@@ -91,7 +88,6 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			th.logger.Error("token failed", zap.Error(validateErr))
 			c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 				Code:    http.StatusInternalServerError,
-				Type:    "token error",
 				Message: "refresh token validation error",
 			})
 			return
@@ -104,20 +100,18 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		th.logger.Error("parse failed", zap.Error(parseErr))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "server error",
-			Message: " parse int failed",
+			Message: "internal server error",
 		})
 		return
 	}
 
-	specialist, err := th.specialistService.Show(c.Request.Context(), userID)
+	specialist, err := th.specialistService.ShowByID(c.Request.Context(), userID)
 	if err != nil {
 		showErr := fmt.Errorf("%s failed to show specialist from DB %w", operationTokenHandler, err)
 		th.logger.Error("show failed", zap.Error(showErr))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "db error",
-			Message: "Internal server error",
+			Message: "internal server error",
 		})
 		return
 	}
@@ -128,8 +122,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		th.logger.Error("generate failed", zap.Error(tokenErr))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "token error",
-			Message: "Internal server error",
+			Message: "internal server error",
 		})
 		return
 	}
@@ -140,7 +133,6 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		th.logger.Error("generate failed", zap.Error(revokeErr))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "token error",
 			Message: "revoke old token failed",
 		})
 		return

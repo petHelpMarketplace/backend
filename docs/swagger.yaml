@@ -41,8 +41,6 @@ definitions:
         type: integer
       message:
         type: string
-      type:
-        type: string
     type: object
   domain.TokensPair:
     properties:
@@ -114,6 +112,35 @@ paths:
       summary: Performs a health check on the application
       tags:
       - System
+  /oauth/{provider}:
+    get:
+      consumes:
+      - application/json
+      description: Handles the callback from an OAuth2.0 provider after user authentication.
+      parameters:
+      - description: OAuth2.0 provider name (e.g., google, github)
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully authenticated and generated tokens
+          schema:
+            $ref: '#/definitions/domain.TokensPair'
+        "404":
+          description: Account with this email not found
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+        "500":
+          description: Internal server error or failed to complete OAuth2.0 authentication
+          schema:
+            $ref: '#/definitions/domain.RequestResponse'
+      summary: OAuth2.0 Provider Callback
+      tags:
+      - OAuth
   /specialist/login:
     post:
       consumes:

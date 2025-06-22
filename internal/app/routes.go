@@ -16,7 +16,7 @@ func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server) *gin.Engi
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://petbackend-a2vg.onrender.com"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://petbackend-a2vg.onrender.com", "https://accounts.google.com/*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},

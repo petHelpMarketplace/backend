@@ -29,6 +29,5 @@ var (
 
 type RequestResponse struct {
 	Code    int    `json:"code,omitempty"`
-	Type    string `json:"type,omitempty"`
 	Message string `json:"message,omitempty"`
 }

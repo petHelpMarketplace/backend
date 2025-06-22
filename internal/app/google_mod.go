@@ -21,11 +21,6 @@ type OauthModuleParams struct {
 
 var OauthModule = fx.Module("google_oauth",
 	fx.Provide(
-		// fx.Annotate(
-		// 	repositories.NewOAuthTokenRepo,
-		// 	fx.As(new(ports.TokenRepository)),
-		// ),
-
 		fx.Annotate(
 			services.NewOAuthService,
 			fx.As(new(ports.OAuthService)),
@@ -39,7 +34,7 @@ var OauthModule = fx.Module("google_oauth",
 		func(mp OauthModuleParams, handler ports.OAuthHandlers) {
 			oauthGroup := mp.Router.Group(oauthCoreRoutePath)
 			{
-				oauthGroup.GET("/google", handler.SignInWithProvider)
+				oauthGroup.GET("/:provider", handler.SignInWithProvider)
 				oauthGroup.GET("/google/callback", handler.ProviderCallback)
 
 				mp.Logger.Info("Registered google OAuth routes",

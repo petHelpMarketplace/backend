@@ -42,7 +42,7 @@ func (ss *SpecialistServiceImpl) Registration(ctx context.Context, specialist *d
 	if err != nil {
 		hashErr := fmt.Errorf("%s failed to generate password hash: %w", operationSpecServ, err)
 		ss.logger.Error(domain.ErrFailedToHashPassword.Error(), zap.Error(hashErr))
-		return 0, hashErr
+		return 0, domain.ErrInternalServer
 	}
 
 	//run
@@ -63,24 +63,30 @@ func (ss *SpecialistServiceImpl) Registration(ctx context.Context, specialist *d
 	id, err := ss.specialistRepo.Save(timeoutCtx, specialist.Name, specialist.FamilyName, specialist.Email, specialist.Phone, hashedPassword)
 	if err != nil {
 		saveErr := fmt.Errorf("%s failed to save specialist: %w", operationName, err)
-		ss.logger.Error("failed to save specialist", zap.Error(saveErr))
-		return 0, saveErr
+		ss.logger.Error("failed insert to database", zap.Error(saveErr))
+		return 0, domain.ErrInternalServer
 	}
 
 	return id, nil
 }
 
 func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password string) (domain.Specialist, error) {
-	//Retrieve stored hash and user ID
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
 	// Check email exists
 	specialistData, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
 	if err != nil {
-		getEmailErr := fmt.Errorf("%s failed to get by email: %w", operationSpecServ, err)
-		ss.logger.Error("failed to save specialist", zap.Error(getEmailErr))
-		return specialistData, getEmailErr
+		if errors.Is(err, sql.ErrNoRows) {
+			getEmailErr := fmt.Errorf("%s failed to get specialist by email - %s: %w", operationSpecServ, email, err)
+			ss.logger.Error("specialist not found", zap.Error(getEmailErr))
+			return specialistData, domain.ErrAccountNotFound
+		}
+		getEmailErr := fmt.Errorf("%s failed to get specialist by email - %s: %w", operationSpecServ, email, err)
+		ss.logger.Error("specialist found error", zap.Error(getEmailErr))
+		return specialistData, domain.ErrInternalServer
+
 	}
 
 	//verify password
@@ -92,10 +98,42 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	return specialistData, nil
 }
 
-func (ss *SpecialistServiceImpl) Show(ctx context.Context, id int64) (domain.Specialist, error) {
-	spec, err := ss.specialistRepo.GetByID(ctx, id)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return domain.Specialist{}, err
+func (ss *SpecialistServiceImpl) ShowByID(ctx context.Context, id int64) (domain.Specialist, error) {
+	//Retrieve stored hash and user ID
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	spec, err := ss.specialistRepo.GetByID(timeoutCtx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			getEmailErr := fmt.Errorf("%s failed to get specialist by id - %d: %w", operationSpecServ, id, err)
+			ss.logger.Error("specialist not found", zap.Error(getEmailErr))
+			return spec, domain.ErrAccountNotFound
+		}
+		getEmailErr := fmt.Errorf("%s failed to get specialist by id - %d: %w", operationSpecServ, id, err)
+		ss.logger.Error("specialist found error", zap.Error(getEmailErr))
+		return spec, domain.ErrInternalServer
+
+	}
+
+	return spec, nil
+}
+
+func (ss *SpecialistServiceImpl) ShowByEmail(ctx context.Context, email string) (domain.Specialist, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	spec, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			getEmailErr := fmt.Errorf("%s failed to get specialist by email - %s: %w", operationSpecServ, email, err)
+			ss.logger.Error("specialist not found", zap.Error(getEmailErr))
+			return spec, domain.ErrAccountNotFound
+		}
+		getEmailErr := fmt.Errorf("%s failed to get specialist by email - %s: %w", operationSpecServ, email, err)
+		ss.logger.Error("specialist found error", zap.Error(getEmailErr))
+		return spec, domain.ErrInternalServer
+
 	}
 
 	return spec, nil

@@ -2,11 +2,14 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
 	redisDB "pethelp-backend/pkg/database/redis"
+
+	"github.com/markbates/goth"
 )
 
 const (
@@ -123,6 +126,24 @@ func (r *TokenRepoImpl) RevokeAllUserRefreshTokens(ctx context.Context, userID s
 	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("%s failed to revoke all user tokens: %w", operationToken, err)
+	}
+	return nil
+}
+
+const userKeyPrefix = "email:"
+const operationName = "oauth_repo"
+
+func (r *TokenRepoImpl) Set(ctx context.Context, user *goth.User) error {
+
+	userJSON, err := json.Marshal(user)
+	if err != nil {
+		return fmt.Errorf("%s failed to marshal user data: %w", operationName, err)
+	}
+
+	key := fmt.Sprintf("%s%s", userKeyPrefix, user.Email) // Use a unique identifier like user.ID
+	err = r.redis.Client().Set(ctx, key, userJSON, 0).Err()
+	if err != nil {
+		return fmt.Errorf("%s failed to save user to Redis: %w", operationName, err)
 	}
 	return nil
 }

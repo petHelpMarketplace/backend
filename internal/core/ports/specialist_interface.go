@@ -13,9 +13,10 @@ type SpecialistHandlers interface {
 }
 
 type SpecialistService interface {
-	Registration(context.Context, *domain.RegistrationRequest) (int64, error)
-	Login(context.Context, string, string) (domain.Specialist, error)
-	Show(ctx context.Context, id int64) (domain.Specialist, error)
+	Registration(ctx context.Context, req *domain.RegistrationRequest) (int64, error)
+	Login(ctx context.Context, email string, password string) (domain.Specialist, error)
+	ShowByID(ctx context.Context, id int64) (domain.Specialist, error)
+	ShowByEmail(ctx context.Context, email string) (domain.Specialist, error)
 	// List(filter dto.ListFilter) ([]domain.User, error)
 	// Update(user domain.User) error
 	// Delete(id uint) error

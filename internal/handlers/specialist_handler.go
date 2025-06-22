@@ -36,8 +36,8 @@ func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.
 }
 
 type successRegistration struct {
-	Message string `json:"message" default:"Registration successful"`
 	ID      string `json:"id"`
+	Message string `json:"message" default:"Registration successful"`
 }
 
 // @Summary Registration
@@ -58,41 +58,34 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		sh.logger.Error("bindJSON failed", zap.Error(bindErr))
 		c.JSON(http.StatusBadRequest, domain.RequestResponse{
 			Code:    http.StatusBadRequest,
-			Type:    "input error",
 			Message: "invalid registration payload",
 		})
 		return
 	}
-	// — Run shared field‐validator on it
+	// — Run field‐validator on it
 	if err := sh.validator.Validate(req); err != nil {
 		validateErr := fmt.Errorf("%s invalid registration payload %w", operationSpHandler, err)
 		sh.logger.Error("validate failed", zap.Error(validateErr))
 		c.JSON(http.StatusBadRequest, domain.RequestResponse{
 			Code:    http.StatusBadRequest,
-			Type:    "validation error",
-			Message: "registration data validation error",
+			Message: "validation error, registration data failed",
 		})
 		return
 	}
 
-	ctx := c.Request.Context()
-
 	//email uniqueness
-	id, err := sh.specialistService.Registration(ctx, req)
+	id, err := sh.specialistService.Registration(c.Request.Context(), req)
 	if err != nil {
 		if err == domain.ErrEmailAlreadyInUse {
 			c.JSON(http.StatusConflict, domain.RequestResponse{
 				Code:    http.StatusConflict,
-				Type:    "conflict error",
 				Message: "specialist with this email already exists",
 			})
 			return
 		}
 
-		sh.logger.Error("email exists check failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "server error",
 			Message: "internal server error",
 		})
 		return
@@ -100,8 +93,8 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	// — Success response
 	c.JSON(http.StatusCreated, successRegistration{
-		Message: "Registration successful",
 		ID:      strconv.FormatInt(id, 10),
+		Message: "Registration successful",
 	})
 
 }
@@ -129,7 +122,6 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		sh.logger.Error("bindJSON failed", zap.Error(bindErr))
 		c.JSON(http.StatusBadRequest, domain.RequestResponse{
 			Code:    http.StatusBadRequest,
-			Type:    "input error",
 			Message: "invalid registration payload",
 		})
 		return
@@ -139,19 +131,25 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	spec, err := sh.specialistService.Login(c.Request.Context(), dto.Email, dto.Password)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
-			loginErr := fmt.Errorf("%s invalid email or password %w", operationSpHandler, err)
+			loginErr := fmt.Errorf("%s invalid password %w", operationSpHandler, err)
 			sh.logger.Error("login failed", zap.Error(loginErr))
 			c.JSON(http.StatusUnauthorized, domain.RequestResponse{
 				Code:    http.StatusUnauthorized,
-				Type:    "login error",
-				Message: "invalid email or password",
+				Message: "wrong password",
 			})
+		} else if errors.Is(err, domain.ErrAccountNotFound) {
+			loginErr := fmt.Errorf("%s email not found %w", operationSpHandler, err)
+			sh.logger.Error("login failed", zap.Error(loginErr))
+			c.JSON(http.StatusNotFound, domain.RequestResponse{
+				Code:    http.StatusNotFound,
+				Message: "user with this email not found",
+			})
+
 		} else {
 			loginErr := fmt.Errorf("%s failed to glogin specialist %w", operationSpHandler, err)
 			sh.logger.Error("login failed", zap.Error(loginErr))
 			c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 				Code:    http.StatusInternalServerError,
-				Type:    "login error",
 				Message: "Internal server error",
 			})
 		}
@@ -160,11 +158,8 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 
 	tokens, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
 	if err != nil {
-		tokenErr := fmt.Errorf("%s failed to generate tokens %w", operationSpHandler, err)
-		sh.logger.Error("generate failed", zap.Error(tokenErr))
 		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
 			Code:    http.StatusInternalServerError,
-			Type:    "token error",
 			Message: "Internal server error",
 		})
 		return

@@ -48,24 +48,24 @@ func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Spe
 	accessToken, _, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
 	if err != nil {
 		accessErr := fmt.Errorf("%s failed to generate access token: %w", operationTokenServ, err)
-		ts.logger.Error(domain.ErrFailedToHashPassword.Error(), zap.Error(accessErr))
-		return tokens, accessErr
+		ts.logger.Error("access token failed", zap.Error(accessErr))
+		return tokens, domain.ErrInternalServer
 	}
 	tokens.Access = accessToken
 
 	refreshToken, refreshTokenID, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
 	if err != nil {
-		refreshErr := fmt.Errorf("%s failed to generate access token: %w", operationTokenServ, err)
-		ts.logger.Error(domain.ErrFailedToHashPassword.Error(), zap.Error(refreshErr))
-		return tokens, refreshErr
+		refreshErr := fmt.Errorf("%s failed to generate accessrefresh token: %w", operationTokenServ, err)
+		ts.logger.Error("refresh token failed", zap.Error(refreshErr))
+		return tokens, domain.ErrInternalServer
 	}
 	tokens.Refresh = refreshToken
 
 	// set freshly minted refresh token to valid list
 	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshTokenID, id, expired); err != nil {
-		saveRefreshErr := fmt.Errorf("%s failed to store refresh token: %w", operationTokenServ, err)
-		ts.logger.Error(domain.ErrFailedToHashPassword.Error(), zap.Error(saveRefreshErr))
-		return tokens, saveRefreshErr
+		saveRefreshErr := fmt.Errorf("%s failed to save refresh token: %w", operationTokenServ, err)
+		ts.logger.Error("save refresh token failed", zap.Error(saveRefreshErr))
+		return tokens, domain.ErrInternalServer
 	}
 
 	return tokens, nil
