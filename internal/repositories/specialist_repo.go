@@ -32,7 +32,7 @@ func NewSpecialistRepository(pool *postgres.DB) *SpecialistRepositoryImpl {
 	}
 }
 
-func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, family_name, email, phone, passHash string) (int64, error) {
+func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, email, phone, passHash string) (int64, error) {
 
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -44,7 +44,6 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, family_name,
 	query, args, err := sq.Insert(curentTableName).
 		Columns(
 			"name",
-			"family_name",
 			"email",
 			"phone",
 			"password_hash",
@@ -53,7 +52,6 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, family_name,
 		).
 		Values(
 			name,
-			family_name,
 			email,
 			phone,
 			passHash,

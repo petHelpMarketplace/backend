@@ -27,7 +27,15 @@ var (
 	ErrNoSpecialChar               = errors.New("password must contain at least one special character")
 )
 
-type RequestResponse struct {
-	Code    int    `json:"code,omitempty"`
-	Message string `json:"message,omitempty"`
+// FieldError contains validation error details for a specific field.
+type FieldError struct {
+	Field   string `json:"field" example:"email"`
+	Message string `json:"message" example:"This field is required."`
+}
+
+// ErrorResponse is the standard structure for API error responses.
+type ErrorResponse struct {
+	Code    int          `json:"code" example:"400"`
+	Message string       `json:"message" example:"Validation failed"`
+	Details []FieldError `json:"details,omitempty"`
 }

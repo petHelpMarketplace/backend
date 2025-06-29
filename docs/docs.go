@@ -88,13 +88,13 @@ const docTemplate = `{
                     "404": {
                         "description": "Account with this email not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error or failed to complete OAuth2.0 authentication",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     }
                 }
@@ -120,7 +120,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginDTO"
+                            "$ref": "#/definitions/handlers.LoginReq"
                         }
                     }
                 ],
@@ -134,19 +134,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     }
                 }
@@ -178,7 +178,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Sign in succeeded",
+                        "description": "Sign-up succeeded",
                         "schema": {
                             "$ref": "#/definitions/handlers.successRegistration"
                         }
@@ -186,19 +186,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     }
                 }
@@ -238,25 +238,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: Invalid refresh token signature or expired",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden: Refresh token has been revoked",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error due to token validation, database lookup, or token generation/revocation issues",
                         "schema": {
-                            "$ref": "#/definitions/domain.RequestResponse"
+                            "$ref": "#/definitions/domain.ErrorResponse"
                         }
                     }
                 }
@@ -277,11 +277,42 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Validation failed"
+                }
+            }
+        },
+        "domain.FieldError": {
+            "type": "object",
+            "properties": {
+                "field": {
+                    "type": "string",
+                    "example": "email"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "This field is required."
+                }
+            }
+        },
         "domain.RegistrationRequest": {
             "type": "object",
             "required": [
                 "email",
-                "family_name",
                 "name",
                 "password",
                 "password_confirmation",
@@ -289,37 +320,29 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
-                },
-                "family_name": {
                     "type": "string",
-                    "minLength": 2
+                    "maxLength": 255,
+                    "example": "john.doe@example.com"
                 },
                 "name": {
                     "type": "string",
-                    "maxLength": 12,
-                    "minLength": 2
+                    "maxLength": 100,
+                    "minLength": 2,
+                    "example": "John"
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 12
+                    "minLength": 12,
+                    "example": "Str0ngP@ssw0rd!"
                 },
                 "password_confirmation": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Str0ngP@ssw0rd!"
                 },
                 "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.RequestResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 13,
+                    "example": "+38 (XXX) XXX-XX-XX)"
                 }
             }
         },
@@ -334,7 +357,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.LoginDTO": {
+        "handlers.LoginReq": {
             "type": "object",
             "required": [
                 "email",
@@ -364,7 +387,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "1"
                 },
                 "message": {
                     "type": "string",

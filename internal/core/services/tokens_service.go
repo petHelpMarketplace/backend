@@ -13,10 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	operationTokenServ = "token_service: "
-)
-
 type TokenServiceImpl struct {
 	tokenRepo      ports.TokenRepository
 	accessExpMin   time.Duration
@@ -47,24 +43,27 @@ func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Spe
 
 	accessToken, _, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
 	if err != nil {
-		accessErr := fmt.Errorf("%s failed to generate access token: %w", operationTokenServ, err)
-		ts.logger.Error("access token failed", zap.Error(accessErr))
+		ts.logger.Error("Failed to generate access token",
+			zap.String("userID", id),
+			zap.Error(err))
 		return tokens, domain.ErrInternalServer
 	}
 	tokens.Access = accessToken
 
 	refreshToken, refreshTokenID, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
 	if err != nil {
-		refreshErr := fmt.Errorf("%s failed to generate accessrefresh token: %w", operationTokenServ, err)
-		ts.logger.Error("refresh token failed", zap.Error(refreshErr))
+		ts.logger.Error("Failed to generate refresh token",
+			zap.String("userID", id),
+			zap.Error(err))
 		return tokens, domain.ErrInternalServer
 	}
 	tokens.Refresh = refreshToken
 
-	// set freshly minted refresh token to valid list
 	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshTokenID, id, expired); err != nil {
-		saveRefreshErr := fmt.Errorf("%s failed to save refresh token: %w", operationTokenServ, err)
-		ts.logger.Error("save refresh token failed", zap.Error(saveRefreshErr))
+		ts.logger.Error("Failed to save refresh token state to repository",
+			zap.String("refreshTokenID", refreshTokenID),
+			zap.String("userID", id),
+			zap.Error(err))
 		return tokens, domain.ErrInternalServer
 	}
 
@@ -72,41 +71,42 @@ func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Spe
 }
 
 func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isAccess bool) (string, string, error) {
-
 	genClaims, err := genJWT.ValidateTokens(token, ts.jwtSecret, isAccess)
 	if err != nil {
-		validateErr := fmt.Errorf("%s failed validate token: %w", operationTokenServ, err)
-		ts.logger.Error("validate failed", zap.Error(validateErr))
+		ts.logger.Error("Token validation failed",
+			zap.Bool("isAccess", isAccess),
+			zap.Error(err))
 		return "", "", domain.ErrTokenInvalid
 	}
 
 	var userID, jti string
 
-	// Assert to the common interface.
 	if accessor, ok := genClaims.(domain.ClaimDataAccessor); ok {
 		userID = accessor.GetUserID()
 		jti = accessor.GetJTI()
 		ts.logger.Info("Extracted token data:", zap.String("userID", userID), zap.String("jti", jti))
 	} else {
 		ts.logger.Error("Error: Claims type does not implement ClaimDataAccessor", zap.String("type", fmt.Sprintf("%T", genClaims)))
-
 		return "", "", domain.ErrInternalServer
 	}
 
 	revoked, err := ts.tokenRepo.IsRefreshTokenRevoked(ctx, jti, userID)
 	if err != nil {
-		revokedErr := fmt.Errorf("%s refresh token revoked check failed: %w", operationTokenServ, err)
-		ts.logger.Error("check revoked error", zap.Error(revokedErr))
-		return "", "", err
+		ts.logger.Error("Failed to check refresh token revocation status in repository",
+			zap.String("jti", jti),
+			zap.String("userID", userID),
+			zap.Error(err))
+		return "", "", domain.ErrInternalServer
 	}
 
 	if !revoked {
-		validErr := fmt.Errorf("%s refresh token revoked: %w", operationTokenServ, err)
-		ts.logger.Error("token revoked", zap.Error(validErr))
+		ts.logger.Warn("Refresh token is revoked",
+			zap.String("jti", jti),
+			zap.String("userID", userID))
 		return "", "", domain.ErrTokenRevoked
 	}
 
-	ts.logger.Info("token valid")
+	ts.logger.Info("token valid", zap.String("userID", userID), zap.String("jti", jti))
 
 	return jti, userID, nil
 
@@ -115,16 +115,19 @@ func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isA
 func (ts *TokenServiceImpl) RevokeToken(ctx context.Context, token string) error {
 	genClaims, err := genJWT.ParseRefreshToken(token, ts.jwtSecret)
 	if err != nil {
-		parseErr := fmt.Errorf("%s failed parse refresh token: %w", operationTokenServ, err)
-		ts.logger.Error("parse failed", zap.Error(parseErr))
+		ts.logger.Error("Failed to parse refresh token for revocation",
+			zap.String("token", token),
+			zap.Error(err))
 		return domain.ErrTokenInvalid
 	}
 
 	err = ts.tokenRepo.RevokeRefreshToken(ctx, genClaims.ID, genClaims.UserID)
 	if err != nil {
-		revokeErr := fmt.Errorf("%s failed revoke refresh token: %w", operationTokenServ, err)
-		ts.logger.Error("revoke failed", zap.Error(revokeErr))
-		return domain.ErrTokenRevoked
+		ts.logger.Error("Failed to revoke refresh token in repository",
+			zap.String("jti", genClaims.ID),
+			zap.String("userID", genClaims.UserID),
+			zap.Error(err))
+		return domain.ErrInternalServer
 	}
 
 	return nil

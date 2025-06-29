@@ -1,12 +1,9 @@
 package services
 
 import (
-	"errors"
-	"fmt"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
 	"regexp"
-	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -35,39 +32,53 @@ func isValidName(fl validator.FieldLevel) bool {
 func NewCustomValidator() *SpecialistValidatorImpl {
 	v := validator.New()
 	v.RegisterValidation("e123", isValidE123)
+	v.RegisterValidation("custom_name", isValidName)
 
 	return &SpecialistValidatorImpl{validator: v}
 }
 
-func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) error {
-	sv.validator.RegisterValidation("e123", isValidE123)
-	sv.validator.RegisterValidation("custom_name", isValidName)
+func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) []domain.FieldError {
+	var validationErrors []domain.FieldError
 
 	if err := sv.validator.Struct(data); err != nil {
 		if _, ok := err.(*validator.InvalidValidationError); ok {
-			return err
+			// This is an internal error, should not happen with a valid struct.
+			validationErrors = append(validationErrors, domain.FieldError{Field: "general", Message: "Invalid validation object"})
+			return validationErrors
 		}
-		var errorMessages []string
+
 		for _, err := range err.(validator.ValidationErrors) {
+			var fe domain.FieldError
+			fe.Field = err.Field()
 			switch err.Field() {
-			case "Name", "FamilyName":
-				errorMessages = append(errorMessages, fmt.Sprintf("%s must be at least 2 characters %s", err.Field(), err.Error()))
+			case "Name":
+				fe.Message = "Invalid name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
 			case "Phone":
-				errorMessages = append(errorMessages, "Phone must be in E.123 format (e.g., +38 (XXX) XXX-XX-XX)")
+				fe.Message = "Phone must be in E.123 format (e.g., +3(XXX)XXX-XX-XX) and contain at least 13 digits."
 			case "Email":
-				errorMessages = append(errorMessages, "Invalid email format")
+				fe.Message = "Invalid email format."
 			case "Password":
-				errorMessages = append(errorMessages, "Password must be at least 12 characters")
+				fe.Message = "Password must be at least 12 characters."
 			case "PasswordConfirmation":
-				errorMessages = append(errorMessages, "Passwords do not match")
+				fe.Message = "Passwords do not match."
 			}
+			validationErrors = append(validationErrors, fe)
 		}
-		return errors.New(strings.Join(errorMessages, "; "))
 	}
-	return isValidPassword(data.Password)
+
+	passwordErrors := validatePasswordComplexity(data.Password)
+	if len(passwordErrors) > 0 {
+		validationErrors = append(validationErrors, passwordErrors...)
+	}
+
+	if len(validationErrors) > 0 {
+		return validationErrors
+	}
+
+	return nil
 }
 
-func isValidPassword(password string) error {
+func validatePasswordComplexity(password string) []domain.FieldError {
 
 	var (
 		hasUpper   bool
@@ -75,6 +86,8 @@ func isValidPassword(password string) error {
 		hasNumber  bool
 		hasSpecial bool
 	)
+
+	var errors []domain.FieldError
 
 	for _, char := range password {
 		switch {
@@ -87,24 +100,20 @@ func isValidPassword(password string) error {
 		case unicode.IsPunct(char) || unicode.IsSymbol(char):
 			hasSpecial = true
 		}
-
-		if hasUpper && hasLower && hasNumber && hasSpecial {
-			return nil
-		}
 	}
 
 	if !hasUpper {
-		return domain.ErrNoUppercase
+		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoUppercase.Error()})
 	}
 	if !hasLower {
-		return domain.ErrNoLowercase
+		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoLowercase.Error()})
 	}
 	if !hasNumber {
-		return domain.ErrNoNumber
+		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoNumber.Error()})
 	}
 	if !hasSpecial {
-		return domain.ErrNoSpecialChar
+		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoSpecialChar.Error()})
 	}
 
-	return nil
+	return errors
 }

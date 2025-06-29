@@ -20,10 +20,9 @@ type Specialist struct {
 }
 
 type RegistrationRequest struct {
-	Name                 string `json:"name" validate:"required,min=2,max=12,custom_name"`
-	FamilyName           string `json:"family_name" validate:"required,min=2,custom_name"`
-	Phone                string `json:"phone" validate:"required,e123"`
-	Email                string `json:"email" validate:"required,email"`
-	Password             string `json:"password" validate:"required,min=12"`
-	PasswordConfirmation string `json:"password_confirmation" validate:"required,eqfield=Password"`
+	Name                 string `json:"name" validate:"required,min=2,max=100,custom_name" example:"John"`
+	Phone                string `json:"phone" validate:"required,e123,min=13" example:"+38 (XXX) XXX-XX-XX)"`
+	Email                string `json:"email" validate:"required,email,max=255" example:"john.doe@example.com"`
+	Password             string `json:"password" validate:"required,min=12" example:"Str0ngP@ssw0rd!"`
+	PasswordConfirmation string `json:"password_confirmation" validate:"required,eqfield=Password" example:"Str0ngP@ssw0rd!"`
 }

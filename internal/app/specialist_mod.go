@@ -66,7 +66,7 @@ var SpecialistModule = fx.Module("specialist",
 			specRouterGroup.POST("/register", handler.Registration)
 			specRouterGroup.POST("/login", handler.Login)
 
-			mp.Logger.Info("Registered google OAuth routes",
+			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),
 				zap.String("register_endpoint", "/specialist"),
 				zap.String("method", "POST"))

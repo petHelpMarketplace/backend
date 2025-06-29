@@ -9,38 +9,56 @@ definitions:
         example: "2023-10-27T10:00:00Z"
         type: string
     type: object
+  domain.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      details:
+        items:
+          $ref: '#/definitions/domain.FieldError'
+        type: array
+      message:
+        example: Validation failed
+        type: string
+    type: object
+  domain.FieldError:
+    properties:
+      field:
+        example: email
+        type: string
+      message:
+        example: This field is required.
+        type: string
+    type: object
   domain.RegistrationRequest:
     properties:
       email:
-        type: string
-      family_name:
-        minLength: 2
+        example: john.doe@example.com
+        maxLength: 255
         type: string
       name:
-        maxLength: 12
+        example: John
+        maxLength: 100
         minLength: 2
         type: string
       password:
+        example: Str0ngP@ssw0rd!
         minLength: 12
         type: string
       password_confirmation:
+        example: Str0ngP@ssw0rd!
         type: string
       phone:
+        example: +38 (XXX) XXX-XX-XX)
+        minLength: 13
         type: string
     required:
     - email
-    - family_name
     - name
     - password
     - password_confirmation
     - phone
-    type: object
-  domain.RequestResponse:
-    properties:
-      code:
-        type: integer
-      message:
-        type: string
     type: object
   domain.TokensPair:
     properties:
@@ -49,7 +67,7 @@ definitions:
       refresh_token:
         type: string
     type: object
-  handlers.LoginDTO:
+  handlers.LoginReq:
     properties:
       email:
         type: string
@@ -69,6 +87,7 @@ definitions:
   handlers.successRegistration:
     properties:
       id:
+        example: "1"
         type: string
       message:
         default: Registration successful
@@ -133,11 +152,11 @@ paths:
         "404":
           description: Account with this email not found
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal server error or failed to complete OAuth2.0 authentication
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
       summary: OAuth2.0 Provider Callback
       tags:
       - OAuth
@@ -152,7 +171,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.LoginDTO'
+          $ref: '#/definitions/handlers.LoginReq'
       produces:
       - application/json
       responses:
@@ -163,15 +182,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
       summary: Login
       tags:
       - Specialist
@@ -191,21 +210,21 @@ paths:
       - application/json
       responses:
         "201":
-          description: Sign in succeeded
+          description: Sign-up succeeded
           schema:
             $ref: '#/definitions/handlers.successRegistration'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
       summary: Registration
       tags:
       - Specialist
@@ -232,20 +251,20 @@ paths:
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "401":
           description: 'Unauthorized: Invalid refresh token signature or expired'
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "403":
           description: 'Forbidden: Refresh token has been revoked'
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
         "500":
           description: Internal server error due to token validation, database lookup,
             or token generation/revocation issues
           schema:
-            $ref: '#/definitions/domain.RequestResponse'
+            $ref: '#/definitions/domain.ErrorResponse'
       summary: Update access and refresh tokens
       tags:
       - Token

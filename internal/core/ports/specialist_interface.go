@@ -23,7 +23,7 @@ type SpecialistService interface {
 }
 
 type SpecialistRepository interface {
-	Save(ctx context.Context, name, family_name, email, phone, hash string) (int64, error)
+	Save(ctx context.Context, name, email, phone, hash string) (int64, error)
 	GetByEmail(ctx context.Context, email string) (domain.Specialist, error)
 	GetByID(ctx context.Context, id int64) (domain.Specialist, error)
 	CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error)

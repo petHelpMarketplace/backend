@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -36,7 +38,7 @@ func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.
 }
 
 type successRegistration struct {
-	ID      string `json:"id"`
+	ID      string `json:"id" example:"1"`
 	Message string `json:"message" default:"Registration successful"`
 }
 
@@ -46,29 +48,50 @@ type successRegistration struct {
 // @Accept       json
 // @Produce      json
 // @Param request body domain.RegistrationRequest true "Registration request body"
-// @Success 201 {object} successRegistration "Sign in succeeded"
-// @Failure      400,409,500 {object} domain.RequestResponse
+// @Success 201 {object} successRegistration "Sign-up succeeded"
+// @Failure      400,409,500 {object} domain.ErrorResponse
 // @Router /specialist/register [post]
 func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	req := &domain.RegistrationRequest{}
 
 	if err := c.ShouldBindJSON(req); err != nil {
-		bindErr := fmt.Errorf("%s invalid registration payload %w", operationSpHandler, err)
-		sh.logger.Error("bindJSON failed", zap.Error(bindErr))
-		c.JSON(http.StatusBadRequest, domain.RequestResponse{
+
+		var fieldErrors []domain.FieldError
+		message := "Invalid request payload"
+
+		var jsonErr *json.UnmarshalTypeError
+		var syntaxErr *json.SyntaxError
+
+		bindErr := fmt.Errorf("%s invalid registration payload: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} else if errors.As(err, &syntaxErr) {
+			message = "The request body is not valid JSON."
+		} else if err == io.EOF {
+			message = "Request body cannot be empty."
+		}
+
+		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "invalid registration payload",
+			Message: message,
+			Details: fieldErrors,
 		})
 		return
 	}
 	// — Run field‐validator on it
-	if err := sh.validator.Validate(req); err != nil {
-		validateErr := fmt.Errorf("%s invalid registration payload %w", operationSpHandler, err)
-		sh.logger.Error("validate failed", zap.Error(validateErr))
-		c.JSON(http.StatusBadRequest, domain.RequestResponse{
+	if validationErrors := sh.validator.Validate(req); len(validationErrors) > 0 {
+		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "validation error, registration data failed",
+			Message: "Validation failed",
+			Details: validationErrors,
 		})
 		return
 	}
@@ -76,15 +99,15 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 	//email uniqueness
 	id, err := sh.specialistService.Registration(c.Request.Context(), req)
 	if err != nil {
-		if err == domain.ErrEmailAlreadyInUse {
-			c.JSON(http.StatusConflict, domain.RequestResponse{
+		if errors.Is(err, domain.ErrAccountAlreadyExists) {
+			c.JSON(http.StatusConflict, domain.ErrorResponse{
 				Code:    http.StatusConflict,
-				Message: "specialist with this email already exists",
+				Message: fmt.Sprintf("specialist email %s already exists", req.Email),
 			})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -99,7 +122,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 }
 
-type LoginDTO struct {
+type LoginReq struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
@@ -109,46 +132,60 @@ type LoginDTO struct {
 // @Tags Specialist
 // @Accept       json
 // @Produce      json
-// @Param request body LoginDTO true "Login request body"
+// @Param request body LoginReq true "Login request body"
 // @Success 200 {object} domain.TokensPair "Login succeeded"
-// @Failure      400,401,500 {object} domain.RequestResponse
+// @Failure      400,401,500 {object} domain.ErrorResponse
 // @Router /specialist/login [post]
 func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
-	var dto LoginDTO
+	var loginData LoginReq
 
 	//bind and validate JSON payload
-	if err := c.ShouldBindJSON(&dto); err != nil {
-		bindErr := fmt.Errorf("%s invalid registration payload %w", operationSpHandler, err)
-		sh.logger.Error("bindJSON failed", zap.Error(bindErr))
-		c.JSON(http.StatusBadRequest, domain.RequestResponse{
+	if err := c.ShouldBindJSON(&loginData); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid request payload"
+
+		var jsonErr *json.UnmarshalTypeError
+		var syntaxErr *json.SyntaxError
+
+		bindErr := fmt.Errorf("%s invalid registration payload: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} else if errors.As(err, &syntaxErr) {
+			message = "The request body is not valid JSON."
+		} else if err == io.EOF {
+			message = "Request body cannot be empty."
+		}
+
+		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "invalid registration payload",
+			Message: message,
+			Details: fieldErrors,
 		})
 		return
 	}
 
 	//perform authentication and token issuance
-	spec, err := sh.specialistService.Login(c.Request.Context(), dto.Email, dto.Password)
+	spec, err := sh.specialistService.Login(c.Request.Context(), loginData.Email, loginData.Password)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
-			loginErr := fmt.Errorf("%s invalid password %w", operationSpHandler, err)
-			sh.logger.Error("login failed", zap.Error(loginErr))
-			c.JSON(http.StatusUnauthorized, domain.RequestResponse{
+			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
 				Code:    http.StatusUnauthorized,
-				Message: "wrong password",
+				Message: "Invalid credentials",
 			})
 		} else if errors.Is(err, domain.ErrAccountNotFound) {
-			loginErr := fmt.Errorf("%s email not found %w", operationSpHandler, err)
-			sh.logger.Error("login failed", zap.Error(loginErr))
-			c.JSON(http.StatusNotFound, domain.RequestResponse{
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{
 				Code:    http.StatusNotFound,
-				Message: "user with this email not found",
+				Message: "Authorization email not found",
 			})
 
 		} else {
-			loginErr := fmt.Errorf("%s failed to glogin specialist %w", operationSpHandler, err)
-			sh.logger.Error("login failed", zap.Error(loginErr))
-			c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal server error",
 			})
@@ -158,7 +195,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 
 	tokens, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})

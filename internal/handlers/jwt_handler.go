@@ -44,10 +44,10 @@ type RefreshReq struct {
 // @Produce      json
 // @Param        request body RefreshReq true "Refresh token request"
 // @Success      200  {object}  domain.TokensPair "Successfully generated new token pair"
-// @Failure      400  {object}  domain.RequestResponse "Invalid request payload or malformed refresh token"
-// @Failure      401  {object}  domain.RequestResponse "Unauthorized: Invalid refresh token signature or expired"
-// @Failure      403  {object}  domain.RequestResponse "Forbidden: Refresh token has been revoked"
-// @Failure      500  {object}  domain.RequestResponse "Internal server error due to token validation, database lookup, or token generation/revocation issues"
+// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or malformed refresh token"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: Invalid refresh token signature or expired"
+// @Failure      403  {object}  domain.ErrorResponse "Forbidden: Refresh token has been revoked"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error due to token validation, database lookup, or token generation/revocation issues"
 // @Router       /token/refresh [post]
 func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
@@ -56,7 +56,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err := c.ShouldBindJSON(&dto); err != nil {
 		bindErr := fmt.Errorf("%s invalid refresh payload %w", operationTokenHandler, err)
 		th.logger.Error("bindJSON failed", zap.Error(bindErr))
-		c.JSON(http.StatusBadRequest, domain.RequestResponse{
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
 			Message: "invalid registration payload",
 		})
@@ -68,7 +68,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		if errors.Is(err, domain.ErrTokenInvalid) {
 			validateErr := fmt.Errorf("%s invalid refresh token %w", operationTokenHandler, err)
 			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusUnauthorized, domain.RequestResponse{
+			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
 				Code:    http.StatusUnauthorized,
 				Message: "invalid refresh token",
 			})
@@ -77,7 +77,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
 			validateErr := fmt.Errorf("%s revoked refresh token %w", operationTokenHandler, err)
 			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusForbidden, domain.RequestResponse{
+			c.JSON(http.StatusForbidden, domain.ErrorResponse{
 				Code:    http.StatusForbidden,
 				Message: "revoked refresh token",
 			})
@@ -86,7 +86,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		} else {
 			validateErr := fmt.Errorf("%s internal refresh token error %w", operationTokenHandler, err)
 			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 				Code:    http.StatusInternalServerError,
 				Message: "refresh token validation error",
 			})
@@ -98,7 +98,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err != nil {
 		parseErr := fmt.Errorf("%s parse int failed %w", operationTokenHandler, err)
 		th.logger.Error("parse failed", zap.Error(parseErr))
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -109,7 +109,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err != nil {
 		showErr := fmt.Errorf("%s failed to show specialist from DB %w", operationTokenHandler, err)
 		th.logger.Error("show failed", zap.Error(showErr))
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -120,7 +120,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err != nil {
 		tokenErr := fmt.Errorf("%s failed to generate tokens %w", operationTokenHandler, err)
 		th.logger.Error("generate failed", zap.Error(tokenErr))
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -131,7 +131,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err != nil {
 		revokeErr := fmt.Errorf("%s failed to revoke tokens %w", operationTokenHandler, err)
 		th.logger.Error("generate failed", zap.Error(revokeErr))
-		c.JSON(http.StatusInternalServerError, domain.RequestResponse{
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "revoke old token failed",
 		})
