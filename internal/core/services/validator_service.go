@@ -17,7 +17,7 @@ var _ ports.SpecialistValidator = (*SpecialistValidatorImpl)(nil)
 
 // Custom validation function for E.123 phone number
 func isValidE123(fl validator.FieldLevel) bool {
-	e123Regex := regexp.MustCompile(`^\+(?:\[\d{1,3}\]|\d{1,3})(?:[\s.-]?\d+)*$`)
+	e123Regex := regexp.MustCompile(`^\+\d{1,3}(?:[()\s-]*\d+)*$`)
 	return e123Regex.MatchString(fl.Field().String())
 }
 
@@ -37,12 +37,11 @@ func NewCustomValidator() *SpecialistValidatorImpl {
 	return &SpecialistValidatorImpl{validator: v}
 }
 
-func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) []domain.FieldError {
+func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []domain.FieldError {
 	var validationErrors []domain.FieldError
 
 	if err := sv.validator.Struct(data); err != nil {
 		if _, ok := err.(*validator.InvalidValidationError); ok {
-			// This is an internal error, should not happen with a valid struct.
 			validationErrors = append(validationErrors, domain.FieldError{Field: "general", Message: "Invalid validation object"})
 			return validationErrors
 		}
@@ -54,7 +53,7 @@ func (sv *SpecialistValidatorImpl) Validate(data *domain.RegistrationRequest) []
 			case "Name":
 				fe.Message = "Invalid name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
 			case "Phone":
-				fe.Message = "Phone must be in E.123 format (e.g., +3(XXX)XXX-XX-XX) and contain at least 13 digits."
+				fe.Message = "Phone must be in E.123 format (e.g., +3(XXX)XXX-XX-XX and contain at least 13 digits."
 			case "Email":
 				fe.Message = "Invalid email format."
 			case "Password":

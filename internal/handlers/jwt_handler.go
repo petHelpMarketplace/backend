@@ -105,7 +105,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	specialist, err := th.specialistService.ShowByID(c.Request.Context(), userID)
+	specialistDTO, err := th.specialistService.ShowByID(c.Request.Context(), userID)
 	if err != nil {
 		showErr := fmt.Errorf("%s failed to show specialist from DB %w", operationTokenHandler, err)
 		th.logger.Error("show failed", zap.Error(showErr))
@@ -116,7 +116,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	tokens, err := th.tokenService.GenerateTokenPair(c.Request.Context(), &specialist)
+	tokens, err := th.tokenService.GenerateTokenPair(c.Request.Context(), &specialistDTO)
 	if err != nil {
 		tokenErr := fmt.Errorf("%s failed to generate tokens %w", operationTokenHandler, err)
 		th.logger.Error("generate failed", zap.Error(tokenErr))

@@ -10,13 +10,14 @@ import (
 type SpecialistHandlers interface {
 	Registration(c *gin.Context)
 	Login(c *gin.Context)
+	Me(c *gin.Context)
 }
 
 type SpecialistService interface {
-	Registration(ctx context.Context, req *domain.RegistrationRequest) (int64, error)
-	Login(ctx context.Context, email string, password string) (domain.Specialist, error)
-	ShowByID(ctx context.Context, id int64) (domain.Specialist, error)
-	ShowByEmail(ctx context.Context, email string) (domain.Specialist, error)
+	Registration(ctx context.Context, req domain.RegistrationRequest) (int64, error)
+	Login(ctx context.Context, email string, password string) (domain.SpecialistProfileDTO, error)
+	ShowByID(ctx context.Context, id int64) (domain.SpecialistProfileDTO, error)
+	ShowByEmail(ctx context.Context, email string) (domain.SpecialistProfileDTO, error)
 	// List(filter dto.ListFilter) ([]domain.User, error)
 	// Update(user domain.User) error
 	// Delete(id uint) error

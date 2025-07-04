@@ -89,7 +89,7 @@ func ValidateTokens(tokenString string, secretKey []byte, isAccessToken bool) (j
 	}
 
 	// jwt.ParseWithClaims will now unmarshal into the specific struct pointed to by 'claims'
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -98,20 +98,15 @@ func ValidateTokens(tokenString string, secretKey []byte, isAccessToken bool) (j
 
 	switch {
 	case token.Valid:
-		fmt.Println("You look nice today")
 		return claims, nil
 	case errors.Is(err, jwt.ErrTokenMalformed):
-		fmt.Println("That's not even a token")
-		return nil, domain.ErrTokenInvalid
+		return nil, domain.ErrTokenMalformed
 	case errors.Is(err, jwt.ErrTokenSignatureInvalid):
-		fmt.Println("Invalid signature")
-		return nil, domain.ErrTokenInvalid
+		return nil, domain.ErrTokenSignatureInvalid
 	case errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet):
-		fmt.Println("Timing is everything")
 		return nil, domain.ErrTokenExpired
 	default:
-		fmt.Println("Couldn't handle this token:", err)
-		return nil, fmt.Errorf("access token parsing failed: %w", err)
+		return nil, fmt.Errorf("couldn't handle this token: %w", err)
 	}
 }
 

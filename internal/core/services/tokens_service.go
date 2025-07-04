@@ -33,7 +33,7 @@ func NewTokenService(repo ports.TokenRepository, cfg config.AuthConfig, logger *
 	}
 }
 
-func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Specialist) (*domain.TokensPair, error) {
+func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, error) {
 
 	tokens := &domain.TokensPair{}
 
@@ -76,7 +76,7 @@ func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isA
 		ts.logger.Error("Token validation failed",
 			zap.Bool("isAccess", isAccess),
 			zap.Error(err))
-		return "", "", domain.ErrTokenInvalid
+		return "", "", err
 	}
 
 	var userID, jti string
@@ -90,20 +90,22 @@ func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isA
 		return "", "", domain.ErrInternalServer
 	}
 
-	revoked, err := ts.tokenRepo.IsRefreshTokenRevoked(ctx, jti, userID)
-	if err != nil {
-		ts.logger.Error("Failed to check refresh token revocation status in repository",
-			zap.String("jti", jti),
-			zap.String("userID", userID),
-			zap.Error(err))
-		return "", "", domain.ErrInternalServer
-	}
+	if !isAccess {
+		revoked, err := ts.tokenRepo.IsRefreshTokenRevoked(ctx, jti, userID)
+		if err != nil {
+			ts.logger.Error("Failed to check refresh token revocation status in repository",
+				zap.String("jti", jti),
+				zap.String("userID", userID),
+				zap.Error(err))
+			return "", "", domain.ErrInternalServer
+		}
 
-	if !revoked {
-		ts.logger.Warn("Refresh token is revoked",
-			zap.String("jti", jti),
-			zap.String("userID", userID))
-		return "", "", domain.ErrTokenRevoked
+		if !revoked {
+			ts.logger.Warn("Refresh token is revoked",
+				zap.String("jti", jti),
+				zap.String("userID", userID))
+			return "", "", domain.ErrTokenRevoked
+		}
 	}
 
 	ts.logger.Info("token valid", zap.String("userID", userID), zap.String("jti", jti))

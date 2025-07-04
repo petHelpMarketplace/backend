@@ -32,25 +32,61 @@ definitions:
         type: string
     type: object
   domain.RegistrationRequest:
+    description: User registration request payload
     properties:
       email:
+        description: |-
+          Email address of the user.
+          required: true
+          format: email
+          maxLength: 255
+          example: john.doe@example.com
         example: john.doe@example.com
         maxLength: 255
         type: string
       name:
+        description: |-
+          Name of the user.
+          Allows Unicode letters, spaces, hyphens, and apostrophes.
+          required: true
+          minLength: 2
+          maxLength: 100
+          pattern: "^[\\p{L}\\s\\-'\\u2019]+$" // Regex for isValidName, including common apostrophes
+          example: John Doe
         example: John
         maxLength: 100
         minLength: 2
         type: string
       password:
+        description: |-
+          Password for the user account.
+          Must be at least 12 characters long.
+          Must contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?&.
+          required: true
+          minLength: 12
+          maxLength: 255 // Arbitrary max length, adjust as needed
+          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$" // Regex for complexity
+          example: Str0ngP@ssw0rd!
         example: Str0ngP@ssw0rd!
         minLength: 12
         type: string
       password_confirmation:
+        description: |-
+          Password confirmation. Must match the Password field.
+          required: true
+          example: Str0ngP@ssw0rd!
         example: Str0ngP@ssw0rd!
         type: string
       phone:
-        example: +38 (XXX) XXX-XX-XX)
+        description: |-
+          Phone number of the user in a flexible E.123-like international format.
+          Must start with '+' followed by country code (1-3 digits).
+          Allows spaces, parentheses, and hyphens as separators.
+          required: true
+          minLength: 13 // Minimum length for +38 (XXX) XXX-XX-XX
+          pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$" // Regex from isValidE123
+          example: "+38 (096) 123-45-67"
+        example: +38 (XXX) XXX-XX-XX
         minLength: 13
         type: string
     required:
@@ -60,6 +96,73 @@ definitions:
     - password_confirmation
     - phone
     type: object
+  domain.SpecialistProfileDTO:
+    description: Specialist profile data returned to clients.
+    properties:
+      avatar_url:
+        description: |-
+          URL to the specialist's avatar image.
+          format: uri
+          example: https://your-cdn.com/avatars/kateryna_avatar.jpg
+        type: string
+      bio:
+        description: |-
+          Short biography or summary of the specialist.
+          example: Experienced veterinarian specializing in small animal care.
+        type: string
+      description:
+        description: |-
+          Detailed description of services offered or qualifications.
+          example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
+        type: string
+      email:
+        description: |-
+          Email address of the specialist.
+          format: email
+          example: kateryna.walls@example.com
+        type: string
+      experience:
+        description: |-
+          Years of professional experience.
+          minimum: 0
+          example: 7
+        type: integer
+      family_name:
+        description: |-
+          Family name (surname) of the specialist.
+          example: Walls
+        type: string
+      id:
+        description: |-
+          Unique identifier of the specialist.
+          example: 123
+        type: integer
+      is_active:
+        description: |-
+          Indicates if the specialist's profile is currently active.
+          example: true
+        type: boolean
+      is_verified:
+        description: |-
+          Indicates if the specialist's credentials have been verified.
+          example: true
+        type: boolean
+      name:
+        description: |-
+          Given name of the specialist.
+          example: Kateryna
+        type: string
+      phone:
+        description: |-
+          Phone number of the specialist in E.164 format.
+          example: +380961234567
+        type: string
+      position:
+        description: |-
+          Professional position or title (e.g., "Veterinarian", "Dog Groomer").
+          example: Veterinarian
+        type: string
+    type: object
   domain.TokensPair:
     properties:
       access_token:
@@ -68,10 +171,22 @@ definitions:
         type: string
     type: object
   handlers.LoginReq:
+    description: User login request payload
     properties:
       email:
+        description: |-
+          Email address of the user.
+          required: true
+          format: email
+          example: user@example.com
+        example: user@example.com
         type: string
       password:
+        description: |-
+          Password for the user account.
+          required: true
+          example: MySecretPassword123!
+        example: MySecretPassword123!
         type: string
     required:
     - email
@@ -102,7 +217,7 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is a sample server celler server.
+  description: This is a PetHelp project backend
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -194,6 +309,34 @@ paths:
       summary: Login
       tags:
       - Specialist
+  /specialist/me:
+    get:
+      description: Get information about the currently authenticated specialist. Requires
+        a valid Bearer token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved specialist data
+          schema:
+            $ref: '#/definitions/domain.SpecialistProfileDTO'
+        "401":
+          description: Unauthorized. The user is not authenticated.
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Specialist account associated with the token not found.
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal server error.
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current specialist
+      tags:
+      - Specialist
   /specialist/register:
     post:
       consumes:
@@ -269,9 +412,11 @@ paths:
       tags:
       - Token
 schemes:
+- http
 - https
 securityDefinitions:
-  Bearer:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
     in: header
     name: Authorization
     type: apiKey

@@ -1,28 +1,131 @@
 package domain
 
 import (
+	"database/sql"
 	"time"
 )
 
+// Specialist represents the 'specialists' table in the database.
 type Specialist struct {
-	ID           int64     `json:"id,omitempty"`
-	Name         string    `json:"name,omitempty"`
-	FamilyName   string    `json:"family_name,omitempty"`
-	Phone        string    `json:"phone,omitempty"`
-	Email        string    `json:"email,omitempty"`
-	PasswordHash string    `json:"-"` // store hashed password; omit from JSON responses
-	IsBanned     bool      `json:"is_banned,omitempty"`
-	IsDeleted    bool      `json:"is_deleted,omitempty"`
-	IsActive     bool      `json:"is_active,omitempty"`
-	IsVerified   bool      `json:"is_verified,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	ID             int64          `json:"id" db:"id"`
+	Name           string         `json:"name" db:"name"`
+	FamilyName     sql.NullString `json:"family_name" db:"family_name"`
+	Phone          string         `json:"phone" db:"phone"`
+	Email          string         `json:"email" db:"email"`
+	PasswordHash   string         `json:"-" db:"password_hash"`
+	Bio            sql.NullString `json:"bio" db:"bio"`
+	Avatar         sql.NullString `json:"avatar" db:"avatar"`
+	AddressID      sql.NullInt32  `json:"address_id" db:"address_id"`
+	OrganisationID sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
+	BranchID       sql.NullInt32  `json:"branch_id" db:"branch_id"`
+	Position       sql.NullString `json:"position" db:"position"`
+	Experience     sql.NullInt32  `json:"experience" db:"experience"`
+	Description    sql.NullString `json:"description" db:"description"`
+	ImageID        []string       `json:"image_id" db:"image_id"`
+	IsBanned       bool           `json:"is_banned" db:"is_banned"`
+	IsDeleted      bool           `json:"is_deleted" db:"is_deleted"`
+	IsActive       bool           `json:"is_active" db:"is_active"`
+	IsVerified     bool           `json:"is_verified" db:"is_verified"`
+	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
 }
 
+// SpecialistProfileDTO - DTO для відповіді
+// SpecialistProfileDTO represents the public profile data of a specialist.
+// @Description Specialist profile data returned to clients.
+type SpecialistProfileDTO struct {
+	// Unique identifier of the specialist.
+	// example: 123
+	ID int64 `json:"id,omitempty"`
+
+	// Given name of the specialist.
+	// example: Kateryna
+	Name string `json:"name,omitempty"`
+
+	// Family name (surname) of the specialist.
+	// example: Walls
+	FamilyName string `json:"family_name,omitempty"`
+
+	// Phone number of the specialist in E.164 format.
+	// example: +380961234567
+	Phone string `json:"phone,omitempty"`
+
+	// Email address of the specialist.
+	// format: email
+	// example: kateryna.walls@example.com
+	Email string `json:"email,omitempty"`
+
+	// Short biography or summary of the specialist.
+	// example: Experienced veterinarian specializing in small animal care.
+	Bio string `json:"bio,omitempty"`
+
+	// URL to the specialist's avatar image.
+	// format: uri
+	// example: https://your-cdn.com/avatars/kateryna_avatar.jpg
+	AvatarURL string `json:"avatar_url,omitempty"`
+
+	// Years of professional experience.
+	// minimum: 0
+	// example: 7
+	Experience int32 `json:"experience,omitempty"`
+
+	// Professional position or title (e.g., "Veterinarian", "Dog Groomer").
+	// example: Veterinarian
+	Position string `json:"position,omitempty"`
+
+	// Detailed description of services offered or qualifications.
+	// example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
+	Description string `json:"description,omitempty"`
+
+	// Indicates if the specialist's profile is currently active.
+	// example: true
+	IsActive bool `json:"is_active,omitempty"`
+
+	// Indicates if the specialist's credentials have been verified.
+	// example: true
+	IsVerified bool `json:"is_verified,omitempty"`
+}
+
+// RegistrationRequest represents the request body for user registration.
+// @Description User registration request payload
 type RegistrationRequest struct {
-	Name                 string `json:"name" validate:"required,min=2,max=100,custom_name" example:"John"`
-	Phone                string `json:"phone" validate:"required,e123,min=13" example:"+38 (XXX) XXX-XX-XX)"`
-	Email                string `json:"email" validate:"required,email,max=255" example:"john.doe@example.com"`
-	Password             string `json:"password" validate:"required,min=12" example:"Str0ngP@ssw0rd!"`
+	// Name of the user.
+	// Allows Unicode letters, spaces, hyphens, and apostrophes.
+	// required: true
+	// minLength: 2
+	// maxLength: 100
+	// pattern: "^[\\p{L}\\s\\-'\\u2019]+$" // Regex for isValidName, including common apostrophes
+	// example: John Doe
+	Name string `json:"name" validate:"required,min=2,max=100,custom_name" example:"John"`
+
+	// Phone number of the user in a flexible E.123-like international format.
+	// Must start with '+' followed by country code (1-3 digits).
+	// Allows spaces, parentheses, and hyphens as separators.
+	// required: true
+	// minLength: 13 // Minimum length for +38 (XXX) XXX-XX-XX
+	// pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$" // Regex from isValidE123
+	// example: "+38 (096) 123-45-67"
+	Phone string `json:"phone" validate:"required,e123,min=13" example:"+38 (XXX) XXX-XX-XX"`
+
+	// Email address of the user.
+	// required: true
+	// format: email
+	// maxLength: 255
+	// example: john.doe@example.com
+	Email string `json:"email" validate:"required,email,max=255" example:"john.doe@example.com"`
+
+	// Password for the user account.
+	// Must be at least 12 characters long.
+	// Must contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?&.
+	// required: true
+	// minLength: 12
+	// maxLength: 255 // Arbitrary max length, adjust as needed
+	// pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$" // Regex for complexity
+	// example: Str0ngP@ssw0rd!
+	Password string `json:"password" validate:"required,min=12" example:"Str0ngP@ssw0rd!"`
+
+	// Password confirmation. Must match the Password field.
+	// required: true
+	// example: Str0ngP@ssw0rd!
 	PasswordConfirmation string `json:"password_confirmation" validate:"required,eqfield=Password" example:"Str0ngP@ssw0rd!"`
 }

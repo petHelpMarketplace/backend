@@ -14,8 +14,8 @@ type TokenHandlers interface {
 }
 
 type TokenService interface {
-	GenerateTokenPair(ctx context.Context, sp *domain.Specialist) (*domain.TokensPair, error)
-	ValidateToken(ctx context.Context, token string, isAccess bool) (jti string, suserID string, err error)
+	GenerateTokenPair(ctx context.Context, sp *domain.SpecialistProfileDTO) (*domain.TokensPair, error)
+	ValidateToken(ctx context.Context, token string, isAccess bool) (jti string, userID string, err error)
 	RevokeToken(ctx context.Context, token string) error
 
 	// ExtractIDFromToken(requestToken string, entitysecret string) (string, error)

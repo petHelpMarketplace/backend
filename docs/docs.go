@@ -152,6 +152,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialist/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get information about the currently authenticated specialist. Requires a valid Bearer token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Get current specialist",
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved specialist data",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SpecialistProfileDTO"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized. The user is not authenticated.",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account associated with the token not found.",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error.",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/register": {
             "post": {
                 "description": "New specialist registration",
@@ -310,6 +353,7 @@ const docTemplate = `{
             }
         },
         "domain.RegistrationRequest": {
+            "description": "User registration request payload",
             "type": "object",
             "required": [
                 "email",
@@ -320,29 +364,88 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
+                    "description": "Email address of the user.\nrequired: true\nformat: email\nmaxLength: 255\nexample: john.doe@example.com",
                     "type": "string",
                     "maxLength": 255,
                     "example": "john.doe@example.com"
                 },
                 "name": {
+                    "description": "Name of the user.\nAllows Unicode letters, spaces, hyphens, and apostrophes.\nrequired: true\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\" // Regex for isValidName, including common apostrophes\nexample: John Doe",
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 2,
                     "example": "John"
                 },
                 "password": {
+                    "description": "Password for the user account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255 // Arbitrary max length, adjust as needed\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\" // Regex for complexity\nexample: Str0ngP@ssw0rd!",
                     "type": "string",
                     "minLength": 12,
                     "example": "Str0ngP@ssw0rd!"
                 },
                 "password_confirmation": {
+                    "description": "Password confirmation. Must match the Password field.\nrequired: true\nexample: Str0ngP@ssw0rd!",
                     "type": "string",
                     "example": "Str0ngP@ssw0rd!"
                 },
                 "phone": {
+                    "description": "Phone number of the user in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nrequired: true\nminLength: 13 // Minimum length for +38 (XXX) XXX-XX-XX\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\" // Regex from isValidE123\nexample: \"+38 (096) 123-45-67\"",
                     "type": "string",
                     "minLength": 13,
-                    "example": "+38 (XXX) XXX-XX-XX)"
+                    "example": "+38 (XXX) XXX-XX-XX"
+                }
+            }
+        },
+        "domain.SpecialistProfileDTO": {
+            "description": "Specialist profile data returned to clients.",
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "description": "URL to the specialist's avatar image.\nformat: uri\nexample: https://your-cdn.com/avatars/kateryna_avatar.jpg",
+                    "type": "string"
+                },
+                "bio": {
+                    "description": "Short biography or summary of the specialist.\nexample: Experienced veterinarian specializing in small animal care.",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "Email address of the specialist.\nformat: email\nexample: kateryna.walls@example.com",
+                    "type": "string"
+                },
+                "experience": {
+                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
+                    "type": "integer"
+                },
+                "family_name": {
+                    "description": "Family name (surname) of the specialist.\nexample: Walls",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique identifier of the specialist.\nexample: 123",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "Indicates if the specialist's profile is currently active.\nexample: true",
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "description": "Indicates if the specialist's credentials have been verified.\nexample: true",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Given name of the specialist.\nexample: Kateryna",
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "Phone number of the specialist in E.164 format.\nexample: +380961234567",
+                    "type": "string"
+                },
+                "position": {
+                    "description": "Professional position or title (e.g., \"Veterinarian\", \"Dog Groomer\").\nexample: Veterinarian",
+                    "type": "string"
                 }
             }
         },
@@ -358,6 +461,7 @@ const docTemplate = `{
             }
         },
         "handlers.LoginReq": {
+            "description": "User login request payload",
             "type": "object",
             "required": [
                 "email",
@@ -365,10 +469,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "description": "Email address of the user.\nrequired: true\nformat: email\nexample: user@example.com",
+                    "type": "string",
+                    "example": "user@example.com"
                 },
                 "password": {
-                    "type": "string"
+                    "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
+                    "type": "string",
+                    "example": "MySecretPassword123!"
                 }
             }
         },
@@ -398,7 +506,8 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "Bearer": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -415,9 +524,9 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "petbackend-a2vg.onrender.com",
 	BasePath:         "/api/v1/",
-	Schemes:          []string{"https"},
+	Schemes:          []string{"http", "https"},
 	Title:            "Swagger Example API",
-	Description:      "This is a sample server celler server.",
+	Description:      "This is a PetHelp project backend",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

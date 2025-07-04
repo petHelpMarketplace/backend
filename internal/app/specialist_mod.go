@@ -5,6 +5,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"pethelp-backend/internal/app/middleware"
 	"pethelp-backend/internal/config"
 	"pethelp-backend/internal/core/ports"
 	"pethelp-backend/internal/core/services"
@@ -20,11 +21,12 @@ const SpecialistRoutePath = "/api/v1/specialist"
 // It supplies the Gin router, Postgres pool, Logger, and Redis client.
 type SpecialistModuleParams struct {
 	fx.In
-	Router     *gin.Engine
-	DB         *postgres.DB
-	Cache      *redisCache.DB
-	Logger     *zap.Logger
-	AuthConfig config.AuthConfig
+	Router         *gin.Engine
+	DB             *postgres.DB
+	Cache          *redisCache.DB
+	Logger         *zap.Logger
+	AuthConfig     config.AuthConfig
+	AuthMiddleware gin.HandlerFunc
 }
 
 var SpecialistModule = fx.Module("specialist",
@@ -58,6 +60,8 @@ var SpecialistModule = fx.Module("specialist",
 			handlers.NewSpecialistHandler,
 			fx.As(new(ports.SpecialistHandlers)),
 		),
+
+		middleware.NewAuthMiddleware,
 	),
 	fx.Invoke(
 		func(mp SpecialistModuleParams, handler ports.SpecialistHandlers) {
@@ -65,6 +69,9 @@ var SpecialistModule = fx.Module("specialist",
 
 			specRouterGroup.POST("/register", handler.Registration)
 			specRouterGroup.POST("/login", handler.Login)
+
+			protected := specRouterGroup.Use(mp.AuthMiddleware)
+			protected.GET("/me", handler.Me)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),
