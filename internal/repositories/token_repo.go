@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"pethelp-backend/internal/core/domain"
 	redisDB "pethelp-backend/pkg/database/redis"
 
 	"github.com/markbates/goth"
@@ -52,42 +53,44 @@ func (r *TokenRepoImpl) SaveRefreshTokenState(ctx context.Context, jti string, u
 }
 
 // IsRefreshTokenValid checks if a refresh token is valid and not revoked in Redis.
-func (r *TokenRepoImpl) IsRefreshTokenRevoked(ctx context.Context, jti string, userID string) (bool, error) {
+func (r *TokenRepoImpl) IsRefreshTokenValid(ctx context.Context, jti string, userID string) (bool, error) {
+
 	tokenKey := tokenKeyPrefix + jti
 
-	// Get token state from Redis
 	tokenState, err := r.redis.Client().HGetAll(ctx, tokenKey).Result()
 	if err != nil {
 		return false, fmt.Errorf("%s failed to retrieve token state: %w", operationToken, err)
 	}
 
 	if len(tokenState) == 0 {
-		return false, nil // Token not found or expired
+		return false, domain.ErrRefreshTokenNotFound
 	}
 
-	// Check user_id match
 	storedUserID := tokenState["user_id"]
 	if storedUserID != userID {
-		return false, fmt.Errorf("%s ser ID mismatch for token JTI %s: expected %s, got %s", operationToken, jti, userID, storedUserID)
+		return false, fmt.Errorf("%w for token JTI %s: expected %s, got %s", domain.ErrUserIDMismatch, jti, userID, storedUserID)
 	}
 
-	// Check if revoked
-	isRevoked, err := strconv.ParseBool(tokenState["revoked"])
+	revokedStr, ok := tokenState["revoked"]
+	if !ok {
+		return false, fmt.Errorf("%w: 'revoked' status field missing for token JTI %s", domain.ErrRevokedStatusParseFail, jti)
+	}
+
+	isRevoked, err := strconv.ParseBool(revokedStr)
 	if err != nil {
-		return false, fmt.Errorf("%s failed to parse revoked status: %w", operationToken, err)
+		return false, fmt.Errorf("%w: failed to parse revoked status for JTI %s: %v", domain.ErrRevokedStatusParseFail, jti, err)
 	}
 	if isRevoked {
-		return false, nil
+		return false, domain.ErrTokenRevoked
 	}
 
-	// Check if JTI is still in user's active sessions set
 	sessionKey := userSessionsKeyPrefix + userID
 	isMember, err := r.redis.Client().SIsMember(ctx, sessionKey, jti).Result()
 	if err != nil {
-		return false, fmt.Errorf("%s failed to check session membership: %w", operationToken, err)
+		return false, fmt.Errorf("%w: failed to check session membership: %v", domain.ErrSessionMembershipFail, err)
 	}
 	if !isMember {
-		return false, nil
+		return false, domain.ErrJTIInUserSessionsNotFound
 	}
 
 	return true, nil

@@ -80,7 +80,7 @@ func GenerateRefreshToken(userID string, secretKey []byte, expiry time.Duration)
 // ValidateToken is a generic function that validates a JWT string and returns
 // the parsed claims of the specified type T.
 func ValidateTokens(tokenString string, secretKey []byte, isAccessToken bool) (jwt.Claims, error) {
-	var claims jwt.Claims // Declare a variable of the interface type
+	var claims jwt.Claims
 
 	if isAccessToken {
 		claims = &domain.AccessTokenClaims{}

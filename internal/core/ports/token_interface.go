@@ -23,7 +23,7 @@ type TokenService interface {
 
 type TokenRepository interface {
 	SaveRefreshTokenState(ctx context.Context, jti string, userID string, expiry time.Time) error
-	IsRefreshTokenRevoked(ctx context.Context, jti string, userID string) (bool, error)
+	IsRefreshTokenValid(ctx context.Context, jti string, userID string) (bool, error)
 	RevokeRefreshToken(ctx context.Context, jti string, userID string) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
 	Set(ctx context.Context, user *goth.User) error

@@ -84,7 +84,7 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	specialistModel, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ss.logger.Warn("fogin attempt for non-existent user", zap.String("email", email))
+			ss.logger.Warn("login attempt for non-existent user", zap.String("email", email))
 			return specialistDTO, domain.ErrAccountNotFound
 		}
 		ss.logger.Error("failed to get specialist by email during login",
@@ -142,7 +142,7 @@ func (ss *SpecialistServiceImpl) ShowByEmail(ctx context.Context, email string) 
 	specialistModel, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			ss.logger.Warn("fpecialist not found by email",
+			ss.logger.Warn("specialist not found by email",
 				zap.String("email", email),
 				zap.Error(err))
 			return specialistDTO, domain.ErrAccountNotFound

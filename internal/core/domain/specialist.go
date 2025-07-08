@@ -94,7 +94,7 @@ type RegistrationRequest struct {
 	// required: true
 	// minLength: 2
 	// maxLength: 100
-	// pattern: "^[\\p{L}\\s\\-'\\u2019]+$" // Regex for isValidName, including common apostrophes
+	// pattern: "^[\\p{L}\\s\\-'\\u2019]+$"
 	// example: John Doe
 	Name string `json:"name" validate:"required,min=2,max=100,custom_name" example:"John"`
 
@@ -102,10 +102,10 @@ type RegistrationRequest struct {
 	// Must start with '+' followed by country code (1-3 digits).
 	// Allows spaces, parentheses, and hyphens as separators.
 	// required: true
-	// minLength: 13 // Minimum length for +38 (XXX) XXX-XX-XX
-	// pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$" // Regex from isValidE123
+	// minLength: 13 // Minimum length for +38 (093) 987-65-32
+	// pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$"
 	// example: "+38 (096) 123-45-67"
-	Phone string `json:"phone" validate:"required,e123,min=13" example:"+38 (XXX) XXX-XX-XX"`
+	Phone string `json:"phone" validate:"required,e123,min=13" example:"+38 (093) 987-65-32"`
 
 	// Email address of the user.
 	// required: true
@@ -120,7 +120,7 @@ type RegistrationRequest struct {
 	// required: true
 	// minLength: 12
 	// maxLength: 255 // Arbitrary max length, adjust as needed
-	// pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$" // Regex for complexity
+	// pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$"
 	// example: Str0ngP@ssw0rd!
 	Password string `json:"password" validate:"required,min=12" example:"Str0ngP@ssw0rd!"`
 
