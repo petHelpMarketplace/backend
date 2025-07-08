@@ -97,19 +97,13 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, email, phone
 func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string) (domain.Specialist, error) {
 
 	var item domain.Specialist
-	query, args, err := sq.Select(
-		"id",
-		"name",
-		"email",
-		"password_hash",
-		"created_at",
-	).
+	query, args, err := sq.Select("*").
 		From(curentTableName).
 		Where(sq.Eq{"email": email}).
-		PlaceholderFormat(sq.Dollar).
+		PlaceholderFormat(sq.Dollar). // conn, err := sr.database.Connection()
 		ToSql()
 	if err != nil {
-		return item, err
+		return item, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
 	}
 
 	conn, err := sr.DBPool.Pool().Acquire(ctx)
@@ -127,8 +121,11 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 	}
 	defer tx.Rollback(ctx)
 
-	row := tx.QueryRow(ctx, query, args...)
-	err = row.Scan(&item.ID, &item.Name, &item.Email, &item.PasswordHash, &item.CreatedAt)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return item, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+	}
+	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Specialist{}, sql.ErrNoRows
@@ -146,19 +143,13 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (domain.Specialist, error) {
 
 	var item domain.Specialist
-	query, args, err := sq.Select(
-		"id",
-		"name",
-		"email",
-		"password_hash",
-		"created_at",
-	).
+	query, args, err := sq.Select("*").
 		From(curentTableName).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return item, err
+		return item, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
 	}
 
 	conn, err := sr.DBPool.Pool().Acquire(ctx)
@@ -176,8 +167,11 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	}
 	defer tx.Rollback(ctx)
 
-	row := tx.QueryRow(ctx, query, args...)
-	err = row.Scan(&item.ID, &item.Name, &item.Email, &item.PasswordHash, &item.CreatedAt)
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return item, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+	}
+	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Specialist{}, sql.ErrNoRows
@@ -209,7 +203,6 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	finalSQL := fmt.Sprintf("SELECT EXISTS (%s)", innerSQL)
 	finalArgs := innerArgs
 
-	// conn, err := sr.database.Connection()
 	conn, err := sr.DBPool.Pool().Acquire(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)

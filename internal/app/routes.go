@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -15,6 +16,12 @@ import (
 func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server) *gin.Engine {
 	router := gin.Default()
 
+	router.Use(
+		requestid.New(),
+	)
+
+	router.Use(gin.Recovery())
+
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		// AllowOrigins:     []string{"http://localhost:3000", "https://petbackend-a2vg.onrender.com", "https://accounts.google.com/*"},
@@ -22,7 +29,7 @@ func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server) *gin.Engi
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		MaxAge:           600 * time.Second,
 	}))
 
 	lc.Append(fx.Hook{

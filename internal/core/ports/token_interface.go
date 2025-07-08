@@ -14,8 +14,8 @@ type TokenHandlers interface {
 }
 
 type TokenService interface {
-	GenerateTokenPair(ctx context.Context, sp *domain.Specialist) (*domain.TokensPair, error)
-	ValidateToken(ctx context.Context, token string, isAccess bool) (jti string, suserID string, err error)
+	GenerateTokenPair(ctx context.Context, sp *domain.SpecialistProfileDTO) (*domain.TokensPair, error)
+	ValidateToken(ctx context.Context, token string, isAccess bool) (jti string, userID string, err error)
 	RevokeToken(ctx context.Context, token string) error
 
 	// ExtractIDFromToken(requestToken string, entitysecret string) (string, error)
@@ -23,7 +23,7 @@ type TokenService interface {
 
 type TokenRepository interface {
 	SaveRefreshTokenState(ctx context.Context, jti string, userID string, expiry time.Time) error
-	IsRefreshTokenRevoked(ctx context.Context, jti string, userID string) (bool, error)
+	IsRefreshTokenValid(ctx context.Context, jti string, userID string) (bool, error)
 	RevokeRefreshToken(ctx context.Context, jti string, userID string) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID string) error
 	Set(ctx context.Context, user *goth.User) error

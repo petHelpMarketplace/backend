@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
@@ -10,10 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-)
-
-const (
-	operationTokenHandler = "token_handler: "
 )
 
 type TokenHandlerImpl struct {
@@ -38,106 +33,107 @@ type RefreshReq struct {
 
 // RefreshToken godoc
 // @Summary      Update access and refresh tokens
-// @Description  Exchanges a valid refresh token for a new access token and a new refresh token.
+// @Description  Exchanges a valid refresh token for a new access token and a new refresh token. The used refresh token is revoked.
 // @Tags         Token
 // @Accept       json
 // @Produce      json
 // @Param        request body RefreshReq true "Refresh token request"
 // @Success      200  {object}  domain.TokensPair "Successfully generated new token pair"
 // @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or malformed refresh token"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: Invalid refresh token signature or expired"
-// @Failure      403  {object}  domain.ErrorResponse "Forbidden: Refresh token has been revoked"
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error due to token validation, database lookup, or token generation/revocation issues"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: Invalid, expired, or malformed refresh token"
+// @Failure      403  {object}  domain.ErrorResponse "Forbidden: Refresh token has been revoked or is otherwise not allowed"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
 // @Router       /token/refresh [post]
 func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
-
 	var dto RefreshReq
-	// Bind and validate JSON payload
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		bindErr := fmt.Errorf("%s invalid refresh payload %w", operationTokenHandler, err)
-		th.logger.Error("bindJSON failed", zap.Error(bindErr))
+		th.logger.Warn("failed to bind refresh token request", zap.Error(err))
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "invalid registration payload",
+			Message: "invalid request: refresh_token is required and must be a valid JWT.",
 		})
 		return
 	}
 
 	_, id, err := th.tokenService.ValidateToken(c.Request.Context(), dto.RefreshToken, false)
 	if err != nil {
-		if errors.Is(err, domain.ErrTokenInvalid) {
-			validateErr := fmt.Errorf("%s invalid refresh token %w", operationTokenHandler, err)
-			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
-				Code:    http.StatusUnauthorized,
-				Message: "invalid refresh token",
-			})
-			return
-		} else if errors.Is(err, domain.ErrTokenRevoked) {
-
-			validateErr := fmt.Errorf("%s revoked refresh token %w", operationTokenHandler, err)
-			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusForbidden, domain.ErrorResponse{
-				Code:    http.StatusForbidden,
-				Message: "revoked refresh token",
-			})
-			return
-
-		} else {
-			validateErr := fmt.Errorf("%s internal refresh token error %w", operationTokenHandler, err)
-			th.logger.Error("token failed", zap.Error(validateErr))
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-				Code:    http.StatusInternalServerError,
-				Message: "refresh token validation error",
-			})
-			return
+		var code int
+		var message string
+		logLevel := zap.WarnLevel
+		switch {
+		case errors.Is(err, domain.ErrTokenMalformed),
+			errors.Is(err, domain.ErrTokenSignatureInvalid),
+			errors.Is(err, domain.ErrTokenExpired),
+			errors.Is(err, domain.ErrRefreshTokenNotValid),
+			errors.Is(err, domain.ErrTokenInvalid):
+			code = http.StatusUnauthorized
+			message = "refresh token is invalid or has expired."
+		case errors.Is(err, domain.ErrTokenRevoked),
+			errors.Is(err, domain.ErrForbidden),
+			errors.Is(err, domain.ErrUserIDMismatch):
+			code = http.StatusForbidden
+			message = "refresh token has been revoked or is not permitted."
+		default:
+			code = http.StatusInternalServerError
+			message = "internal server error."
+			logLevel = zap.ErrorLevel
 		}
+		if ce := th.logger.Check(logLevel, "refresh token validation failed"); ce != nil {
+			ce.Write(zap.Error(err), zap.String("reason", message))
+		}
+		c.JSON(code, domain.ErrorResponse{Code: code, Message: message})
+		return
 	}
 
 	userID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
-		parseErr := fmt.Errorf("%s parse int failed %w", operationTokenHandler, err)
-		th.logger.Error("parse failed", zap.Error(parseErr))
+		th.logger.Error("failed to parse userID from token claims", zap.String("userID_claim", id), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "internal server error",
+			Message: "internal server error.",
 		})
 		return
 	}
 
-	specialist, err := th.specialistService.ShowByID(c.Request.Context(), userID)
+	specialistDTO, err := th.specialistService.ShowByID(c.Request.Context(), userID)
 	if err != nil {
-		showErr := fmt.Errorf("%s failed to show specialist from DB %w", operationTokenHandler, err)
-		th.logger.Error("show failed", zap.Error(showErr))
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			th.logger.Warn("user account not found for valid refresh token", zap.Int64("userID", userID))
+			c.JSON(http.StatusForbidden, domain.ErrorResponse{
+				Code:    http.StatusForbidden,
+				Message: "user associated with token no longer exists.",
+			})
+			return
+		}
+		th.logger.Error("failed to retrieve specialist for token refresh", zap.Int64("userID", userID), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "internal server error",
+			Message: "internal server error.",
 		})
 		return
 	}
 
-	tokens, err := th.tokenService.GenerateTokenPair(c.Request.Context(), &specialist)
+	tokens, err := th.tokenService.GenerateTokenPair(c.Request.Context(), &specialistDTO)
 	if err != nil {
-		tokenErr := fmt.Errorf("%s failed to generate tokens %w", operationTokenHandler, err)
-		th.logger.Error("generate failed", zap.Error(tokenErr))
+		th.logger.Error("failed to generate new token pair", zap.Int64("userID", userID), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "internal server error",
+			Message: "internal server error.",
 		})
 		return
 	}
 
-	err = th.tokenService.RevokeToken(c.Request.Context(), dto.RefreshToken)
-	if err != nil {
-		revokeErr := fmt.Errorf("%s failed to revoke tokens %w", operationTokenHandler, err)
-		th.logger.Error("generate failed", zap.Error(revokeErr))
+	if err := th.tokenService.RevokeToken(c.Request.Context(), dto.RefreshToken); err != nil {
+		th.logger.Error("failed to revoke used refresh token after issuing a new pair",
+			zap.Int64("userID", userID),
+			zap.Error(err),
+		)
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "revoke old token failed",
+			Message: "failed to finalize token refresh. Please log in again.",
 		})
 		return
 	}
 
-	// Return new tokens
 	c.JSON(http.StatusOK, tokens)
 }

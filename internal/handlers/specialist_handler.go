@@ -53,9 +53,9 @@ type successRegistration struct {
 // @Router /specialist/register [post]
 func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
-	req := &domain.RegistrationRequest{}
+	req := domain.RegistrationRequest{}
 
-	if err := c.ShouldBindJSON(req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 
 		var fieldErrors []domain.FieldError
 		message := "Invalid request payload"
@@ -122,9 +122,19 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 }
 
+// LoginReq represents the request body for user login.
+// @Description User login request payload
 type LoginReq struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	// Email address of the user.
+	// required: true
+	// format: email
+	// example: user@example.com
+	Email string `json:"email" binding:"required,email" example:"user@example.com"`
+
+	// Password for the user account.
+	// required: true
+	// example: MySecretPassword123!
+	Password string `json:"password" binding:"required" example:"MySecretPassword123!"`
 }
 
 // @Summary Login
@@ -204,4 +214,61 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 
 	//return both tokens in the response body
 	c.JSON(http.StatusOK, tokens)
+}
+
+// Me godoc
+// @Summary      Get current specialist
+// @Description  Get information about the currently authenticated specialist. Requires a valid Bearer token.
+// @Tags         Specialist
+// @Produce      json
+// @Success      200  {object}  domain.SpecialistProfileDTO "Successfully retrieved specialist data"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized. The user is not authenticated."
+// @Failure      404  {object}  domain.ErrorResponse "Specialist account associated with the token not found."
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error."
+// @Router       /specialist/me [get]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
+	userIDRaw, exists := c.Get("userID")
+	if !exists {
+		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	specialist, err := sh.specialistService.ShowByID(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			sh.logger.Warn("specialist not found for ID from token", zap.Int64("userID", userID))
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Code: http.StatusNotFound, Message: "Specialist account not found"})
+			return
+		}
+		sh.logger.Error("failed to get specialist by ID", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, specialist)
 }
