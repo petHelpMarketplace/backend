@@ -77,7 +77,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 			message = "Request body cannot be empty."
 		}
 
-		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		sh.logger.Error("bind JSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
 			Message: message,
@@ -90,7 +90,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Validation failed",
+			Message: "validation failed",
 			Details: validationErrors,
 		})
 		return
@@ -102,7 +102,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		if errors.Is(err, domain.ErrAccountAlreadyExists) {
 			c.JSON(http.StatusConflict, domain.ErrorResponse{
 				Code:    http.StatusConflict,
-				Message: fmt.Sprintf("specialist email %s already exists", req.Email),
+				Message: fmt.Sprintf("specialist email %s already used", req.Email),
 			})
 			return
 		}

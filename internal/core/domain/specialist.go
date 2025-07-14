@@ -30,7 +30,6 @@ type Specialist struct {
 	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
 }
 
-// SpecialistProfileDTO - DTO для відповіді
 // SpecialistProfileDTO represents the public profile data of a specialist.
 // @Description Specialist profile data returned to clients.
 type SpecialistProfileDTO struct {

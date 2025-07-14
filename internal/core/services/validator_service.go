@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/nyaruka/phonenumbers"
 )
 
 type SpecialistValidatorImpl struct {
@@ -18,6 +19,15 @@ var _ ports.SpecialistValidator = (*SpecialistValidatorImpl)(nil)
 // Custom validation function for E.123 phone number
 func isValidE123(fl validator.FieldLevel) bool {
 	e123Regex := regexp.MustCompile(`^\+\d{1,3}(?:[()\s-]*\d+)*$`)
+	digNumber := phonenumbers.NormalizeDigitsOnly(fl.Field().String())
+	num, err := phonenumbers.Parse(digNumber, "UA")
+	if err != nil {
+		return false
+	}
+	if !phonenumbers.IsValidNumber(num) {
+		return false
+	}
+
 	return e123Regex.MatchString(fl.Field().String())
 }
 
@@ -53,7 +63,7 @@ func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []d
 			case "Name":
 				fe.Message = "Invalid name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
 			case "Phone":
-				fe.Message = "Phone must be in E.123 format (e.g., +3(XXX)XXX-XX-XX and contain at least 13 digits."
+				fe.Message = "Phone must be compatible with E.164 and E.123 formats (e.g., +38(XXX)XXX-XX-XX and contain at least 13 digits."
 			case "Email":
 				fe.Message = "Invalid email format."
 			case "Password":
