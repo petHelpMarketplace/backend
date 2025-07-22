@@ -85,8 +85,8 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		})
 		return
 	}
-	// — Run field‐validator on it
-	if validationErrors := sh.validator.Validate(req); len(validationErrors) > 0 {
+
+	if validationErrors := sh.validator.ValidateRegistrationReq(req); len(validationErrors) > 0 {
 		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
@@ -96,7 +96,6 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		return
 	}
 
-	//email uniqueness
 	id, err := sh.specialistService.Registration(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountAlreadyExists) {
@@ -122,32 +121,17 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 }
 
-// LoginReq represents the request body for user login.
-// @Description User login request payload
-type LoginReq struct {
-	// Email address of the user.
-	// required: true
-	// format: email
-	// example: user@example.com
-	Email string `json:"email" binding:"required,email" example:"user@example.com"`
-
-	// Password for the user account.
-	// required: true
-	// example: MySecretPassword123!
-	Password string `json:"password" binding:"required" example:"MySecretPassword123!"`
-}
-
 // @Summary Login
 // @Description Login specialist
 // @Tags Specialist
 // @Accept       json
 // @Produce      json
-// @Param request body LoginReq true "Login request body"
+// @Param request body domain.LoginReq true "Login request body"
 // @Success 200 {object} domain.TokensPair "Login succeeded"
 // @Failure      400,401,500 {object} domain.ErrorResponse
 // @Router /specialist/login [post]
 func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
-	var loginData LoginReq
+	var loginData domain.LoginReq
 
 	//bind and validate JSON payload
 	if err := c.ShouldBindJSON(&loginData); err != nil {
@@ -271,4 +255,120 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, specialist)
+}
+
+// ChangePassword
+// @Summary      Change specialist password
+// @Description  Allows an authenticated specialist to change their password. All active sessions will be terminated upon successful password change.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body domain.ChangePassReq true "Change password request"
+// @Success      200  {object}  domain.SuccessResponse "Password updated successfully"
+// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or validation failed"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized or invalid old password"
+// @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
+// @Router       /specialist/change-password [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
+	userIDRaw, exists := c.Get("userID")
+	if !exists {
+		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+		})
+		return
+	}
+
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
+		return
+	}
+
+	var reqData domain.ChangePassReq
+
+	//bind and validate JSON payload
+	if err := c.ShouldBindJSON(&reqData); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid request payload"
+
+		var jsonErr *json.UnmarshalTypeError
+		var syntaxErr *json.SyntaxError
+
+		bindErr := fmt.Errorf("%s invalid registration payload: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} else if errors.As(err, &syntaxErr) {
+			message = "The request body is not valid JSON."
+		} else if err == io.EOF {
+			message = "Request body cannot be empty."
+		}
+
+		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: message,
+			Details: fieldErrors,
+		})
+		return
+	}
+
+	if validationErrors := sh.validator.ValidateChangePasswordReq(reqData); len(validationErrors) > 0 {
+		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "validation failed",
+			Details: validationErrors,
+		})
+		return
+	}
+
+	err = sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidCredentials) {
+			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Code: http.StatusUnauthorized, Message: "Invalid old password"})
+			return
+		}
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{Code: http.StatusNotFound, Message: "Specialist account not found"})
+			return
+		}
+
+		sh.logger.Error("failed to update password", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
+		return
+	}
+
+	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), userIDStr)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: "Password changed successfully.",
+	})
+
 }

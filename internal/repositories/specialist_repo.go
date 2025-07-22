@@ -186,7 +186,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	return item, nil
 }
 
-func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error) {
+func (sr *SpecialistRepositoryImpl) CheckCellValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error) {
 	if fieldName == "" || fieldValue == "" {
 		return false, fmt.Errorf("%s field name or field value cannot be empty", operationSpecialist)
 	}
@@ -229,4 +229,43 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	}
 
 	return exists, nil
+}
+
+func (sr *SpecialistRepositoryImpl) UpdatePasswordHash(ctx context.Context, id int64, newHash string) error {
+
+	query, args, err := sq.Update(curentTableName).
+		Set("password_hash", newHash).
+		Set("updated_at", time.Now()).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build update query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute update query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
+	return tx.Commit(ctx)
 }

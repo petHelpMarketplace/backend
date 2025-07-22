@@ -44,7 +44,7 @@ func (ss *SpecialistServiceImpl) Registration(ctx context.Context, specialist do
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	exists, err := ss.specialistRepo.CheckFieldValueExists(timeoutCtx, "email", specialist.Email)
+	exists, err := ss.specialistRepo.CheckCellValueExists(timeoutCtx, "email", specialist.Email)
 	if err != nil {
 		ss.logger.Error("database check for existing email failed",
 			zap.String("email", specialist.Email),
@@ -156,4 +156,44 @@ func (ss *SpecialistServiceImpl) ShowByEmail(ctx context.Context, email string) 
 	specialistDTO = utils.ToSpecialistProfileDTO(specialistModel)
 
 	return specialistDTO, nil
+}
+
+func (ss *SpecialistServiceImpl) ChangePassword(ctx context.Context, id int64, CurrentPass, newPass string) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	specialist, err := ss.specialistRepo.GetByID(timeoutCtx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("attempt to update password for non-existent user", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to get specialist by id during password update", zap.Int64("id", id), zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	if err := utils.HashCompare(specialist.PasswordHash, CurrentPass); err != nil {
+		ss.logger.Warn("password update failed due to invalid old password", zap.Int64("id", id))
+		return domain.ErrInvalidCredentials
+	}
+
+	hashedPassword, err := utils.HashGen(newPass)
+	if err != nil {
+		ss.logger.Error("failed to generate password hash during password update",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	if err := ss.specialistRepo.UpdatePasswordHash(timeoutCtx, id, hashedPassword); err != nil {
+		ss.logger.Error("failed to update password hash in database",
+			zap.Int64("id", id),
+			zap.Error(err))
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrAccountNotFound
+		}
+		return domain.ErrInternalServer
+	}
+
+	return nil
 }

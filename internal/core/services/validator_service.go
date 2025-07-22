@@ -47,7 +47,7 @@ func NewCustomValidator() *SpecialistValidatorImpl {
 	return &SpecialistValidatorImpl{validator: v}
 }
 
-func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []domain.FieldError {
+func (sv *SpecialistValidatorImpl) ValidateRegistrationReq(data domain.RegistrationRequest) []domain.FieldError {
 	var validationErrors []domain.FieldError
 
 	if err := sv.validator.Struct(data); err != nil {
@@ -76,6 +76,44 @@ func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []d
 	}
 
 	passwordErrors := validatePasswordComplexity(data.Password)
+	if len(passwordErrors) > 0 {
+		validationErrors = append(validationErrors, passwordErrors...)
+	}
+
+	if len(validationErrors) > 0 {
+		return validationErrors
+	}
+
+	return nil
+}
+
+// ValidateChangePassword checks the change password request.
+func (sv *SpecialistValidatorImpl) ValidateChangePasswordReq(reqData domain.ChangePassReq) []domain.FieldError {
+	var validationErrors []domain.FieldError
+
+	if err := sv.validator.Struct(reqData); err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			validationErrors = append(validationErrors, domain.FieldError{Field: "general", Message: "Invalid validation object"})
+			return validationErrors
+		}
+
+		for _, err := range err.(validator.ValidationErrors) {
+			var fe domain.FieldError
+			fe.Field = err.Field()
+			switch err.Field() {
+			case "NewPass":
+				fe.Message = err.Error()
+			case "NewPassRepeat":
+				fe.Message = err.Error()
+			case "OldPass":
+				fe.Message = "The current password is required."
+			}
+
+			validationErrors = append(validationErrors, fe)
+		}
+	}
+
+	passwordErrors := validatePasswordComplexity(reqData.NewPass)
 	if len(passwordErrors) > 0 {
 		validationErrors = append(validationErrors, passwordErrors...)
 	}

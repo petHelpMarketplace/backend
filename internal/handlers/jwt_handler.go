@@ -123,7 +123,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	if err := th.tokenService.RevokeToken(c.Request.Context(), dto.RefreshToken); err != nil {
+	if err := th.tokenService.RevokeRefreshToken(c.Request.Context(), dto.RefreshToken); err != nil {
 		th.logger.Error("failed to revoke used refresh token after issuing a new pair",
 			zap.Int64("userID", userID),
 			zap.Error(err),

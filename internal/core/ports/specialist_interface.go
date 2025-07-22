@@ -11,6 +11,7 @@ type SpecialistHandlers interface {
 	Registration(c *gin.Context)
 	Login(c *gin.Context)
 	Me(c *gin.Context)
+	ChangePassword(c *gin.Context)
 }
 
 type SpecialistService interface {
@@ -18,18 +19,13 @@ type SpecialistService interface {
 	Login(ctx context.Context, email string, password string) (domain.SpecialistProfileDTO, error)
 	ShowByID(ctx context.Context, id int64) (domain.SpecialistProfileDTO, error)
 	ShowByEmail(ctx context.Context, email string) (domain.SpecialistProfileDTO, error)
-	// List(filter dto.ListFilter) ([]domain.User, error)
-	// Update(user domain.User) error
-	// Delete(id uint) error
+	ChangePassword(ctx context.Context, id int64, oldPass, newPass string) error
 }
 
 type SpecialistRepository interface {
 	Save(ctx context.Context, name, email, phone, hash string) (int64, error)
 	GetByEmail(ctx context.Context, email string) (domain.Specialist, error)
 	GetByID(ctx context.Context, id int64) (domain.Specialist, error)
-	CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error)
-	// Find(id uint) (domain.User, error)
-	// List(filter dto.ListFilter) ([]domain.User, error)
-	// Update(user domain.User) error
-	// Delete(id uint) error
+	CheckCellValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error)
+	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
 }

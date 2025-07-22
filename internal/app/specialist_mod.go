@@ -72,6 +72,7 @@ var SpecialistModule = fx.Module("specialist",
 
 			protected := specRouterGroup.Use(mp.AuthMiddleware)
 			protected.GET("/me", handler.Me)
+			protected.PATCH("/change-password", handler.ChangePassword)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),
