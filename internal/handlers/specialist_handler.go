@@ -141,7 +141,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		var jsonErr *json.UnmarshalTypeError
 		var syntaxErr *json.SyntaxError
 
-		bindErr := fmt.Errorf("%s invalid registration payload: %w", operationSpHandler, err)
+		bindErr := fmt.Errorf("%s invalid login request payload: %w", operationSpHandler, err)
 
 		if errors.As(err, &jsonErr) {
 			message = "The request contains invalid data types."
@@ -268,6 +268,7 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 // @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or validation failed"
 // @Failure      401  {object}  domain.ErrorResponse "Unauthorized or invalid old password"
 // @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
+// @Failure      409  {object}  domain.ErrorResponse "Conflict: New password is the same as the old one"
 // @Failure      500  {object}  domain.ErrorResponse "Internal server error"
 // @Router       /specialist/change-password [patch]
 // @Security 	 BearerAuth
@@ -309,7 +310,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		var jsonErr *json.UnmarshalTypeError
 		var syntaxErr *json.SyntaxError
 
-		bindErr := fmt.Errorf("%s invalid registration payload: %w", operationSpHandler, err)
+		bindErr := fmt.Errorf("%s invalid change password request payload: %w", operationSpHandler, err)
 
 		if errors.As(err, &jsonErr) {
 			message = "The request contains invalid data types."
@@ -350,6 +351,10 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		}
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			c.JSON(http.StatusNotFound, domain.ErrorResponse{Code: http.StatusNotFound, Message: "Specialist account not found"})
+			return
+		}
+		if errors.Is(err, domain.ErrPasswordReuse) {
+			c.JSON(http.StatusConflict, domain.ErrorResponse{Code: http.StatusConflict, Message: "New password cannot be the same as the old password."})
 			return
 		}
 

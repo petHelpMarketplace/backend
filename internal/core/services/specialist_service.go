@@ -44,7 +44,7 @@ func (ss *SpecialistServiceImpl) Registration(ctx context.Context, specialist do
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	exists, err := ss.specialistRepo.CheckCellValueExists(timeoutCtx, "email", specialist.Email)
+	exists, err := ss.specialistRepo.CheckFieldValueExists(timeoutCtx, "email", specialist.Email)
 	if err != nil {
 		ss.logger.Error("database check for existing email failed",
 			zap.String("email", specialist.Email),
@@ -184,6 +184,12 @@ func (ss *SpecialistServiceImpl) ChangePassword(ctx context.Context, id int64, C
 			zap.Error(err))
 		return domain.ErrInternalServer
 	}
+
+	// // Ensure new password is different from current password
+	// if specialist.PasswordHash == hashedPassword {
+	// 	ss.logger.Warn("password update failed: new password same as current", zap.Int64("id", id))
+	// 	return domain.ErrPasswordReuse
+	// }
 
 	if err := ss.specialistRepo.UpdatePasswordHash(timeoutCtx, id, hashedPassword); err != nil {
 		ss.logger.Error("failed to update password hash in database",

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	curentTableName     = "specialists"
+	currentTableName    = "specialists"
 	operationSpecialist = "specialist_repo: "
 )
 
@@ -41,7 +41,7 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, email, phone
 	}
 	saveTime := time.Now().In(loc)
 
-	query, args, err := sq.Insert(curentTableName).
+	query, args, err := sq.Insert(currentTableName).
 		Columns(
 			"name",
 			"email",
@@ -98,7 +98,7 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 
 	var item domain.Specialist
 	query, args, err := sq.Select("*").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{"email": email}).
 		PlaceholderFormat(sq.Dollar). // conn, err := sr.database.Connection()
 		ToSql()
@@ -144,7 +144,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 
 	var item domain.Specialist
 	query, args, err := sq.Select("*").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -186,13 +186,13 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	return item, nil
 }
 
-func (sr *SpecialistRepositoryImpl) CheckCellValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error) {
+func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error) {
 	if fieldName == "" || fieldValue == "" {
 		return false, fmt.Errorf("%s field name or field value cannot be empty", operationSpecialist)
 	}
 
 	innerSQL, innerArgs, err := sq.Select("1").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{fieldName: fieldValue}).
 		PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
@@ -233,9 +233,16 @@ func (sr *SpecialistRepositoryImpl) CheckCellValueExists(ctx context.Context, fi
 
 func (sr *SpecialistRepositoryImpl) UpdatePasswordHash(ctx context.Context, id int64, newHash string) error {
 
-	query, args, err := sq.Update(curentTableName).
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	query, args, err := sq.Update(currentTableName).
 		Set("password_hash", newHash).
-		Set("updated_at", time.Now()).
+		Set("updated_at", updateTime).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -267,5 +274,8 @@ func (sr *SpecialistRepositoryImpl) UpdatePasswordHash(ctx context.Context, id i
 		return sql.ErrNoRows
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s failed to commit sql transaction: %w", operationSpecialist, err)
+	}
+	return nil
 }

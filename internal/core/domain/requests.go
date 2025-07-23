@@ -31,7 +31,7 @@ type ChangePassReq struct {
 	// maxLength: 255
 	// pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$"
 	// example: NewStr0ngP@ssw0rd!
-	NewPass string `json:"new_password" binding:"required,min=12" validate:"required,min=12" example:"NewStr0ngP@ssw0rd!"`
+	NewPass string `json:"new_password" binding:"required" validate:"required,min=12,necsfield=CurrentPass" example:"NewStr0ngP@ssw0rd!"`
 }
 
 // SuccessResponse is a generic success response structure.

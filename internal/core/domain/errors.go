@@ -28,6 +28,7 @@ var (
 	ErrUnauthorized              = errors.New("unauthorized")
 	ErrForbidden                 = errors.New("forbidden")
 	ErrSessionTerminated         = errors.New("session terminated")
+	ErrPasswordReuse             = errors.New("password reuse")
 )
 
 // FieldError contains validation error details for a specific field.
