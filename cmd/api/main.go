@@ -22,7 +22,7 @@ import (
 // @host   petbackend-a2vg.onrender.com
 // @BasePath  /api/v1/
 
-// @schemes http https
+// @schemes https http
 
 // @securityDefinitions.apikey BearerAuth
 // @in header

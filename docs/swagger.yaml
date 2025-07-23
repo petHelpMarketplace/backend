@@ -9,6 +9,33 @@ definitions:
         example: "2023-10-27T10:00:00Z"
         type: string
     type: object
+  domain.ChangePassReq:
+    description: Change password request payload
+    properties:
+      current_password:
+        description: |-
+          The specialist's current password.
+          required: true
+          example: MySecretPassword123!
+        example: MySecretPassword123!
+        type: string
+      new_password:
+        description: |-
+          The new password for the specialist account.
+          Must be at least 12 characters long.
+          Must contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?&.
+          required: true
+          minLength: 12
+          maxLength: 255
+          pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,255}$"
+          example: NewStr0ngP@ssw0rd!
+        example: NewStr0ngP@ssw0rd!
+        minLength: 12
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
   domain.ErrorResponse:
     properties:
       code:
@@ -30,6 +57,28 @@ definitions:
       message:
         example: This field is required.
         type: string
+    type: object
+  domain.LoginReq:
+    description: User login request payload
+    properties:
+      email:
+        description: |-
+          Email address of the user.
+          required: true
+          format: email
+          example: user@example.com
+        example: user@example.com
+        type: string
+      password:
+        description: |-
+          Password for the user account.
+          required: true
+          example: MySecretPassword123!
+        example: MySecretPassword123!
+        type: string
+    required:
+    - email
+    - password
     type: object
   domain.RegistrationRequest:
     description: User registration request payload
@@ -163,34 +212,21 @@ definitions:
           example: Veterinarian
         type: string
     type: object
+  domain.SuccessResponse:
+    properties:
+      code:
+        example: 200
+        type: integer
+      message:
+        example: Operation was successful
+        type: string
+    type: object
   domain.TokensPair:
     properties:
       access_token:
         type: string
       refresh_token:
         type: string
-    type: object
-  handlers.LoginReq:
-    description: User login request payload
-    properties:
-      email:
-        description: |-
-          Email address of the user.
-          required: true
-          format: email
-          example: user@example.com
-        example: user@example.com
-        type: string
-      password:
-        description: |-
-          Password for the user account.
-          required: true
-          example: MySecretPassword123!
-        example: MySecretPassword123!
-        type: string
-    required:
-    - email
-    - password
     type: object
   handlers.RefreshReq:
     properties:
@@ -275,6 +311,51 @@ paths:
       summary: OAuth2.0 Provider Callback
       tags:
       - OAuth
+  /specialist/change-password:
+    patch:
+      consumes:
+      - application/json
+      description: Allows an authenticated specialist to change their password. All
+        active sessions will be terminated upon successful password change.
+      parameters:
+      - description: Change password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ChangePassReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated successfully
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized or invalid old password
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: 'Conflict: New password is the same as the old one'
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change specialist password
+      tags:
+      - Specialist
   /specialist/login:
     post:
       consumes:
@@ -286,7 +367,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.LoginReq'
+          $ref: '#/definitions/domain.LoginReq'
       produces:
       - application/json
       responses:
@@ -412,8 +493,8 @@ paths:
       tags:
       - Token
 schemes:
-- http
 - https
+- http
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

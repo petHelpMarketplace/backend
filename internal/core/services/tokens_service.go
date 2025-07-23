@@ -150,7 +150,7 @@ func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isA
 
 }
 
-func (ts *TokenServiceImpl) RevokeToken(ctx context.Context, token string) error {
+func (ts *TokenServiceImpl) RevokeRefreshToken(ctx context.Context, token string) error {
 	genClaims, err := genJWT.ParseRefreshToken(token, ts.jwtSecret)
 	if err != nil {
 		ts.logger.Error("failed to parse refresh token for revocation",
@@ -161,12 +161,25 @@ func (ts *TokenServiceImpl) RevokeToken(ctx context.Context, token string) error
 
 	err = ts.tokenRepo.RevokeRefreshToken(ctx, genClaims.ID, genClaims.UserID)
 	if err != nil {
-		ts.logger.Error("failed to revoke refresh token in repository",
+		ts.logger.Error("failed to revoke refresh token",
 			zap.String("jti", genClaims.ID),
 			zap.String("userID", genClaims.UserID),
 			zap.Error(err))
 		return domain.ErrInternalServer
 	}
+
+	return nil
+}
+
+func (ts *TokenServiceImpl) RevokeAllUserSessions(ctx context.Context, userID string) error {
+	if err := ts.tokenRepo.RevokeAllUserRefreshTokens(ctx, userID); err != nil {
+		ts.logger.Error("failed to revoke all user sessions",
+			zap.String("userID", userID),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	ts.logger.Info("all sessions revoked for user", zap.String("userID", userID))
 
 	return nil
 }

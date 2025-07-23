@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	curentTableName     = "specialists"
+	currentTableName    = "specialists"
 	operationSpecialist = "specialist_repo: "
 )
 
@@ -41,7 +41,7 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, email, phone
 	}
 	saveTime := time.Now().In(loc)
 
-	query, args, err := sq.Insert(curentTableName).
+	query, args, err := sq.Insert(currentTableName).
 		Columns(
 			"name",
 			"email",
@@ -98,7 +98,7 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 
 	var item domain.Specialist
 	query, args, err := sq.Select("*").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{"email": email}).
 		PlaceholderFormat(sq.Dollar). // conn, err := sr.database.Connection()
 		ToSql()
@@ -144,7 +144,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 
 	var item domain.Specialist
 	query, args, err := sq.Select("*").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -192,7 +192,7 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	}
 
 	innerSQL, innerArgs, err := sq.Select("1").
-		From(curentTableName).
+		From(currentTableName).
 		Where(sq.Eq{fieldName: fieldValue}).
 		PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
@@ -229,4 +229,53 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	}
 
 	return exists, nil
+}
+
+func (sr *SpecialistRepositoryImpl) UpdatePasswordHash(ctx context.Context, id int64, newHash string) error {
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	query, args, err := sq.Update(currentTableName).
+		Set("password_hash", newHash).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build update query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute update query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s failed to commit sql transaction: %w", operationSpecialist, err)
+	}
+	return nil
 }

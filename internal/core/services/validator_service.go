@@ -47,7 +47,7 @@ func NewCustomValidator() *SpecialistValidatorImpl {
 	return &SpecialistValidatorImpl{validator: v}
 }
 
-func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []domain.FieldError {
+func (sv *SpecialistValidatorImpl) ValidateRegistrationReq(data domain.RegistrationRequest) []domain.FieldError {
 	var validationErrors []domain.FieldError
 
 	if err := sv.validator.Struct(data); err != nil {
@@ -75,7 +75,7 @@ func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []d
 		}
 	}
 
-	passwordErrors := validatePasswordComplexity(data.Password)
+	passwordErrors := validatePasswordComplexity(data.Password, "Password")
 	if len(passwordErrors) > 0 {
 		validationErrors = append(validationErrors, passwordErrors...)
 	}
@@ -87,7 +87,47 @@ func (sv *SpecialistValidatorImpl) Validate(data domain.RegistrationRequest) []d
 	return nil
 }
 
-func validatePasswordComplexity(password string) []domain.FieldError {
+// ValidateChangePassword checks the change password request.
+func (sv *SpecialistValidatorImpl) ValidateChangePasswordReq(reqData domain.ChangePassReq) []domain.FieldError {
+	var validationErrors []domain.FieldError
+
+	if err := sv.validator.Struct(reqData); err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			validationErrors = append(validationErrors, domain.FieldError{Field: "general", Message: "Invalid validation object"})
+			return validationErrors
+		}
+
+		for _, err := range err.(validator.ValidationErrors) {
+			var fe domain.FieldError
+			fe.Field = err.Field()
+			switch err.Field() {
+			case "NewPass":
+				if err.Tag() == "necsfield" {
+					fe.Message = "The new password must be different from the current password (case-sensitive)."
+					break
+				}
+				fe.Message = err.Error()
+			case "CurrentPass":
+				fe.Message = "The current password is required."
+			}
+
+			validationErrors = append(validationErrors, fe)
+		}
+	}
+
+	passwordErrors := validatePasswordComplexity(reqData.NewPass, "NewPass")
+	if len(passwordErrors) > 0 {
+		validationErrors = append(validationErrors, passwordErrors...)
+	}
+
+	if len(validationErrors) > 0 {
+		return validationErrors
+	}
+
+	return nil
+}
+
+func validatePasswordComplexity(password, fieldName string) []domain.FieldError {
 
 	var (
 		hasUpper   bool
@@ -112,16 +152,16 @@ func validatePasswordComplexity(password string) []domain.FieldError {
 	}
 
 	if !hasUpper {
-		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoUppercase.Error()})
+		errors = append(errors, domain.FieldError{Field: fieldName, Message: domain.ErrNoUppercase.Error()})
 	}
 	if !hasLower {
-		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoLowercase.Error()})
+		errors = append(errors, domain.FieldError{Field: fieldName, Message: domain.ErrNoLowercase.Error()})
 	}
 	if !hasNumber {
-		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoNumber.Error()})
+		errors = append(errors, domain.FieldError{Field: fieldName, Message: domain.ErrNoNumber.Error()})
 	}
 	if !hasSpecial {
-		errors = append(errors, domain.FieldError{Field: "Password", Message: domain.ErrNoSpecialChar.Error()})
+		errors = append(errors, domain.FieldError{Field: fieldName, Message: domain.ErrNoSpecialChar.Error()})
 	}
 
 	return errors

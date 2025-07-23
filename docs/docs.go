@@ -100,6 +100,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialist/change-password": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows an authenticated specialist to change their password. All active sessions will be terminated upon successful password change.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Change specialist password",
+                "parameters": [
+                    {
+                        "description": "Change password request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ChangePassReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized or invalid old password",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict: New password is the same as the old one",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/login": {
             "post": {
                 "description": "Login specialist",
@@ -120,7 +189,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.LoginReq"
+                            "$ref": "#/definitions/domain.LoginReq"
                         }
                     }
                 ],
@@ -320,6 +389,27 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ChangePassReq": {
+            "description": "Change password request payload",
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "description": "The specialist's current password.\nrequired: true\nexample: MySecretPassword123!",
+                    "type": "string",
+                    "example": "MySecretPassword123!"
+                },
+                "new_password": {
+                    "description": "The new password for the specialist account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\"\nexample: NewStr0ngP@ssw0rd!",
+                    "type": "string",
+                    "minLength": 12,
+                    "example": "NewStr0ngP@ssw0rd!"
+                }
+            }
+        },
         "domain.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -349,6 +439,26 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "This field is required."
+                }
+            }
+        },
+        "domain.LoginReq": {
+            "description": "User login request payload",
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Email address of the user.\nrequired: true\nformat: email\nexample: user@example.com",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
+                    "type": "string",
+                    "example": "MySecretPassword123!"
                 }
             }
         },
@@ -449,6 +559,19 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Operation was successful"
+                }
+            }
+        },
         "domain.TokensPair": {
             "type": "object",
             "properties": {
@@ -457,26 +580,6 @@ const docTemplate = `{
                 },
                 "refresh_token": {
                     "type": "string"
-                }
-            }
-        },
-        "handlers.LoginReq": {
-            "description": "User login request payload",
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "description": "Email address of the user.\nrequired: true\nformat: email\nexample: user@example.com",
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "password": {
-                    "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
-                    "type": "string",
-                    "example": "MySecretPassword123!"
                 }
             }
         },
@@ -524,7 +627,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "petbackend-a2vg.onrender.com",
 	BasePath:         "/api/v1/",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"https", "http"},
 	Title:            "Swagger Example API",
 	Description:      "This is a PetHelp project backend",
 	InfoInstanceName: "swagger",
