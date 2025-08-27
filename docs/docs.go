@@ -374,6 +374,64 @@ const docTemplate = `{
                 }
             }
         }
+        "/public-appointment-request": {
+            "post": {
+                "description": "Book appointment with a specialist without registration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "UnauthAppointment"
+                ],
+                "summary": "Book appointment",
+                "parameters": [
+                    {
+                        "description": "Refresh token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RefreshReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully generated new token pair",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TokensPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Invalid, expired, or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }    
     },
     "definitions": {
         "app.HealthCheckResponse": {

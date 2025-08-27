@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     address_id       INTEGER,  -- user, organisation or specialist address
     created_at       TIMESTAMPTZ DEFAULT NOW(),
     updated_at       TIMESTAMPTZ,
+    start_time       TIMESTAMPTZ,
+    end_time       TIMESTAMPTZ,
 
     CONSTRAINT fk_appointments_user
         FOREIGN KEY (user_id) REFERENCES users(id),

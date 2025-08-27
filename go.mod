@@ -11,7 +11,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/joho/godotenv v1.5.1
 	github.com/markbates/goth v1.81.0
-	github.com/nyaruka/phonenumbers v1.6.3
+	github.com/nyaruka/phonenumbers v1.6.4
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/swaggo/files v1.0.1
