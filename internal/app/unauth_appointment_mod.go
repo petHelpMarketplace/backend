@@ -5,7 +5,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"pethelp-backend/internal/app/middleware"
 	"pethelp-backend/internal/core/ports"
 	"pethelp-backend/internal/core/services"
 	"pethelp-backend/internal/handlers"
@@ -14,7 +13,7 @@ import (
 	redisCache "pethelp-backend/pkg/database/redis"
 )
 
-const UnauthAppointmenttRoutePath = "/api/v1/public-appointment-request"
+const UnauthAppointmentRoutePath = "/api/v1/public-appointment-request"
 
 // ModuleParams holds common dependencies for auth modules.
 // It supplies the Gin router, Postgres pool, Logger, and Redis client.
@@ -24,7 +23,6 @@ type UnauthAppointmentModuleParams struct {
 	DB             *postgres.DB
 	Cache          *redisCache.DB
 	Logger         *zap.Logger
-	// AuthConfig     config.AuthConfig
 }
 
 var UnauthAppointmentModule = fx.Module("unauth_appointment",
@@ -39,27 +37,27 @@ var UnauthAppointmentModule = fx.Module("unauth_appointment",
 			fx.As(new(ports.UnauthAppointmentService)),
 		),
 
-		// fx.Annotate(
-		// 	services.NewUnauthAppointmentValidator,
-		// 	fx.As(new(ports.UnauthAppointmentValidator)),
-		// ),
+		fx.Annotate(
+			services.NewUnauthAppointmentValidator,
+			fx.As(new(ports.UnauthAppointmentValidator)),
+		),
 
 		fx.Annotate(
 			handlers.NewUnauthAppointmentHandler,
 			fx.As(new(ports.UnauthAppointmentHandler)),
 		),
 
-		middleware.NewAuthMiddleware,
+		// middleware.NewAuthMiddleware,
 	),
 	fx.Invoke(
 		func(mp UnauthAppointmentModuleParams, handler ports.UnauthAppointmentHandler) {
-			specRouterGroup := mp.Router.Group(UnauthAppointmenttRoutePath)
+			specRouterGroup := mp.Router.Group(UnauthAppointmentRoutePath)
 
-			specRouterGroup.POST("/public-appointment-request", handler.Book)
+			specRouterGroup.POST("", handler.Book)
 
 
 			mp.Logger.Info("Unauth appointment routes",
-				zap.String("base_path", UnauthAppointmenttRoutePath),
+				zap.String("base_path", UnauthAppointmentRoutePath),
 				zap.String("book_unauth_app_endpoint", "/public-appointment-request"),
 				zap.String("method", "POST"))
 		},

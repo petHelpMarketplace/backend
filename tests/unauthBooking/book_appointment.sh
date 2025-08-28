@@ -1,27 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-BASE_URL=${BASE_URL:-http://localhost:3000}
+BASE_URL=${BASE_URL:-http://localhost:3000/api/v1}
 
 echo "Creating first unauth appointment..."
-response=$(curl -s -w "\n%{http_code}" -X POST $BASE_URL/public-appointment-request \
+response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/public-appointment-request" \
   -H "Content-Type: application/json" \
-  -d '{
-    "service_id": 1,
-    "city_id": 1,
-    "district_id": 1,
-    "street": "Main Street",
-    "location_type": "at home",
-    "unit": "12B",
-    "apt": "34",
-    "animal_size_id": 2,
-    "description": "Routine check-up",
-    "specialist_id": 1,
-    "date": "2025-09-01",
-    "start_time": "14:30",
-    "end_time": "15:00",
-    "amount": 75.50,
-    "email": "user@example.com"
-  }')
+  -d @- <<EOF
+{
+  "service_id": 1,
+  "city_id": 1,
+  "area_id": 10,
+  "street": "вул. Володимирська",
+  "location_type": "at home",
+  "unit": "3",
+  "apt": "32",
+  "animal_size_id": 2,
+  "description": "Routine check-up",
+  "appointment_date": "2025-09-01T00:00:00Z",
+  "start_time": "2025-09-01T14:30:00Z",
+  "end_time": "2025-09-01T15:00:00Z",
+  "amount": 75.50,
+  "email": "user@example.com",
+  "specialist_id": 1,
+  "status": "pending"
+}
+EOF
+)
 
 http_code=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')
@@ -35,25 +40,29 @@ else
 fi
 
 echo -e "\nTesting duplicate appointment (should fail with 409)..."
-response=$(curl -s -w "\n%{http_code}" -X POST $BASE_URL/public-appointment-request \
+response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/public-appointment-request" \
   -H "Content-Type: application/json" \
-  -d '{
-    "service_id": 1,
-    "city_id": 1,
-    "district_id": 1,
-    "street": "Main Street",
-    "location_type": "home",
-    "unit": "12B",
-    "apt": "34",
-    "animal_size_id": 2,
-    "description": "Routine check-up",
-    "specialist_id": 123,
-    "date": "2025-09-01",
-    "start_time": "14:30",
-    "end_time": "15:00",
-    "amount": 75.50,
-    "email": "user@example.com"
-  }')
+  -d @- <<EOF
+{
+  service_id": 1,
+  "city_id": 1,
+  "area_id": 10,
+  "street": "вул. Володимирська",
+  "location_type": "at home",
+  "unit": "3",
+  "apt": "32",
+  "animal_size_id": 2,
+  "description": "Routine check-up",
+  "appointment_date": "2025-09-01T00:00:00Z",
+  "start_time": "2025-09-01T14:30:00Z",
+  "end_time": "2025-09-01T15:00:00Z",
+  "amount": 75.50,
+  "email": "user@example.com",
+  "specialist_id": 1,
+  "status": "pending"
+}
+EOF
+)
 
 http_code=$(echo "$response" | tail -n1)
 body=$(echo "$response" | sed '$d')

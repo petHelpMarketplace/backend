@@ -80,6 +80,7 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		Amount:       unauthAppointment.Amount,
 		Email:        unauthAppointment.Email,
 		SpecialistId: unauthAppointment.SpecialistId,
+		Status:       unauthAppointment.Status,
 	}
 	
 	id, err := aa.unauthAppointmentRepo.Save(
@@ -90,13 +91,14 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		create.AnimalSizeId,
 		create.SpecialistId,
 		create.Amount,
-		create.Street,
-		create.LocationType,
+		create.LocationType, // first string
+		create.Street,       // second string
 		create.Unit,
 		create.Apt,
 		create.Description,
 		create.Email,
-		create.Date,
+		"pending",       // last string
+		create.Date,         // time.Time
 		create.StartTime,
 		create.EndTime,
 	)

@@ -7,16 +7,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+//// UnauthAppointmentValidatorImpl validates unauthenticated appointment requests
 type UnauthAppointmentValidatorImpl struct {
 	validator *validator.Validate
 }
-
+// Ensure UnauthAppointmentValidatorImpl implements the interface
 var _ ports.UnauthAppointmentValidator = (*UnauthAppointmentValidatorImpl)(nil)
 
 func NewUnauthAppointmentValidator() *UnauthAppointmentValidatorImpl {
 	v := validator.New()
-	v.RegisterValidation("e123", isValidE123)
-	v.RegisterValidation("custom_name", isValidName)
 
 	return &UnauthAppointmentValidatorImpl{validator: v}
 }
@@ -47,7 +46,7 @@ func (sv *UnauthAppointmentValidatorImpl) ValidateUnauthAppointmentRequest(data 
 			case "Unit":
 				fe.Message = "Invalid unit"
 			case "Apt":
-				fe.Message = "Invalid appartment"
+				fe.Message = "Invalid apartment"
 			case "AnimalSizeId":
 				fe.Message = "Invalid animal size"
 			case "Description":
@@ -59,7 +58,7 @@ func (sv *UnauthAppointmentValidatorImpl) ValidateUnauthAppointmentRequest(data 
 			case "EndTime":
 				fe.Message = "Invalid appointment end time"
 			case "Amount":
-				fe.Message = "Invalid ammount"
+				fe.Message = "Invalid amount"
 			case "Email":
 				fe.Message = "Invalid email"
 			case "SpecialistId":

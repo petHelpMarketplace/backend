@@ -16,8 +16,8 @@ const (
 	operationUnauthAppointment = "unauth_appointment_repo: "
 	appointmentsTableName = "appointments"
 	addressTableName = "addresses"
-	animalSizeTableName = "animal_size"
-	unauthUserTableName = "unauthorized_user_email"
+	animalSizeTableName = "animal_sizes"
+	unauthUserTableName = "unauthorized_users_emails"
 )
 
 type UnauthAppointmentRepositoryImpl struct {
@@ -38,7 +38,7 @@ func (ar *UnauthAppointmentRepositoryImpl) IsTimeBooked(ctx context.Context, spe
 		return false, fmt.Errorf("invalid time window: start must be before end")
 	}
 
-	innerSel := sq.Select("1").From(appointmentsTableName).Where(sq.Eq{"specialist_id": specialistID}).Where(sq.Expr("status <> 'canceled'")).
+	innerSel := sq.Select("1").From(appointmentsTableName).Where(sq.Eq{"specialist_id": specialistID}).Where(sq.Expr("status <> 'pending'")).
 		Where(sq.Expr("(start_time, end_time) OVERLAPS (?, ?)", startTime, endTime)).PlaceholderFormat(sq.Dollar)
 
 	innerSQL, innerArgs, err := innerSel.ToSql()
@@ -59,7 +59,7 @@ func (ar *UnauthAppointmentRepositoryImpl) IsTimeBooked(ctx context.Context, spe
 func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	serviceID, cityID, districtID, animalSizeID, specialistID int,
 	amount float32,
-	locationType, street, unit, apt, description, email string,
+	locationType, street, unit, apt, description, email, status string,
 	date, startTime, endTime time.Time) (int64, error) {
 
 	const (
@@ -82,9 +82,10 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	// Build appointment insert
 	appInsert := sq.Insert(profileTable).
 		Columns("appointment_date", "location_type", "description", "specialist_id", "amount", "status", "created_at", "updated_at", "start_time", "end_time").
-		Values(date, locationType, description, specialistID, amount, "pending", now, now, startTime, endTime).
+		Values(date, locationType, description, specialistID, amount, status, now, now, startTime, endTime).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar)
+
 
 	sqlAppt, argsAppt, err := appInsert.ToSql()
 	if err != nil {
@@ -93,8 +94,8 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 
 	// Address insert
 	addrInsert := sq.Insert(addressTable).
-		Columns("city_id", "area_id", "street", "unit", "apt", "created_at").
-		Values(cityID, districtID, street, unit, apt, now).
+		Columns("city_id", "area_id", "street", "unit", "apt").
+		Values(cityID, districtID, street, unit, apt).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar)
 
@@ -115,17 +116,24 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 		return 0, fmt.Errorf("%s building email insert: %w", operationUnauthAppointment, err)
 	}
 
-	// Animal size insert
-	sizeInsert := sq.Insert(sizeTable).
-		Columns("id", "created_at"). // Assuming size_id is correct
-		Values(animalSizeID, now).
-		Suffix("RETURNING id").
-		PlaceholderFormat(sq.Dollar)
+	// Animal size select
+	var sizeName string
+	var minWeight, maxWeight float32
 
-	sqlSize, argsSize, err := sizeInsert.ToSql()
+	sizeSelect := sq.Select("name_eng", "min_weight", "max_weight").
+    From(sizeTable).
+    Where(sq.Eq{"id": animalSizeID}).
+    PlaceholderFormat(sq.Dollar)
+
+	sqlSize, argsSize, err := sizeSelect.ToSql()
 	if err != nil {
-		return 0, fmt.Errorf("%s building size insert: %w", operationUnauthAppointment, err)
+		return 0, fmt.Errorf("%s building size select: %w", operationUnauthAppointment, err)
 	}
+
+	if err := ar.DBPool.Pool().QueryRow(ctx, sqlSize, argsSize...).Scan(&sizeName, &minWeight, &maxWeight); err != nil {
+		return 0, fmt.Errorf("%s querying animal size: %w", operationUnauthAppointment, err)
+	}
+
 
 	// Acquire DB connection
 	conn, err := ar.DBPool.Pool().Acquire(ctx)
@@ -160,25 +168,20 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 		return 0, fmt.Errorf("%s inserting email: %w", operationUnauthAppointment, err)
 	}
 
-	var sizeID int64
-	if err := tx.QueryRow(ctx, sqlSize, argsSize...).Scan(&sizeID); err != nil {
-		return 0, fmt.Errorf("%s inserting animal size: %w", operationUnauthAppointment, err)
-	}
-
 	// Link appointment with service
 	svcInsert := sq.Insert(serviceTable).
-		Columns("appointment_id", "service_id").
-		Values(appointmentID, serviceID).
-		Suffix("RETURNING id").
-		PlaceholderFormat(sq.Dollar)
+    Columns("appointment_id", "service_id").
+    Values(appointmentID, serviceID).
+    Suffix("RETURNING appointment_id"). 
+    PlaceholderFormat(sq.Dollar)
 
 	sqlSvc, argsSvc, err := svcInsert.ToSql()
 	if err != nil {
 		return 0, fmt.Errorf("%s building service insert: %w", operationUnauthAppointment, err)
 	}
 
-	var svcID int64
-	if err := tx.QueryRow(ctx, sqlSvc, argsSvc...).Scan(&svcID); err != nil {
+	var returnedID int64
+	if err := tx.QueryRow(ctx, sqlSvc, argsSvc...).Scan(&returnedID); err != nil {
 		return 0, fmt.Errorf("%s inserting appointment service: %w", operationUnauthAppointment, err)
 	}
 
@@ -188,6 +191,7 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	}
 
 	return appointmentID, nil
+
 }
 
 

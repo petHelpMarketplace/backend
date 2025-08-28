@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS appointments (
-    id                INTEGER PRIMARY KEY,
+    id                SERIAl PRIMARY KEY,
     appointment_date  TIMESTAMPTZ,
     user_id          INTEGER NOT NULL,
     location_type    location_type,  -- "at home" or "at specialist"

@@ -13,7 +13,7 @@ type UnauthAppointmentRepository interface {
 	Save(ctx context.Context,
 	serviceID, cityID, districtID, animalSizeID, specialistID int,
 	amount float32,
-	locationType, street, unit, apt, description, email string,
+	locationType, street, unit, apt, description, email, status string,
 	date, startTime, endTime time.Time) (int64, error)
 	IsTimeBooked(ctx context.Context, specialistID int, data, startTime, endTime time.Time) (bool, error)
 }
