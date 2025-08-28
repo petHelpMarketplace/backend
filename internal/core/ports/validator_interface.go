@@ -8,5 +8,5 @@ type SpecialistValidator interface {
 }
 
 type UnauthAppointmentValidator interface {
-	ValidateUnauthAppointmentRequest(domain.SaveUnauthAppointmentnRequest) []domain.FieldError
+	ValidateUnauthAppointmentRequest(domain.SaveUnauthAppointmentRequest) []domain.FieldError
 }

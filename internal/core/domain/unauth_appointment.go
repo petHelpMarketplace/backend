@@ -22,9 +22,9 @@ type Appointment struct {
 }
 
 
-// SaveUnauthAppointmentnRequest represents the request body for saving anauthorized user' appointment request.
+// SaveUnauthAppointmentRequest represents the request body for saving anauthorized user' appointment request.
 // @Description Anauthorized user' appointment request
-type SaveUnauthAppointmentnRequest struct {
+type SaveUnauthAppointmentRequest struct {
 	ServiceId int `json:"service_id" validate:"required" example:"3"`
 	CityId int `json:"city_id" validate:"required" example:"1"`
 	DistrictId int `json:"area_id" validate:"required" example:"1"`

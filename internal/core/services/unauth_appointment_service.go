@@ -33,7 +33,7 @@ func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger 
 }
 
 //saves an unauthenticated appointment, returns appointment ID or error
-func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Context, unauthAppointment domain.SaveUnauthAppointmentnRequest) (int64, error) {
+func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Context, unauthAppointment domain.SaveUnauthAppointmentRequest) (int64, error) {
 
 	// Basic validation, ensures start time is before end time
 	if !unauthAppointment.StartTime.Before(unauthAppointment.EndTime) {
@@ -57,14 +57,14 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 	}
 	if exists {
 		aa.logger.Warn("booking attempt of unavailable time",
-			zap.Time("date", unauthAppointment.Date),
+			zap.Int("specialist_id", unauthAppointment.SpecialistId),
+			zap.String("date", unauthAppointment.Date.Format("2006-01-02")),
 			zap.Time("start_time", unauthAppointment.StartTime),
 			zap.Time("end_time", unauthAppointment.EndTime))
 		return 0, domain.ErrTimeUnavailable
 	}
 
-	create := domain.SaveUnauthAppointmentnRequest{
-
+	create := domain.SaveUnauthAppointmentRequest{
 		ServiceId:    unauthAppointment.ServiceId,
 	    CityId:       unauthAppointment.CityId,
 		DistrictId:   unauthAppointment.DistrictId,

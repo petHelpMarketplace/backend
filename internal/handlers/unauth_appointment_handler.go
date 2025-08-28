@@ -19,7 +19,7 @@ const (
 	operationUnauthAppHandler = "unauth_appointment_handler: "
 )
 
-type UnauthAppintmentHandlerImpl struct {
+type UnauthAppointmentHandlerImpl struct {
 	//checks request payload fields for correctness
 	validator         ports.UnauthAppointmentValidator
 	unauthAppointmentService ports.UnauthAppointmentService
@@ -27,11 +27,11 @@ type UnauthAppintmentHandlerImpl struct {
 }
 
 //Compile-time check that this struct implements the SpecialistHandlers interface
-var _ ports.UnauthAppointmentHandler = (*UnauthAppintmentHandlerImpl)(nil)
+var _ ports.UnauthAppointmentHandler = (*UnauthAppointmentHandlerImpl)(nil)
 
 //Creates a new handler and injects dependencies.
-func NewUnauthAppointmentHandler(unauthAppointmentSrv ports.UnauthAppointmentService, tokenSrv ports.TokenService, validator ports.UnauthAppointmentValidator, logger *zap.Logger) *UnauthAppintmentHandlerImpl {
-	return &UnauthAppintmentHandlerImpl{
+func NewUnauthAppointmentHandler(unauthAppointmentSrv ports.UnauthAppointmentService, validator ports.UnauthAppointmentValidator, logger *zap.Logger) *UnauthAppointmentHandlerImpl {
+	return &UnauthAppointmentHandlerImpl{
 		validator:         validator,
 		unauthAppointmentService: unauthAppointmentSrv,
 		logger:            logger,
@@ -48,16 +48,16 @@ type successSaveUnauthAppointment struct {
 // @Tags SpecialistAppointment
 // @Accept       json
 // @Produce      json
-// @Param request body domain.SaveUnauthAppointmentnRequest true "UnauthAppointment request body"
+// @Param request body domain.SaveUnauthAppointmentRequest true "UnauthAppointment request body"
 // @Success 201 {object} successSaveUnauthAppointment "Booking appointment succeeded"
 // @Failure      400,409,500 {object} domain.ErrorResponse
 // @Router /public-appointment-request [post]
 
 //Handles HTTP POST requests to create unauthenticated appointments
-func (ah *UnauthAppintmentHandlerImpl) Book (c *gin.Context) {
+func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 
 	//Bind JSON request
-	req := domain.SaveUnauthAppointmentnRequest{}
+	req := domain.SaveUnauthAppointmentRequest{}
 
 	//parses request body into req struct
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -104,13 +104,16 @@ func (ah *UnauthAppintmentHandlerImpl) Book (c *gin.Context) {
 		return
 	}
 
-	id, err :=ah.unauthAppointmentService.BookUnauthAppointment(c.Request.Context(), req)
+	id, err := ah.unauthAppointmentService.BookUnauthAppointment(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, domain.ErrTimeUnavailable) {
 			c.JSON(http.StatusConflict, domain.ErrorResponse{
 				Code:    http.StatusConflict,
-				Message: fmt.Sprintf("time %s %s-%s already booked", req.Date, req.StartTime, req.EndTime),
-			})
+				Message: fmt.Sprintf("time %s %s-%s already booked",
+				req.Date.Format("2006-01-02"),
+				req.StartTime.Format("15:04"),
+				req.EndTime.Format("15:04"),),
+				})
 			return
 		}
 

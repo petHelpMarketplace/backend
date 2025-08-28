@@ -76,6 +76,8 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 		return 0, fmt.Errorf("%s failed to load time location: %w", operationUnauthAppointment, err)
 	}
 	now := time.Now().In(loc)
+	startTime = startTime.In(loc)
+	endTime = endTime.In(loc)
 
 	// Build appointment insert
 	appInsert := sq.Insert(profileTable).
@@ -115,7 +117,7 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 
 	// Animal size insert
 	sizeInsert := sq.Insert(sizeTable).
-		Columns("size_id", "created_at"). // Assuming size_id is correct
+		Columns("id", "created_at"). // Assuming size_id is correct
 		Values(animalSizeID, now).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar)

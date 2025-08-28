@@ -23,5 +23,5 @@ type UnauthAppointmentHandler interface {
 }
 
 type UnauthAppointmentService interface {
-	BookUnauthAppointment(ctx context.Context, req domain.SaveUnauthAppointmentnRequest) (int64, error)
+	BookUnauthAppointment(ctx context.Context, req domain.SaveUnauthAppointmentRequest) (int64, error)
 }

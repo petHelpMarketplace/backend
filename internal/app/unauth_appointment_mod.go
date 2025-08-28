@@ -60,7 +60,7 @@ var UnauthAppointmentModule = fx.Module("unauth_appointment",
 
 			mp.Logger.Info("Unauth appointment routes",
 				zap.String("base_path", UnauthAppointmenttRoutePath),
-				zap.String("book_unauth_app_endpoint", "/public-appointment"),
+				zap.String("book_unauth_app_endpoint", "/public-appointment-request"),
 				zap.String("method", "POST"))
 		},
 	),

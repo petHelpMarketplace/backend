@@ -228,7 +228,7 @@ definitions:
       refresh_token:
         type: string
     type: object
-  domain.SaveUnauthAppointmentnRequest:
+  domain.SaveUnauthAppointmentRequest:
     description: Unauthenticated appointment booking request payload
     type: object
     properties:

@@ -21,7 +21,7 @@ func NewUnauthAppointmentValidator() *UnauthAppointmentValidatorImpl {
 	return &UnauthAppointmentValidatorImpl{validator: v}
 }
 
-func (sv *UnauthAppointmentValidatorImpl) ValidateUnauthAppointmentRequest(data domain.SaveUnauthAppointmentnRequest) []domain.FieldError {
+func (sv *UnauthAppointmentValidatorImpl) ValidateUnauthAppointmentRequest(data domain.SaveUnauthAppointmentRequest) []domain.FieldError {
 	var validationErrors []domain.FieldError
 
 	if err := sv.validator.Struct(data); err != nil {

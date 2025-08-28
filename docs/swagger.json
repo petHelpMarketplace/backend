@@ -343,7 +343,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/domain.SaveUnauthAppointmentnRequest"
+              "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
             }
           }
         ],
@@ -578,7 +578,7 @@
         }
       }
     },
-    "domain.SaveUnauthAppointmentnRequest": {
+    "domain.SaveUnauthAppointmentRequest": {
       "description": "Unauth appointment booking request payload",
       "type": "object",
       "required": [

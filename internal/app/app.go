@@ -59,6 +59,7 @@ func NewApp() fx.Option {
 		OauthModule,
 		DocsModule,
 		TokenModule,
+		UnauthAppointmentModule,
 
 		fx.StartTimeout(10*time.Second),
 	)
