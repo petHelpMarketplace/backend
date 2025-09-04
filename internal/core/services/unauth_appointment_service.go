@@ -9,9 +9,11 @@ import (
 	"pethelp-backend/internal/config"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
+	// "pethelp-backend/pkg/email"
 )
 
 type UnauthAppointmentServiceImpl struct {
+	emailSender ports.EmailSender
 	//interface to interact with appointment storage 
 	unauthAppointmentRepo ports.UnauthAppointmentRepository
 	logger         *zap.Logger
@@ -24,11 +26,12 @@ type UnauthAppointmentServiceImpl struct {
 var _ ports.UnauthAppointmentService = (*UnauthAppointmentServiceImpl)(nil)
 
 //Constructor Function
-func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig) *UnauthAppointmentServiceImpl {
+func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig, emailSender ports.EmailSender) *UnauthAppointmentServiceImpl {
 	return &UnauthAppointmentServiceImpl{
 		unauthAppointmentRepo: repo,
 		logger:         logger,
 		defaultTimeout: cfg.DefaultTimeout,
+		emailSender: emailSender,
 	}
 }
 
@@ -91,14 +94,14 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		create.AnimalSizeId,
 		create.SpecialistId,
 		create.Amount,
-		create.LocationType, // first string
-		create.Street,       // second string
+		create.LocationType, 
+		create.Street,       
 		create.Unit,
 		create.Apt,
 		create.Description,
 		create.Email,
-		"pending",       // last string
-		create.Date,         // time.Time
+		"pending",       
+		create.Date,        
 		create.StartTime,
 		create.EndTime,
 	)
@@ -108,6 +111,15 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 			zap.Error(err))
 		return 0, domain.ErrInternalServer
 	}
+
+
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := aa.emailSender.SendAppointmentConfirmationEmail(bgCtx, unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
+			aa.logger.Error("failed to send email", zap.Error(err))
+		}
+	}()
 
 
 	return id, nil

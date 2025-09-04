@@ -18,10 +18,10 @@ response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/public-appointment-req
   "animal_size_id": 2,
   "description": "Routine check-up",
   "appointment_date": "2025-09-01T00:00:00Z",
-  "start_time": "2025-09-01T14:30:00Z",
-  "end_time": "2025-09-01T15:00:00Z",
+  "start_time": "2025-09-01T15:30:00Z",
+  "end_time": "2025-09-01T16:00:00Z",
   "amount": 75.50,
-  "email": "user@example.com",
+  "email": "jiwonkim751@gmail.com",
   "specialist_id": 1,
   "status": "pending"
 }
@@ -57,7 +57,7 @@ response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/public-appointment-req
   "start_time": "2025-09-01T14:30:00Z",
   "end_time": "2025-09-01T15:00:00Z",
   "amount": 75.50,
-  "email": "user@example.com",
+  "email": "jiwonkim751@gmail.com",
   "specialist_id": 1,
   "status": "pending"
 }
