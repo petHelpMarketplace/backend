@@ -36,8 +36,14 @@ func NewApp() fx.Option {
 		log.Fatal(err)
 	}
 
+	confPath, ok := os.LookupEnv("CONFIG_PATH")
+	if !ok {
+		log.Fatalf("failed to read env var CONFIG_PATH - %s", err.Error())
+	}
+
 	return fx.Options(
 		fx.Supply(logger),
+		fx.Supply(confPath),
 		// Core services
 		fx.Provide(
 			config.NewPostgresConfig,
@@ -45,6 +51,7 @@ func NewApp() fx.Option {
 			config.NewServersConfig,
 			config.LoadOAuthConf,
 			config.LoadAuthConfig,
+			config.LoadCookieConfig,
 			NewHTTPServer,
 			NewGinServer,
 		),

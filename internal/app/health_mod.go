@@ -32,7 +32,6 @@ type HealthCheckResponse struct {
 // @Summary      Performs a health check on the application
 // @Description  Checks if the application is running and responsive.
 // @Tags         System
-// @Accept       json
 // @Produce      json
 // @Success      200  {object}  HealthCheckResponse "Application is healthy"
 // @Failure      503  {object}  map[string]string   "Application is unhealthy or service unavailable"

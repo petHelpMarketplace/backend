@@ -27,6 +27,7 @@ type SpecialistModuleParams struct {
 	Logger         *zap.Logger
 	AuthConfig     config.AuthConfig
 	AuthMiddleware gin.HandlerFunc
+	CookieManager  ports.CookieManager
 }
 
 var SpecialistModule = fx.Module("specialist",
@@ -60,6 +61,9 @@ var SpecialistModule = fx.Module("specialist",
 			handlers.NewSpecialistHandler,
 			fx.As(new(ports.SpecialistHandlers)),
 		),
+
+		fx.Annotate(services.NewCookieManager,
+			fx.As(new(ports.CookieManager))),
 
 		middleware.NewAuthMiddleware,
 	),

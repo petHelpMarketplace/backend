@@ -27,9 +27,6 @@ const docTemplate = `{
         "/health": {
             "get": {
                 "description": "Checks if the application is running and responsive.",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -318,10 +315,7 @@ const docTemplate = `{
         },
         "/token/refresh": {
             "post": {
-                "description": "Exchanges a valid refresh token for a new access token and a new refresh token. The used refresh token is revoked.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
                 "produces": [
                     "application/json"
                 ],
@@ -329,17 +323,6 @@ const docTemplate = `{
                     "Token"
                 ],
                 "summary": "Update access and refresh tokens",
-                "parameters": [
-                    {
-                        "description": "Refresh token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.RefreshReq"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successfully generated new token pair",
@@ -578,17 +561,6 @@ const docTemplate = `{
                 "access_token": {
                     "type": "string"
                 },
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.RefreshReq": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
                 "refresh_token": {
                     "type": "string"
                 }

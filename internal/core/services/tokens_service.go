@@ -34,7 +34,7 @@ func NewTokenService(repo ports.TokenRepository, cfg config.AuthConfig, logger *
 	}
 }
 
-func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, error) {
+func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, string, error) {
 
 	tokens := &domain.TokensPair{}
 
@@ -42,33 +42,34 @@ func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Spe
 	roles := []string{"specialist"}
 	tenant := "petHelp"
 
-	accessToken, _, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
+	accessToken, accessJTI, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
 	if err != nil {
 		ts.logger.Error("failed to generate access token",
+			zap.String("accessTokenID", accessJTI),
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 	tokens.Access = accessToken
 
-	refreshToken, refreshTokenID, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
+	refreshToken, refreshJTI, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
 	if err != nil {
 		ts.logger.Error("failed to generate refresh token",
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 	tokens.Refresh = refreshToken
 
-	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshTokenID, id, expired); err != nil {
+	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshJTI, id, expired); err != nil {
 		ts.logger.Error("failed to save refresh token state to repository",
-			zap.String("refreshTokenID", refreshTokenID),
+			zap.String("refreshTokenID", refreshJTI),
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 
-	return tokens, nil
+	return tokens, accessJTI, nil
 }
 
 func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isAccess bool) (string, string, error) {

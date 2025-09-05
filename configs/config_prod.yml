@@ -1,4 +1,4 @@
-env: "local" #local, prod, test
+env: "prod" #local, prod, test
 
 http_server:
   address: "0.0.0.0:3000"
@@ -18,8 +18,8 @@ postgres_db:
 cookie_config:
     name: "pethelp_cookie"
     max_age: 259200
-    domain: "localhost"
+    domain: "petbackend-a2vg.onrender.com"
     path: "/api/v1"
     http_only: true
-    secure: false     #set true in production
+    secure: true     #set true in production
     same_site: "strict"

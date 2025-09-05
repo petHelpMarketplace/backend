@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
+	"time"
 
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"github.com/markbates/goth/gothic"
+	"github.com/oklog/ulid/v2"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +21,7 @@ const operationOAuthName = "oauth_handler:"
 type OAuthHandlersImpl struct {
 	oauthService      ports.OAuthService
 	specialistService ports.SpecialistService
+	cookieManager     ports.CookieManager
 	tokenService      ports.TokenService
 	logger            *zap.Logger
 }
@@ -25,11 +29,12 @@ type OAuthHandlersImpl struct {
 var _ ports.OAuthHandlers = (*OAuthHandlersImpl)(nil)
 
 // NewOAuthHandlers create new OAuthHandlers
-func NewOAuthHandlers(oauth ports.OAuthService, specialist ports.SpecialistService, token ports.TokenService, logger *zap.Logger) *OAuthHandlersImpl {
+func NewOAuthHandlers(oauth ports.OAuthService, specialist ports.SpecialistService, token ports.TokenService, cookieMngr ports.CookieManager, logger *zap.Logger) *OAuthHandlersImpl {
 	return &OAuthHandlersImpl{
 		oauthService:      oauth,
 		specialistService: specialist,
 		tokenService:      token,
+		cookieManager:     cookieMngr,
 		logger:            logger,
 	}
 }
@@ -88,9 +93,30 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 		return
 	}
 
-	tokens, err := oh.tokenService.GenerateTokenPair(c.Request.Context(), &specialist)
+	tokens, jti, err := oh.tokenService.GenerateTokenPair(c.Request.Context(), &specialist)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	sessionID := ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
+	sessionValues := map[string]interface{}{
+		"session_id":    sessionID,
+		"request_id":    requestid.Get(c),
+		"user_id":       specialist.ID,
+		"jti":           jti,
+		"refresh_token": tokens.Refresh,
+	}
+
+	// Write session
+	oh.cookieManager.BulkSet(c, sessionValues)
+	err = oh.cookieManager.Save(c)
+	if err != nil {
+		oh.logger.Error("failed to save OAuth login cookie ", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})

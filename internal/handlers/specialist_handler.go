@@ -7,11 +7,14 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
 
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
+	"github.com/oklog/ulid/v2"
 	"go.uber.org/zap"
 )
 
@@ -23,16 +26,18 @@ type SpecialistHandlerImpl struct {
 	validator         ports.SpecialistValidator
 	specialistService ports.SpecialistService
 	tokenService      ports.TokenService
+	cookieManager     ports.CookieManager
 	logger            *zap.Logger
 }
 
 var _ ports.SpecialistHandlers = (*SpecialistHandlerImpl)(nil)
 
-func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.TokenService, validator ports.SpecialistValidator, logger *zap.Logger) *SpecialistHandlerImpl {
+func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.TokenService, validator ports.SpecialistValidator, cookieMngr ports.CookieManager, logger *zap.Logger) *SpecialistHandlerImpl {
 	return &SpecialistHandlerImpl{
 		validator:         validator,
 		specialistService: specialistSrv,
 		tokenService:      tokenSrv,
+		cookieManager:     cookieMngr,
 		logger:            logger,
 	}
 }
@@ -113,6 +118,16 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		return
 	}
 
+	sessionID := ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
+
+	// Write session
+	sh.cookieManager.Set(c, "session_id", sessionID)
+	sh.cookieManager.Set(c, "request_id", requestid.Get(c))
+	err = sh.cookieManager.Save(c)
+	if err != nil {
+		sh.logger.Error("failed to save registration cookie ", zap.Error(err))
+	}
+
 	// — Success response
 	c.JSON(http.StatusCreated, successRegistration{
 		ID:      strconv.FormatInt(id, 10),
@@ -187,7 +202,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	tokens, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
+	tokens, jti, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
@@ -195,6 +210,29 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		})
 		return
 	}
+
+	sessionID := ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
+	sessionValues := map[string]interface{}{
+		"session_id":    sessionID,
+		"request_id":    requestid.Get(c),
+		"user_id":       spec.ID,
+		"jti":           jti,
+		"refresh_token": tokens.Refresh,
+	}
+
+	// Write session
+	sh.cookieManager.BulkSet(c, sessionValues)
+	err = sh.cookieManager.Save(c)
+	if err != nil {
+		sh.logger.Error("failed to save login cookie ", zap.Error(err))
+	}
+
+	sh.logger.Info("Session cookie set with",
+		zap.String("session_id", sessionID),
+		zap.Int64("user_id", spec.ID),
+		zap.String("jti", jti),
+		zap.String("refresh_token", tokens.Refresh),
+	)
 
 	//return both tokens in the response body
 	c.JSON(http.StatusOK, tokens)
