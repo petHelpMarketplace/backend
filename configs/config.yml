@@ -18,8 +18,8 @@ postgres_db:
 cookie_config:
     name: "pethelp_cookie"
     max_age: 259200
-    domain: "localhost"
+    domain: ""
     path: "/api/v1"
     http_only: true
-    secure: false     #set true in production
-    same_site: "strict"
+    secure: true     #set true in production
+    same_site: "none"

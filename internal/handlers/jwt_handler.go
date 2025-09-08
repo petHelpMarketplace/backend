@@ -223,8 +223,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	th.logger.Info("Session cookie updated",
 		zap.String("session_id", sessionID),
 		zap.Int64("user_id", userID),
-		zap.String("jti", jti),
-		zap.String("refresh_token", tokens.Refresh))
+		zap.String("jti", jti))
 
 	c.JSON(http.StatusOK, tokens)
 }

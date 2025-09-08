@@ -116,7 +116,7 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 	err = oh.cookieManager.Save(c)
 	if err != nil {
 		oh.logger.Error("failed to save OAuth login cookie ", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})

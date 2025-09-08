@@ -37,8 +37,8 @@ func NewApp() fx.Option {
 	}
 
 	confPath, ok := os.LookupEnv("CONFIG_PATH")
-	if !ok {
-		log.Fatalf("failed to read env var CONFIG_PATH - %s", err.Error())
+	if !ok || confPath == "" {
+		log.Fatal("CONFIG_PATH env var is required (e.g., configs/config.yml)")
 	}
 
 	return fx.Options(

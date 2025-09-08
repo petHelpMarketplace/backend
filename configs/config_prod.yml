@@ -22,4 +22,4 @@ cookie_config:
     path: "/api/v1"
     http_only: true
     secure: true     #set true in production
-    same_site: "strict"
+    same_site: "lax"

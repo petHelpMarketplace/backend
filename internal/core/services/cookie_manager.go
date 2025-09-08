@@ -23,12 +23,12 @@ var _ ports.CookieManager = (*cookieManager)(nil)
 // NewCookieManager creates and configures a new CookieManager instance for Gin.
 // It initializes a cookie store based on the provided configuration.
 func NewCookieManager(cfg config.CookieConfig) (*cookieManager, error) {
-	if cfg.CookieSecretKey == "" {
-		return nil, errors.New("cookie secret key cannot be empty")
+	if cfg.CookieAuthKey == "" || cfg.CookieEncKey == "" {
+		return nil, errors.New("cookie authentication or encryption key cannot be empty")
 	}
 
 	// Create a new cookie-based session store.
-	store := cookie.NewStore([]byte(cfg.CookieSecretKey))
+	store := cookie.NewStore([]byte(cfg.CookieAuthKey), []byte(cfg.CookieEncKey))
 
 	opt := sessions.Options{
 		Path:     cfg.CookiePath,

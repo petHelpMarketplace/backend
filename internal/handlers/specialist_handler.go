@@ -225,14 +225,17 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	err = sh.cookieManager.Save(c)
 	if err != nil {
 		sh.logger.Error("failed to save login cookie ", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
 	}
 
 	sh.logger.Info("Session cookie set with",
 		zap.String("session_id", sessionID),
 		zap.Int64("user_id", spec.ID),
-		zap.String("jti", jti),
-		zap.String("refresh_token", tokens.Refresh),
-	)
+		zap.String("jti", jti))
 
 	//return both tokens in the response body
 	c.JSON(http.StatusOK, tokens)
