@@ -38,6 +38,12 @@ func NewCookieManager(cfg config.CookieConfig) (*cookieManager, error) {
 		Secure:   cfg.CookieSecure,
 		SameSite: parseSameSite(cfg.CookieSameSite),
 	}
+
+	// Enforce Chrome/Safari requirement.
+	if opt.SameSite == http.SameSiteNoneMode && !opt.Secure {
+		return nil, errors.New("CookieSameSite=None requires CookieSecure=true")
+	}
+
 	// Configure the default options for the session cookie.
 	store.Options(opt)
 
@@ -84,9 +90,9 @@ func (cm *cookieManager) Clear(c *gin.Context) error {
 	session.Clear()
 
 	// Set the MaxAge to -1 to instruct the browser to delete the cookie.
-	session.Options(sessions.Options{
-		MaxAge: -1,
-	})
+	del := cm.defaultOpts
+	del.MaxAge = -1
+	session.Options(del)
 
 	// Save the session to apply the clearing and expiration.
 	return session.Save()
@@ -94,7 +100,7 @@ func (cm *cookieManager) Clear(c *gin.Context) error {
 
 // UpdateOptions updates the Options an existing session cookie.
 // This is useful for extending a session's lifetime (e.g., "keep me logged in").
-func (cm *cookieManager) UpdateOptions(c *gin.Context) {
+func (cm *cookieManager) ResetOptions(c *gin.Context) {
 	session := sessions.Default(c)
 
 	// Update default options

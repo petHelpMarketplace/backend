@@ -28,8 +28,8 @@ type CookieManager interface {
 	// operation.
 	BulkSet(c *gin.Context, values map[string]interface{})
 
-	// UpdateOptions updates default options an existing session cookie.
-	UpdateOptions(c *gin.Context)
+	// ResetOptions updates default options an existing session cookie.
+	ResetOptions(c *gin.Context)
 
 	// Save saves the current session to the response.
 	Save(c *gin.Context) error

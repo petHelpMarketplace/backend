@@ -44,37 +44,26 @@ func NewTokenHandler(specialistSrv ports.SpecialistService, tokenSrv ports.Token
 // @Router       /token/refresh [post]
 func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
-	cookieRefreshToken, err := th.cookieManager.Get(c, "refresh_token")
-	if err != nil {
-		th.logger.Error("failed to get refresh token from cookie", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Get cookie error.",
-		})
-		return
-	}
 	var refreshToken string
-	if cookieRefreshToken != nil {
-		token, ok := cookieRefreshToken.(string)
-		if !ok {
-			refreshToken = ""
+	cookieRefreshToken, err := th.cookieManager.Get(c, "refresh_token")
+	if err == nil && cookieRefreshToken != nil {
+		switch v := cookieRefreshToken.(type) {
+		case string:
+			refreshToken = v
+		case []byte:
+			refreshToken = string(v)
+		default:
+			th.logger.Warn("refresh_token cookie has unexpected type", zap.String("type", fmt.Sprintf("%T", cookieRefreshToken)))
+			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+				Code:    http.StatusInternalServerError,
+				Message: "Get cookie error.",
+			})
+			return
 		}
-		refreshToken = token
-	}
-
-	// var dto RefreshReq
-	// if err := c.ShouldBindJSON(&dto); err != nil {
-	// 	th.logger.Warn("failed to bind refresh token request", zap.Error(err))
-	// 	c.JSON(http.StatusBadRequest, domain.ErrorResponse{
-	// 		Code:    http.StatusBadRequest,
-	// 		Message: "invalid request: refresh_token is required and must be a valid JWT.",
-	// 	})
-	// 	return
-	// }
-
-	if refreshToken == "" {
-		c.JSON(http.StatusForbidden, domain.ErrorResponse{
-			Code:    http.StatusForbidden,
+	} else if err != nil {
+		th.logger.Debug("refresh_token cookie not present", zap.Error(err))
+		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+			Code:    http.StatusUnauthorized,
 			Message: "Refresh token cookie not found or invalid.",
 		})
 		return
@@ -122,25 +111,43 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
 	cookieUserID, err := th.cookieManager.Get(c, "user_id")
 	if err != nil {
-		th.logger.Error("failed to get user_id from cookie", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Get cookie error.",
-		})
-		return
-	}
-	if cookieUserID != nil {
-		usr, ok := cookieUserID.(int64)
-		if !ok {
-			th.logger.Error("error cast interface type",
-				zap.Any("type", fmt.Sprintf("%T", cookieUserID)))
+		th.logger.Warn("user_id cookie not present", zap.Error(err))
+	} else if cookieUserID != nil {
+		var usrFromCookie int64
+		switch v := cookieUserID.(type) {
+		case int64:
+			usrFromCookie = v
+		case string:
+			if parsed, perr := strconv.ParseInt(v, 10, 64); perr != nil {
+				th.logger.Error("failed to parse user_id cookie", zap.String("value", v), zap.Error(perr))
+				c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+					Code:    http.StatusInternalServerError,
+					Message: "Internal server error.",
+				})
+				return
+			} else {
+				usrFromCookie = parsed
+			}
+		case []byte:
+			if parsed, perr := strconv.ParseInt(string(v), 10, 64); perr != nil {
+				th.logger.Error("failed to parse user_id cookie", zap.String("value", string(v)), zap.Error(perr))
+				c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+					Code:    http.StatusInternalServerError,
+					Message: "Internal server error.",
+				})
+				return
+			} else {
+				usrFromCookie = parsed
+			}
+		default:
+			th.logger.Error("unexpected user_id cookie type", zap.String("type", fmt.Sprintf("%T", cookieUserID)))
 			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-				Code:    http.StatusForbidden,
+				Code:    http.StatusInternalServerError,
 				Message: "Internal server error.",
 			})
 			return
 		}
-		if usr != userID {
+		if usrFromCookie != userID {
 			c.JSON(http.StatusForbidden, domain.ErrorResponse{
 				Code:    http.StatusForbidden,
 				Message: "UserID cookie mismatch.",
@@ -203,15 +210,14 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		}
 	}
 
-	th.cookieManager.UpdateOptions(c)
+	th.cookieManager.ResetOptions(c)
 	sessionValues := map[string]interface{}{
 		"jti":           jti,
 		"refresh_token": tokens.Refresh,
 	}
 	// Write session
 	th.cookieManager.BulkSet(c, sessionValues)
-	th.cookieManager.Save(c)
-	if err != nil {
+	if err := th.cookieManager.Save(c); err != nil {
 		th.logger.Error("failed to save refresh token cookie ", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
