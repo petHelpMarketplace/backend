@@ -36,8 +36,14 @@ func NewApp() fx.Option {
 		log.Fatal(err)
 	}
 
+	confPath, ok := os.LookupEnv("CONFIG_PATH")
+	if !ok || confPath == "" {
+		log.Fatal("CONFIG_PATH env var is required (e.g., configs/config.yml)")
+	}
+
 	return fx.Options(
 		fx.Supply(logger),
+		fx.Supply(confPath),
 		// Core services
 		fx.Provide(
 			config.NewPostgresConfig,
@@ -45,6 +51,7 @@ func NewApp() fx.Option {
 			config.NewServersConfig,
 			config.LoadOAuthConf,
 			config.LoadAuthConfig,
+			config.LoadCookieConfig,
 			NewHTTPServer,
 			NewGinServer,
 		),

@@ -13,7 +13,7 @@ type TokenHandlers interface {
 }
 
 type TokenService interface {
-	GenerateTokenPair(ctx context.Context, sp *domain.SpecialistProfileDTO) (*domain.TokensPair, error)
+	GenerateTokenPair(ctx context.Context, sp *domain.SpecialistProfileDTO) (*domain.TokensPair, string, error)
 	ValidateToken(ctx context.Context, token string, isAccess bool) (jti string, userID string, err error)
 	RevokeRefreshToken(ctx context.Context, token string) error
 	RevokeAllUserSessions(ctx context.Context, userID string) error

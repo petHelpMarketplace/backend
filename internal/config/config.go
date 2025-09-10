@@ -37,16 +37,16 @@ type PostgresDB struct {
 }
 
 type Servers struct {
+	Env      string     `yaml:"env"`
 	Web      HTTP       `yaml:"http_server"`
 	Postgres PostgresDB `yaml:"postgres_db"`
 }
 
-func NewServersConfig(logger *zap.Logger) (*Servers, error) {
-	yamlConfigPath := "configs/config.yml"
+func NewServersConfig(logger *zap.Logger, confPath string) (*Servers, error) {
 
 	var cfg Servers
 
-	if err := cleanenv.ReadConfig(yamlConfigPath, &cfg); err != nil {
+	if err := cleanenv.ReadConfig(confPath, &cfg); err != nil {
 		logger.Fatal("Error reading config", zap.Error(err))
 		return nil, err
 	}

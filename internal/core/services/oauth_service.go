@@ -24,7 +24,7 @@ type OAuthServiceImpl struct {
 
 var _ ports.OAuthService = (*OAuthServiceImpl)(nil)
 
-func NewOAuthService(repo ports.TokenRepository, googleOAuthConf *config.GoogleOAuthConfig, logger *zap.Logger) *OAuthServiceImpl {
+func NewOAuthService(repo ports.TokenRepository, googleOAuthConf config.GoogleOAuthConfig, logger *zap.Logger) *OAuthServiceImpl {
 
 	scopes := []string{"https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"}
 
