@@ -184,3 +184,42 @@ func (ts *TokenServiceImpl) RevokeAllUserSessions(ctx context.Context, userID st
 
 	return nil
 }
+
+// BlacklistAccessToken parses an access token, extracts its JTI and expiry,
+// and adds the JTI to the blacklist in the repository.
+// If the token is already expired, it is a no-op.
+func (ts *TokenServiceImpl) BlacklistAccessToken(ctx context.Context, tokenString string) error {
+	claims, err := genJWT.ParseAccessToken(tokenString, ts.jwtSecret)
+	if err != nil {
+		if !errors.Is(err, domain.ErrTokenExpired) {
+			ts.logger.Warn("attempted to blacklist an invalid access token", zap.Error(err))
+			return domain.ErrTokenInvalid
+		}
+		// If the token is already expired, there's no need to blacklist it.
+		ts.logger.Info("attempted to blacklist an already expired token, operation skipped", zap.Error(err))
+		return nil
+	}
+
+	jti := claims.ID
+	expiresAt := claims.ExpiresAt.Time
+
+	if err := ts.tokenRepo.BlacklistAccessToken(ctx, jti, expiresAt); err != nil {
+		ts.logger.Error("failed to blacklist access token in repository",
+			zap.String("jti", jti),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	ts.logger.Info("access token successfully blacklisted", zap.String("jti", jti))
+	return nil
+}
+
+// IsAccessTokenBlacklisted checks if an access token's JTI is in the blacklist.
+func (ts *TokenServiceImpl) IsAccessTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
+	isBlacklisted, err := ts.tokenRepo.IsAccessTokenBlacklisted(ctx, jti)
+	if err != nil {
+		ts.logger.Error("failed to check access token blacklist status", zap.String("jti", jti), zap.Error(err))
+		return false, domain.ErrInternalServer
+	}
+	return isBlacklisted, nil
+}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"pethelp-backend/internal/core/domain"
@@ -417,4 +418,56 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		Message: "Password changed successfully.",
 	})
 
+}
+
+// Logout godoc
+// @Summary      Logout specialist
+// @Description  Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.
+// @Tags         Specialist
+// @Produce      json
+// @Success      200  {object}  domain.SuccessResponse "Logout successful"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error during logout process"
+// @Router       /specialist/logout [post]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	authHeader := c.GetHeader("Authorization")
+	if accessToken := strings.TrimPrefix(authHeader, "Bearer "); accessToken != "" {
+		if err := sh.tokenService.BlacklistAccessToken(ctx, accessToken); err != nil {
+			// Log the error but don't fail the request. The token will expire naturally.
+			sh.logger.Error("failed to blacklist access token during logout", zap.Error(err))
+		}
+	}
+
+	cookieRefreshToken, err := sh.cookieManager.Get(c, "refresh_token")
+	if err == nil {
+		if refreshToken, ok := cookieRefreshToken.(string); ok && refreshToken != "" {
+			if err := sh.tokenService.RevokeRefreshToken(ctx, refreshToken); err != nil {
+				sh.logger.Error("failed to revoke refresh token during logout", zap.Error(err))
+			} else {
+				sh.logger.Info("refresh token revoked successfully")
+			}
+		}
+	} else {
+		sh.logger.Warn("could not retrieve refresh token cookie during logout", zap.Error(err))
+	}
+
+	//Clear the session cookie on the client side
+	if err := sh.cookieManager.Clear(c); err != nil {
+		sh.logger.Error("failed to clear session cookie during logout", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to clear session. Please clear your browser cookies.",
+		})
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	sh.logger.Info("user logged out successfully", zap.Any("userID", userID))
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: "Logout successful.",
+	})
 }

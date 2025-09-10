@@ -12,6 +12,7 @@ type SpecialistHandlers interface {
 	Login(c *gin.Context)
 	Me(c *gin.Context)
 	ChangePassword(c *gin.Context)
+	Logout(c *gin.Context)
 }
 
 type SpecialistService interface {

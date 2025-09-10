@@ -381,6 +381,30 @@ paths:
       summary: Login
       tags:
       - Specialist
+  /specialist/logout:
+    post:
+      description: Logs out the specialist by blacklisting the current access token,
+        revoking the refresh token and clearing the session cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal server error during logout process
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout specialist
+      tags:
+      - Specialist
   /specialist/me:
     get:
       description: Get information about the currently authenticated specialist. Requires
