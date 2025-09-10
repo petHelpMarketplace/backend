@@ -424,6 +424,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 // @Summary      Logout specialist
 // @Description  Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.
 // @Tags         Specialist
+// @Accept       json
 // @Produce      json
 // @Success      200  {object}  domain.SuccessResponse "Logout successful"
 // @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
@@ -434,7 +435,7 @@ func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	authHeader := c.GetHeader("Authorization")
-	if accessToken := strings.TrimPrefix(authHeader, "Bearer "); accessToken != "" {
+	if accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer ")); accessToken != "" {
 		if err := sh.tokenService.BlacklistAccessToken(ctx, accessToken); err != nil {
 			// Log the error but don't fail the request. The token will expire naturally.
 			sh.logger.Error("failed to blacklist access token during logout", zap.Error(err))

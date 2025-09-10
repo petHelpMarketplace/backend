@@ -201,7 +201,15 @@ func (ts *TokenServiceImpl) BlacklistAccessToken(ctx context.Context, tokenStrin
 	}
 
 	jti := claims.ID
+	if claims.ExpiresAt == nil {
+		ts.logger.Warn("access token missing exp; blacklist skipped", zap.String("jti", jti))
+		return domain.ErrTokenInvalid
+	}
 	expiresAt := claims.ExpiresAt.Time
+	if time.Until(expiresAt) <= 0 {
+		ts.logger.Info("access token already expired; blacklist skipped", zap.String("jti", jti))
+		return domain.ErrTokenExpired
+	}
 
 	if err := ts.tokenRepo.BlacklistAccessToken(ctx, jti, expiresAt); err != nil {
 		ts.logger.Error("failed to blacklist access token in repository",

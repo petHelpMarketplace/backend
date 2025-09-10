@@ -140,7 +140,10 @@ func (r *TokenRepoImpl) BlacklistAccessToken(ctx context.Context, jti string, ex
 	blacklistKey := atBlacklistPrefix + jti
 
 	// Store the JTI in Redis with an expiry that matches the token's expiry
-	err := r.redis.Client().Set(ctx, blacklistKey, "revoked", time.Until(expiresAt)).Err()
+	pipe := r.redis.Client().Pipeline()
+	pipe.Set(ctx, blacklistKey, "revoked", 0)
+	pipe.ExpireAt(ctx, blacklistKey, expiresAt)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("%s failed to blacklist access token %s: %w", operationToken, jti, err)
 	}
