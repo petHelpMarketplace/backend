@@ -13,7 +13,7 @@ import (
 )
 
 type UnauthAppointmentServiceImpl struct {
-	emailSender ports.EmailSender
+	emailSender ports.EmailService
 	//interface to interact with appointment storage 
 	unauthAppointmentRepo ports.UnauthAppointmentRepository
 	logger         *zap.Logger
@@ -26,7 +26,7 @@ type UnauthAppointmentServiceImpl struct {
 var _ ports.UnauthAppointmentService = (*UnauthAppointmentServiceImpl)(nil)
 
 //Constructor Function
-func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig, emailSender ports.EmailSender) *UnauthAppointmentServiceImpl {
+func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig, emailSender ports.EmailService) *UnauthAppointmentServiceImpl {
 	return &UnauthAppointmentServiceImpl{
 		unauthAppointmentRepo: repo,
 		logger:         logger,
@@ -116,7 +116,7 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := aa.emailSender.SendAppointmentConfirmationEmail(bgCtx, unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
+		if err := aa.emailSender.SendAppointmentConfirmationEmail(bgCtx,int64(unauthAppointment.SpecialistId), unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
 			aa.logger.Error("failed to send email", zap.Error(err))
 		}
 	}()

@@ -1,8 +1,6 @@
 package app
 
 import (
-	"os"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -13,7 +11,6 @@ import (
 	"pethelp-backend/internal/repositories"
 	"pethelp-backend/pkg/database/postgres"
 	redisCache "pethelp-backend/pkg/database/redis"
-	"pethelp-backend/pkg/utils"
 )
 
 const UnauthAppointmentRoutePath = "/api/v1/public-appointment-request"
@@ -34,15 +31,12 @@ var UnauthAppointmentModule = fx.Module("unauth_appointment",
 			repositories.NewUnauthAppointmentRepository,
 			fx.As(new(ports.UnauthAppointmentRepository)),
 		),
-
-		// fx.Annotate(
-		// 	services.NewUnauthAppointmentService,
-		// 	fx.As(new(ports.UnauthAppointmentService)),
-		// ),
-		func() ports.EmailSender {
-			apiKey := os.Getenv("EMAIL_SENDER_TOKEN")
-			return utils.NewSender(apiKey)
+		fx.Annotate(
+			func(specialist ports.SpecialistService) ports.EmailService {
+			return services.NewSender("", specialist)
 		},
+		fx.As(new(ports.EmailService)),
+		),
 		fx.Annotate(
 			services.NewUnauthAppointmentValidator,
 			fx.As(new(ports.UnauthAppointmentValidator)),
