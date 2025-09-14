@@ -26,6 +26,7 @@ type UnauthAppointmentRepositoryImpl struct {
 
 var _ ports.UnauthAppointmentRepository = (*UnauthAppointmentRepositoryImpl)(nil)
 
+// NewUnauthAppointmentRepository creates and returns a UnauthAppointmentRepositoryImpl backed by the given database pool.
 func NewUnauthAppointmentRepository(pool *postgres.DB) *UnauthAppointmentRepositoryImpl {
 	return &UnauthAppointmentRepositoryImpl{
 		DBPool: pool,

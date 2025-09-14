@@ -14,6 +14,8 @@ type UnauthAppointmentValidatorImpl struct {
 // Ensure UnauthAppointmentValidatorImpl implements the interface
 var _ ports.UnauthAppointmentValidator = (*UnauthAppointmentValidatorImpl)(nil)
 
+// NewUnauthAppointmentValidator creates and returns a new UnauthAppointmentValidatorImpl
+// with a freshly initialized validator instance for validating unauthenticated appointment requests.
 func NewUnauthAppointmentValidator() *UnauthAppointmentValidatorImpl {
 	v := validator.New()
 

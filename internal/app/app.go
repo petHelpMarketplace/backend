@@ -16,6 +16,15 @@ import (
 	redisDB "pethelp-backend/pkg/database/redis"
 )
 
+// NewApp returns an fx.Option that configures and wires application components for startup.
+// 
+// It loads a local ".env" file when APP_STAGE is empty or "local" (if the file exists),
+// then initializes a logger from the resolved stage and LOG_LEVEL (fatal on logger init error).
+// The returned option supplies the logger, registers configuration and server constructors,
+// includes database modules (Postgres, Redis) and API modules (Health, Specialist, OAuth, Docs,
+// Token, UnauthAppointment), and sets a 10-second start timeout for the Fx application.
+// 
+// Note: failures during .env loading or logger creation call log.Fatal and terminate the process.
 func NewApp() fx.Option {
 
 	envFileName := ".env"

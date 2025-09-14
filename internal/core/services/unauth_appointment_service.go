@@ -25,7 +25,7 @@ type UnauthAppointmentServiceImpl struct {
 //it ensures UnauthAppointmentServiceImpl implements the UnauthAppointmentService interface
 var _ ports.UnauthAppointmentService = (*UnauthAppointmentServiceImpl)(nil)
 
-//Constructor Function
+// NewUnauthAppointmentService creates and returns an UnauthAppointmentServiceImpl wired with the provided repository, logger, default timeout from cfg, and email sender. It initializes the service's dependencies and sets defaultTimeout to cfg.DefaultTimeout.
 func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig, emailSender ports.EmailService) *UnauthAppointmentServiceImpl {
 	return &UnauthAppointmentServiceImpl{
 		unauthAppointmentRepo: repo,

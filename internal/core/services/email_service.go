@@ -16,6 +16,11 @@ type Sender struct {
 	specialist ports.SpecialistService
 } 
 
+// NewSender creates a Sender configured to send emails via Mailjet.
+// The Mailjet client is initialized from the environment variables
+// EMAIL_SENDER_TOKEN and EMAIL_SECRET_KEY. The provided SpecialistService
+// is stored for retrieving specialist contact information.
+// Note: the apiKey parameter is unused.
 func NewSender(apiKey string, specialist ports.SpecialistService) *Sender {
 	ms := mailjet.NewMailjetClient(os.Getenv("EMAIL_SENDER_TOKEN"), os.Getenv("EMAIL_SECRET_KEY"))
 	return &Sender{
