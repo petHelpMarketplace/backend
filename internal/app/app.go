@@ -16,6 +16,7 @@ import (
 	redisDB "pethelp-backend/pkg/database/redis"
 )
 
+// - Configure the Fx application start timeout to 10 seconds.
 func NewApp() fx.Option {
 
 	envFileName := ".env"

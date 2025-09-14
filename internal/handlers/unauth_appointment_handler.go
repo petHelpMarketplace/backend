@@ -29,7 +29,7 @@ type UnauthAppointmentHandlerImpl struct {
 //Compile-time check that this struct implements the SpecialistHandlers interface
 var _ ports.UnauthAppointmentHandler = (*UnauthAppointmentHandlerImpl)(nil)
 
-//Creates a new handler and injects dependencies.
+// NewUnauthAppointmentHandler creates a UnauthAppointmentHandlerImpl with the given validator, unauthenticated appointment service, and logger injected.
 func NewUnauthAppointmentHandler(unauthAppointmentSrv ports.UnauthAppointmentService, validator ports.UnauthAppointmentValidator, logger *zap.Logger) *UnauthAppointmentHandlerImpl {
 	return &UnauthAppointmentHandlerImpl{
 		validator:         validator,
