@@ -360,8 +360,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	userIDRaw, _ := c.Get("userID")
-	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), userIDRaw.(string))
+	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,

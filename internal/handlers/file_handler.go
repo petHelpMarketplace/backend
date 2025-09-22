@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"pethelp-backend/internal/core/domain"
@@ -108,7 +109,6 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	defer src.Close()
 
 	// Read the file content into a buffer to detect MIME type and reuse the reader
-	// This is more efficient than reading the header and then seeking.
 	buf, err := io.ReadAll(src)
 	if err != nil {
 		fh.logger.Error("failed to read file content", zap.Error(err))
@@ -122,7 +122,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	// Detect the MIME type from the file content
 	mtype := mimetype.Detect(buf)
 
-	// Validate the detected MIME type against our allowed list
+	// Validate the detected MIME type against allowed list
 	expectedExtension, isAllowed := allowedMIMETypes[mtype.String()]
 	if !isAllowed {
 		fh.logger.Warn("upload attempt with disallowed file type",
@@ -157,23 +157,37 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 		Content:  bytes.NewReader(buf),
 	}
 
-	// Call the core service
-	uploadedFile, err := fh.uploadService.UploadAvatar(c.Request.Context(), &file)
+	specDTO, err := fh.specialistService.ShowByID(c.Request.Context(), userID)
 	if err != nil {
-		fh.logger.Error("failed to save avatar file", zap.Error(err))
+		fh.logger.Error("failed to get specialist by ID", zap.Int64("userID", userID), zap.Error(err))
+	}
+
+	if specDTO.AvatarURL != "" {
+		err = fh.uploadService.DeleteAvatar(c.Request.Context(), specDTO.AvatarURL)
+		if err != nil {
+			fh.logger.Error("failed to delete old avatar file from S3", zap.Error(err))
+		}
+	}
+
+	// Call the core service
+	uploadedFile, err := fh.uploadService.UploadAvatar(c.Request.Context(), strconv.FormatInt(userID, 10), &file)
+	if err != nil {
+		fh.logger.Error("failed to save avatar file in repository", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "failed to upload file"})
+			Message: "failed to upload file",
+		})
 		return
 	}
 
 	err = fh.specialistService.UpdateAvatar(c.Request.Context(), userID, uploadedFile.URL)
 	if err != nil {
-		fh.logger.Error("failed to update specialist avatar", zap.Error(err))
+		fh.logger.Error("failed to update specialist avatar URL in DB", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to update specialist avatar",
 		})
+		return
 	}
 
 	// Return a successful response

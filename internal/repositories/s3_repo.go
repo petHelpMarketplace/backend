@@ -68,9 +68,36 @@ func (r *s3Repository) Save(ctx context.Context, file *domain.FileUpload) (strin
 	if r.endpoint != "" {
 		url = fmt.Sprintf("%s/%s/%s", r.endpoint, r.bucketName, file.ID)
 	} else {
-		url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", r.bucketName, r.client.Options().Region, file.ID)
+		region := r.client.Options().Region
+		if region == "" {
+			region, err = manager.GetBucketRegion(ctx, r.client, r.bucketName)
+			if err != nil {
+				return "", fmt.Errorf("failed to get bucket region: %w", err)
+			}
+		}
+		url = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", r.bucketName, region, file.ID)
 	}
 
 	return url, nil
 
+}
+
+// Delete removes an object from the S3 bucket by its key.
+func (r *s3Repository) Delete(ctx context.Context, key string) error {
+	input := &s3.DeleteObjectInput{
+		Bucket: aws.String(r.bucketName),
+		Key:    aws.String(key),
+	}
+
+	_, err := r.client.DeleteObject(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to delete object with key '%s' from S3: %w", key, err)
+	}
+
+	return nil
+}
+
+// Bucket method return bucket name
+func (r *s3Repository) Bucket() string {
+	return r.bucketName
 }
