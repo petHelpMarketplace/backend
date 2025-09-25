@@ -17,6 +17,9 @@ import (
 func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server, cookieMngr ports.CookieManager) *gin.Engine {
 	router := gin.Default()
 
+	// Set a lower memory limit for multipart forms (default is 32 MiB)
+	router.MaxMultipartMemory = 8 << 20 // 8 MiB
+
 	// Add a unique ID to each request for tracing and logging.
 	router.Use(requestid.New())
 

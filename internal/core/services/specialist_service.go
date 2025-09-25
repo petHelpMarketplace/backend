@@ -197,3 +197,28 @@ func (ss *SpecialistServiceImpl) ChangePassword(ctx context.Context, id int64, C
 
 	return nil
 }
+
+func (ss *SpecialistServiceImpl) UpdateAvatar(ctx context.Context, specialistID int64, avatarURL string) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	// First, check if the specialist exists.
+	if _, err := ss.specialistRepo.GetByID(timeoutCtx, specialistID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("attempt to update avatar for non-existent specialist", zap.Int64("id", specialistID))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to get specialist by ID during avatar update", zap.Int64("id", specialistID), zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	if err := ss.specialistRepo.UpdateAvatar(timeoutCtx, specialistID, avatarURL); err != nil {
+		ss.logger.Error("failed to update avatar in DB", zap.Int64("id", specialistID), zap.Error(err))
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrAccountNotFound
+		}
+		return domain.ErrInternalServer
+	}
+
+	return nil
+}

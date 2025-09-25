@@ -254,33 +254,9 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 // @Router       /specialist/me [get]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
-	userIDRaw, exists := c.Get("userID")
-	if !exists {
-		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
-		return
-	}
 
-	userIDStr, ok := userIDRaw.(string)
+	userID, ok := getUserIDFromContext(c, sh.logger)
 	if !ok {
-		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
-		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
 		return
 	}
 
@@ -315,30 +291,9 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 // @Router       /specialist/change-password [patch]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
-	userIDRaw, exists := c.Get("userID")
-	if !exists {
-		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
-		return
-	}
 
-	userIDStr, ok := userIDRaw.(string)
+	userID, ok := getUserIDFromContext(c, sh.logger)
 	if !ok {
-		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
-		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
 		return
 	}
 
@@ -385,7 +340,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err = sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
+	err := sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Code: http.StatusUnauthorized, Message: "Invalid old password"})
@@ -405,7 +360,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), userIDStr)
+	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
 )
 
 type AuthConfig struct {
@@ -15,7 +14,7 @@ type AuthConfig struct {
 	RefreshTTL     time.Duration `envconfig:"REFRESH_TOKEN_TTL"   default:"168h"`
 }
 
-func LoadAuthConfig(logger *zap.Logger) (AuthConfig, error) {
+func LoadAuthConfig() (AuthConfig, error) {
 	var cfg AuthConfig
 	if err := envconfig.Process("", &cfg); err != nil {
 		return cfg, fmt.Errorf("loading auth config: %w", err)

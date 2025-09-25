@@ -95,6 +95,73 @@
                 }
             }
         },
+        "/specialist/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads a new avatar for the authenticated specialist. The file should be sent as multipart/form-data with the key 'file'. The server validates file size (max 10MB) and type (jpeg, png, webp, heic).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Upload specialist avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar file to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Avatar uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessPayload"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: file is required, extension mismatch, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large: File size exceeds the 10MB limit",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type: File type is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/change-password": {
             "patch": {
                 "security": [
@@ -224,6 +291,9 @@
                     }
                 ],
                 "description": "Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -598,6 +668,19 @@
                 },
                 "refresh_token": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.SuccessPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Avatar file uploaded successfully"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
                 }
             }
         },

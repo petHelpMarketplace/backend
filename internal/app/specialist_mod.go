@@ -28,6 +28,7 @@ type SpecialistModuleParams struct {
 	AuthConfig     config.AuthConfig
 	AuthMiddleware gin.HandlerFunc
 	CookieManager  ports.CookieManager
+	FileHandler    ports.FileHandlers
 }
 
 var SpecialistModule = fx.Module("specialist",
@@ -78,6 +79,7 @@ var SpecialistModule = fx.Module("specialist",
 			protected.GET("/me", handler.Me)
 			protected.PATCH("/change-password", handler.ChangePassword)
 			protected.POST("/logout", handler.Logout)
+			protected.POST("/avatar", mp.FileHandler.UploadAvatar)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),
