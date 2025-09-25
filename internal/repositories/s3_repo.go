@@ -34,7 +34,12 @@ func NewS3Repository(cfg config.S3Config) (*s3Repository, error) {
 		return nil, fmt.Errorf("failed to load AWS configuration: %w", err)
 	}
 
-	s3Client := s3.NewFromConfig(awsCfg)
+	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		// Path‑style is required for many S3‑compatible providers and dotted bucket names over TLS
+		if cfg.EndpointURL != "" {
+			o.UsePathStyle = true
+		}
+	})
 
 	return &s3Repository{
 		client:     s3Client,

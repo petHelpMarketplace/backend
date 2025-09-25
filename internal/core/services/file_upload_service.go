@@ -80,10 +80,10 @@ func (fs *FileUploadServiceImpl) DeleteAvatar(ctx context.Context, avatarURL str
 	// Call the repository's Delete method with the extracted key.
 	err = fs.fileRepo.Delete(ctx, key)
 	if err != nil {
-		fs.logger.Error("File repository failed to delete avatar", zap.String("key", key), zap.Error(err))
-		return fmt.Errorf("failed to delete avatar from repositor: %s - %w", avatarURL, err)
+		fs.logger.Error("failed to delete avatar image from storage", zap.String("key", key), zap.Error(err))
+		return fmt.Errorf("failed to delete avatar image from storage: %s - %w", avatarURL, err)
 	}
 
-	fs.logger.Info("Successfully deleted avatar from S3", zap.String("key", key))
+	fs.logger.Info("Successfully deleted avatar image from S3", zap.String("key", key))
 	return nil
 }
