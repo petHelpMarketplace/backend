@@ -79,6 +79,7 @@ var SpecialistModule = fx.Module("specialist",
 			protected.GET("/me", handler.Me)
 			protected.PATCH("/change-password", handler.ChangePassword)
 			protected.POST("/logout", handler.Logout)
+			protected.PATCH("/profile", handler.UpdateProfile)
 			protected.POST("/avatar", mp.FileHandler.UploadAvatar)
 
 			mp.Logger.Info("Registered specialist routes",

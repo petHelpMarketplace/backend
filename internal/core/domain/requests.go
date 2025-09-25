@@ -38,4 +38,5 @@ type ChangePassReq struct {
 type SuccessResponse struct {
 	Code    int    `json:"code" example:"200"`
 	Message string `json:"message" example:"Operation was successful"`
+	Data    any    `json:"data,omitempty"`
 }

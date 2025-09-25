@@ -34,7 +34,7 @@ func NewTokenService(repo ports.TokenRepository, cfg config.AuthConfig, logger *
 	}
 }
 
-func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, string, error) {
+func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfDTO) (*domain.TokensPair, string, error) {
 
 	tokens := &domain.TokensPair{}
 

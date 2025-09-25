@@ -3,8 +3,8 @@ package utils
 import "pethelp-backend/internal/core/domain"
 
 // ToSpecialistProfileDTO is a helper function to map the domain model to a DTO.
-func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.SpecialistProfileDTO {
-	dto := domain.SpecialistProfileDTO{
+func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.SpecialistProfDTO {
+	dto := domain.SpecialistProfDTO{
 		ID:         specialistModel.ID,
 		Name:       specialistModel.Name,
 		Phone:      specialistModel.Phone,

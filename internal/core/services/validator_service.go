@@ -127,6 +127,44 @@ func (sv *SpecialistValidatorImpl) ValidateChangePasswordReq(reqData domain.Chan
 	return nil
 }
 
+// ValidateSpecialistProfileUpdateReq checks the specialist profile update request.
+func (sv *SpecialistValidatorImpl) ValidateSpecialistProfileUpdateReq(reqData domain.SpecialistProfUpdateReq) []domain.FieldError {
+	var validationErrors []domain.FieldError
+
+	if err := sv.validator.Struct(reqData); err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			validationErrors = append(validationErrors, domain.FieldError{Field: "general", Message: "Invalid validation object"})
+			return validationErrors
+		}
+
+		for _, err := range err.(validator.ValidationErrors) {
+			var fe domain.FieldError
+			fe.Field = err.Field()
+			switch err.Field() {
+			case "Name":
+				fe.Message = "Invalid name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
+			case "FamilyName":
+				fe.Message = "Invalid family name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
+			case "Phone":
+				fe.Message = "Phone must be compatible with E.164 and E.123 formats (e.g., +38(XXX)XXX-XX-XX and contain at least 13 digits."
+			case "Experience":
+				fe.Message = "Experience years must be a non-negative number."
+			case "Bio":
+				fe.Message = "Bio cannot exceed 1000 characters."
+			default:
+				fe.Message = err.Error() // Fallback for unhandled fields
+			}
+
+			validationErrors = append(validationErrors, fe)
+		}
+	}
+
+	if len(validationErrors) > 0 {
+		return validationErrors
+	}
+	return nil
+}
+
 func validatePasswordComplexity(password, fieldName string) []domain.FieldError {
 
 	var (
