@@ -260,9 +260,6 @@ definitions:
           example: "+38 (096) 123-45-67"
         minLength: 13
         type: string
-    required:
-    - name
-    - phone
     type: object
   domain.SuccessResponse:
     properties:

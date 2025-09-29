@@ -334,16 +334,30 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	}
 	updateTime := time.Now().In(loc)
 
-	query, args, err := sq.Update(currentTableName).
-		Set("name", req.Name).
-		Set("family_name", req.FamilyName).
-		Set("phone", req.Phone).
-		Set("experience", req.Experience).
-		Set("bio", req.Bio).
+	builder := sq.Update(currentTableName).
 		Set("updated_at", updateTime).
-		Where(sq.Eq{"id": id}).
+		Where(sq.Eq{"id": id})
+
+	if req.Name != nil {
+		builder = builder.Set("name", *req.Name)
+	}
+	if req.FamilyName != nil {
+		builder = builder.Set("family_name", *req.FamilyName)
+	}
+	if req.Phone != nil {
+		builder = builder.Set("phone", *req.Phone)
+	}
+	if req.Experience != nil {
+		builder = builder.Set("experience", *req.Experience)
+	}
+	if req.Bio != nil {
+		builder = builder.Set("bio", *req.Bio)
+	}
+
+	query, args, err := builder.
 		Suffix("RETURNING *").
 		PlaceholderFormat(sq.Dollar).ToSql()
+
 	if err != nil {
 		return updatedSpecialist, fmt.Errorf("%s failed to build update profile query: %w", operationSpecialist, err)
 	}

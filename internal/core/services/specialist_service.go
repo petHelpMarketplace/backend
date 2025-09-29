@@ -241,6 +241,18 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 		return updatedSpec, domain.ErrInternalServer
 	}
 
+	// Normalize the phone number only if it's provided in the request.
+	if req.Phone != nil {
+		phone, err := utils.NormalizePhoneNumber(*req.Phone)
+		if err != nil {
+			ss.logger.Error("failed to convert phone number before save",
+				zap.String("phone", *req.Phone),
+				zap.Error(err))
+			return updatedSpec, domain.ErrInternalServer
+		}
+		*req.Phone = phone
+	}
+
 	// Perform the update and get the updated model back
 	updatedModel, err := ss.specialistRepo.UpdateProfile(timeoutCtx, id, req)
 	if err != nil {

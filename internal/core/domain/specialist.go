@@ -138,14 +138,14 @@ type SpecialistProfUpdateReq struct {
 	// maxLength: 100
 	// pattern: "^[\\p{L}\\s\\-'\\u2019]+$"
 	// example: Kateryna
-	Name string `json:"name" validate:"required,min=2,max=100,custom_name"`
+	Name *string `json:"name" validate:"omitempty,min=2,max=100,custom_name"`
 
 	// Family name (surname) of the specialist.
 	// minLength: 2
 	// maxLength: 100
 	// pattern: "^[\\p{L}\\s\\-'\\u2019]+$"
 	// example: Walls
-	FamilyName string `json:"family_name" validate:"omitempty,min=2,max=100,custom_name"`
+	FamilyName *string `json:"family_name" validate:"omitempty,min=2,max=100,custom_name"`
 
 	// Phone number of the specialist in a flexible E.123-like international format.
 	// Must start with '+' followed by country code (1-3 digits).
@@ -153,20 +153,15 @@ type SpecialistProfUpdateReq struct {
 	// minLength: 13
 	// pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$"
 	// example: "+38 (096) 123-45-67"
-	Phone string `json:"phone" validate:"required,e123,min=13"`
+	Phone *string `json:"phone" validate:"omitempty,e123,min=13"`
 
 	// Years of professional experience.
 	// minimum: 0
 	// example: 7
-	Experience int32 `json:"experience_years" validate:"omitempty,min=0"`
+	Experience *int32 `json:"experience_years" validate:"omitempty,min=0"`
 
 	// Short biography or summary of the specialist.
 	// maxLength: 1000
 	// example: Experienced veterinarian specializing in small animal care.
-	Bio string `json:"bio" validate:"omitempty,max=1000"`
-
-	// Note: The request mentioned "city_areas". This field is not directly present
-	// in the `domain.Specialist` model and would typically require a separate
-	// table and more complex repository logic for many-to-many relationships.
-	// For this update, it is omitted to focus on direct specialist profile fields.
+	Bio *string `json:"bio" validate:"omitempty,max=1000"`
 }

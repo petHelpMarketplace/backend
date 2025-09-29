@@ -715,10 +715,6 @@ const docTemplate = `{
         "domain.SpecialistProfUpdateReq": {
             "description": "Specialist profile update request payload",
             "type": "object",
-            "required": [
-                "name",
-                "phone"
-            ],
             "properties": {
                 "bio": {
                     "description": "Short biography or summary of the specialist.\nmaxLength: 1000\nexample: Experienced veterinarian specializing in small animal care.",
