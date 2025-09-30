@@ -83,7 +83,7 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		Amount:       unauthAppointment.Amount,
 		Email:        unauthAppointment.Email,
 		SpecialistId: unauthAppointment.SpecialistId,
-		Status:       unauthAppointment.Status,
+		Status:       "pending",
 	}
 	
 	id, err := aa.unauthAppointmentRepo.Save(
@@ -113,13 +113,12 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 	}
 
 
-	go func() {
-		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := aa.emailSender.SendAppointmentConfirmationEmail(bgCtx,int64(unauthAppointment.SpecialistId), unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
-			aa.logger.Error("failed to send email", zap.Error(err))
-		}
-	}()
+	if err := aa.emailSender.SendAppointmentConfirmationEmail(timeoutCtx, int64(unauthAppointment.SpecialistId), unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
+		aa.logger.Error("failed to send email", zap.Error(err))
+		return 0, domain.ErrInternalServer
+
+	}
+
 
 
 	return id, nil

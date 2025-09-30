@@ -15,7 +15,7 @@ type UnauthAppointmentRepository interface {
 	amount float32,
 	locationType, street, unit, apt, description, email, status string,
 	date, startTime, endTime time.Time) (int64, error)
-	IsTimeBooked(ctx context.Context, specialistID int, data, startTime, endTime time.Time) (bool, error)
+	IsTimeBooked(ctx context.Context, specialistID int, date, startTime, endTime time.Time) (bool, error)
 }
 
 type UnauthAppointmentHandler interface {

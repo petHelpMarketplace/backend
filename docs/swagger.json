@@ -348,7 +348,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Unauth appointment booking succeeded",
             "schema": {
               "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
@@ -356,12 +356,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "schema": {
               "$ref": "#/definitions/domain.ErrorResponse"
             }

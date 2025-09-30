@@ -17,7 +17,7 @@ type Appointment struct {
 	Amount          float32        `json:"amount" db:"amount"`
 	UserEmail       string         `json:"user_id" db:"user_id"`
 	SpecialistID    int64          `json:"specialist_id" db:"specialist_id"`
-	Status          string         `json:"appointment_status" db:"appointment_status"`
+	// Status          string         `json:"appointment_status" db:"appointment_status"`
 
 }
 

@@ -386,39 +386,27 @@ const docTemplate = `{
                 "tags": [
                     "UnauthAppointment"
                 ],
-                "summary": "Book appointment",
+                "summary": "Booking appointment",
                 "parameters": [
                     {
-                        "description": "Refresh token request",
+                        "description": "Book appointment as unauthorized user",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.RefreshReq"
+                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully generated new token pair",
+                        "description": "Successfully booked appiuntment as unauthorized user",
                         "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
+                            "$ref": "#/definitions/domain.successSaveUnauthAppointment"
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload or malformed refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized: Invalid, expired, or malformed refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
+                        "description": "Invalid request payload",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }

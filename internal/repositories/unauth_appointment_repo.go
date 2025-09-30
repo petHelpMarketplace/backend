@@ -38,7 +38,7 @@ func (ar *UnauthAppointmentRepositoryImpl) IsTimeBooked(ctx context.Context, spe
 		return false, fmt.Errorf("invalid time window: start must be before end")
 	}
 
-	innerSel := sq.Select("1").From(appointmentsTableName).Where(sq.Eq{"specialist_id": specialistID}).Where(sq.Expr("status <> 'pending'")).
+	innerSel := sq.Select("1").From(appointmentsTableName).Where(sq.Eq{"specialist_id": specialistID}).Where(sq.Eq{"appointment_date": date}).Where(sq.Expr("status <> 'pending'")).
 		Where(sq.Expr("(start_time, end_time) OVERLAPS (?, ?)", startTime, endTime)).PlaceholderFormat(sq.Dollar)
 
 	innerSQL, innerArgs, err := innerSel.ToSql()

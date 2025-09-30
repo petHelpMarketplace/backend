@@ -44,6 +44,9 @@ func(s *Sender) SendAppointmentConfirmationEmail(ctx context.Context, id int64, 
 	)
 
 	specialistEmail, err := s.GetSpecialistConfirmationEmail(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get specialist email: %w", err)
+	}
 
 	msg := []mailjet.InfoMessagesV31{
 		mailjet.InfoMessagesV31{

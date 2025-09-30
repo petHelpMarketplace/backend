@@ -301,10 +301,6 @@ definitions:
         type: string
         description: Contact phone number (optional)
         example: "+1 (555) 123-4567"
-      notes:
-        type: string
-        description: Optional notes for the specialist
-        example: "Please bring vaccination record."
     required:
       - service_id
       - city_id

@@ -115,7 +115,13 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 				req.EndTime.Format("15:04"),),
 				})
 			return
-		}
+		} else if errors.Is(err, domain.ErrInvalidTimeWindow) {
+			c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "invalid time window: start_time must be before end_time",
+     })
+     return
+   }
 
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
