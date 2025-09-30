@@ -34,7 +34,7 @@ func NewTokenService(repo ports.TokenRepository, cfg config.AuthConfig, logger *
 	}
 }
 
-func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, error) {
+func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.SpecialistProfileDTO) (*domain.TokensPair, string, error) {
 
 	tokens := &domain.TokensPair{}
 
@@ -42,33 +42,34 @@ func (ts *TokenServiceImpl) GenerateTokenPair(ctx context.Context, s *domain.Spe
 	roles := []string{"specialist"}
 	tenant := "petHelp"
 
-	accessToken, _, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
+	accessToken, accessJTI, err := genJWT.GenerateAccessToken(id, roles, tenant, ts.jwtSecret, ts.accessExpMin)
 	if err != nil {
 		ts.logger.Error("failed to generate access token",
+			zap.String("accessTokenID", accessJTI),
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 	tokens.Access = accessToken
 
-	refreshToken, refreshTokenID, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
+	refreshToken, refreshJTI, expired, err := genJWT.GenerateRefreshToken(id, ts.jwtSecret, ts.refreshExpDays)
 	if err != nil {
 		ts.logger.Error("failed to generate refresh token",
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 	tokens.Refresh = refreshToken
 
-	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshTokenID, id, expired); err != nil {
+	if err = ts.tokenRepo.SaveRefreshTokenState(ctx, refreshJTI, id, expired); err != nil {
 		ts.logger.Error("failed to save refresh token state to repository",
-			zap.String("refreshTokenID", refreshTokenID),
+			zap.String("refreshTokenID", refreshJTI),
 			zap.String("userID", id),
 			zap.Error(err))
-		return tokens, domain.ErrInternalServer
+		return tokens, accessJTI, domain.ErrInternalServer
 	}
 
-	return tokens, nil
+	return tokens, accessJTI, nil
 }
 
 func (ts *TokenServiceImpl) ValidateToken(ctx context.Context, token string, isAccess bool) (string, string, error) {
@@ -182,4 +183,51 @@ func (ts *TokenServiceImpl) RevokeAllUserSessions(ctx context.Context, userID st
 	ts.logger.Info("all sessions revoked for user", zap.String("userID", userID))
 
 	return nil
+}
+
+// BlacklistAccessToken parses an access token, extracts its JTI and expiry,
+// and adds the JTI to the blacklist in the repository.
+// If the token is already expired, it is a no-op.
+func (ts *TokenServiceImpl) BlacklistAccessToken(ctx context.Context, tokenString string) error {
+	claims, err := genJWT.ParseAccessToken(tokenString, ts.jwtSecret)
+	if err != nil {
+		if !errors.Is(err, domain.ErrTokenExpired) {
+			ts.logger.Warn("attempted to blacklist an invalid access token", zap.Error(err))
+			return domain.ErrTokenInvalid
+		}
+		// If the token is already expired, there's no need to blacklist it.
+		ts.logger.Info("attempted to blacklist an already expired token, operation skipped", zap.Error(err))
+		return nil
+	}
+
+	jti := claims.ID
+	if claims.ExpiresAt == nil {
+		ts.logger.Warn("access token missing exp; blacklist skipped", zap.String("jti", jti))
+		return domain.ErrTokenInvalid
+	}
+	expiresAt := claims.ExpiresAt.Time
+	if time.Until(expiresAt) <= 0 {
+		ts.logger.Info("access token already expired; blacklist skipped", zap.String("jti", jti))
+		return domain.ErrTokenExpired
+	}
+
+	if err := ts.tokenRepo.BlacklistAccessToken(ctx, jti, expiresAt); err != nil {
+		ts.logger.Error("failed to blacklist access token in repository",
+			zap.String("jti", jti),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	ts.logger.Info("access token successfully blacklisted", zap.String("jti", jti))
+	return nil
+}
+
+// IsAccessTokenBlacklisted checks if an access token's JTI is in the blacklist.
+func (ts *TokenServiceImpl) IsAccessTokenBlacklisted(ctx context.Context, jti string) (bool, error) {
+	isBlacklisted, err := ts.tokenRepo.IsAccessTokenBlacklisted(ctx, jti)
+	if err != nil {
+		ts.logger.Error("failed to check access token blacklist status", zap.String("jti", jti), zap.Error(err))
+		return false, domain.ErrInternalServer
+	}
+	return isBlacklisted, nil
 }

@@ -22,7 +22,6 @@
     "/health": {
       "get": {
         "description": "Checks if the application is running and responsive.",
-        "consumes": ["application/json"],
         "produces": ["application/json"],
         "tags": ["System"],
         "summary": "Performs a health check on the application",
@@ -76,6 +75,67 @@
           },
           "500": {
             "description": "Internal server error or failed to complete OAuth2.0 authentication",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/specialist/avatar": {
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Uploads a new avatar for the authenticated specialist. The file should be sent as multipart/form-data with the key 'file'. The server validates file size (max 10MB) and type (jpeg, png, webp, heic).",
+        "consumes": ["multipart/form-data"],
+        "produces": ["application/json"],
+        "tags": ["Specialist"],
+        "summary": "Upload specialist avatar",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Avatar file to upload",
+            "name": "file",
+            "in": "formData",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Avatar uploaded successfully",
+            "schema": {
+              "$ref": "#/definitions/handlers.SuccessPayload"
+            }
+          },
+          "400": {
+            "description": "Bad Request: file is required, extension mismatch, or other validation errors",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized: User is not authenticated",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "413": {
+            "description": "Payload Too Large: File size exceeds the 10MB limit",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type: File type is not allowed",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "schema": {
               "$ref": "#/definitions/domain.ErrorResponse"
             }
@@ -192,6 +252,40 @@
         }
       }
     },
+    "/specialist/logout": {
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["Specialist"],
+        "summary": "Logout specialist",
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "schema": {
+              "$ref": "#/definitions/domain.SuccessResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal server error during logout process",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/specialist/me": {
       "get": {
         "security": [
@@ -279,22 +373,10 @@
     },
     "/token/refresh": {
       "post": {
-        "description": "Exchanges a valid refresh token for a new access token and a new refresh token. The used refresh token is revoked.",
-        "consumes": ["application/json"],
+        "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
         "produces": ["application/json"],
         "tags": ["Token"],
         "summary": "Update access and refresh tokens",
-        "parameters": [
-          {
-            "description": "Refresh token request",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/handlers.RefreshReq"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successfully generated new token pair",
@@ -328,43 +410,43 @@
           }
         }
       }
-    },
-    "/public-appointment-request": {
-      "post": {
-        "description": "New unauth appointment booking",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["UnauthAppointment"],
-        "summary": "Booking",
-        "parameters": [
-          {
-            "description": "Unauth appointment request body",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
-            }
+    }
+  },
+  "/public-appointment-request": {
+    "post": {
+      "description": "New unauth appointment booking",
+      "consumes": ["application/json"],
+      "produces": ["application/json"],
+      "tags": ["UnauthAppointment"],
+      "summary": "Booking",
+      "parameters": [
+        {
+          "description": "Unauth appointment request body",
+          "name": "request",
+          "in": "body",
+          "required": true,
+          "schema": {
+            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Unauth appointment booking succeeded",
-            "schema": {
-              "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Unauth appointment booking succeeded",
+          "schema": {
+            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "schema": {
+            "$ref": "#/definitions/domain.ErrorResponse"
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "schema": {
+            "$ref": "#/definitions/domain.ErrorResponse"
           }
         }
       }
@@ -572,124 +654,16 @@
         }
       }
     },
-    "domain.SaveUnauthAppointmentRequest": {
-      "description": "Unauth appointment booking request payload",
+    "handlers.SuccessPayload": {
       "type": "object",
-      "required": [
-        "service_id",
-        "city_id",
-        "district_id",
-        "street",
-        "location_type",
-        "unit",
-        "apt",
-        "animal_size_id",
-        "description",
-        "date",
-        "start_time",
-        "end_time",
-        "amount",
-        "email",
-        "specialist_id"
-      ],
       "properties": {
-        "service_id": {
-          "description": "Service ID\nrequired: true\nexample: 1",
-          "type": "integer",
-          "minimum": 1,
-          "example": 1
-        },
-        "city_id": {
-          "description": "City ID\nrequired: true\nexample: 12",
-          "type": "integer",
-          "minimum": 1,
-          "example": 12
-        },
-        "district_id": {
-          "description": "District ID\nrequired: true\nexample: 5",
-          "type": "integer",
-          "minimum": 1,
-          "example": 5
-        },
-        "street": {
-          "description": "Street name of appointment location\nrequired: true\nexample: 'Main St.'",
+        "message": {
           "type": "string",
-          "minLength": 1,
-          "example": "Main St."
+          "example": "Avatar file uploaded successfully"
         },
-        "location_type": {
-          "description": "Type of location (e.g., home, office)\nrequired: true\nexample: 'home'",
+        "url": {
           "type": "string",
-          "minLength": 1,
-          "example": "home"
-        },
-        "unit": {
-          "description": "Unit or suite number\nrequired: true\nexample: '5B'",
-          "type": "string",
-          "example": "5B"
-        },
-        "apt": {
-          "description": "Apartment number\nrequired: true\nexample: '12'",
-          "type": "string",
-          "example": "12"
-        },
-        "animal_size_id": {
-          "description": "Animal size ID\nrequired: true\nexample: 2",
-          "type": "integer",
-          "minimum": 1,
-          "example": 2
-        },
-        "description": {
-          "description": "Additional notes or description\nrequired: true\nexample: 'Dog grooming session'",
-          "type": "string",
-          "minLength": 1,
-          "example": "Dog grooming session"
-        },
-        "specialist_id": {
-          "description": "ID of the specialist\nrequired: true\nexample: 7",
-          "type": "integer",
-          "minimum": 1,
-          "example": 7
-        },
-        "date": {
-          "description": "Date of the appointment\nrequired: true\nformat: date\nexample: '2025-08-25'",
-          "type": "string",
-          "format": "date",
-          "example": "2025-08-25"
-        },
-        "start_time": {
-          "description": "Start time of the appointment\nrequired: true\nformat: date-time\nexample: '2025-08-25T10:00:00Z'",
-          "type": "string",
-          "format": "date-time",
-          "example": "2025-08-25T10:00:00Z"
-        },
-        "end_time": {
-          "description": "End time of the appointment\nrequired: true\nformat: date-time\nexample: '2025-08-25T11:00:00Z'",
-          "type": "string",
-          "format": "date-time",
-          "example": "2025-08-25T11:00:00Z"
-        },
-        "amount": {
-          "description": "Amount for the service in USD\nrequired: true\nexample: 50.0",
-          "type": "number",
-          "minimum": 0,
-          "example": 50.0
-        },
-        "email": {
-          "description": "Email of the user booking the appointment\nrequired: true\nformat: email\nexample: 'john.doe@example.com'",
-          "type": "string",
-          "format": "email",
-          "maxLength": 255,
-          "example": "john.doe@example.com"
-        }
-      }
-    },
-    "handlers.RefreshReq": {
-      "type": "object",
-      "required": ["refresh_token"],
-      "properties": {
-        "refresh_token": {
-          "type": "string"
+          "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
         }
       }
     },

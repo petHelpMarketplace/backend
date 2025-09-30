@@ -27,9 +27,6 @@ const docTemplate = `{
         "/health": {
             "get": {
                 "description": "Checks if the application is running and responsive.",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -93,6 +90,73 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error or failed to complete OAuth2.0 authentication",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads a new avatar for the authenticated specialist. The file should be sent as multipart/form-data with the key 'file'. The server validates file size (max 10MB) and type (jpeg, png, webp, heic).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Upload specialist avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar file to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Avatar uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessPayload"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: file is required, extension mismatch, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large: File size exceeds the 10MB limit",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type: File type is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -221,6 +285,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialist/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Logout specialist",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error during logout process",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/me": {
             "get": {
                 "security": [
@@ -318,10 +422,7 @@ const docTemplate = `{
         },
         "/token/refresh": {
             "post": {
-                "description": "Exchanges a valid refresh token for a new access token and a new refresh token. The used refresh token is revoked.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
                 "produces": [
                     "application/json"
                 ],
@@ -329,17 +430,6 @@ const docTemplate = `{
                     "Token"
                 ],
                 "summary": "Update access and refresh tokens",
-                "parameters": [
-                    {
-                        "description": "Refresh token request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.RefreshReq"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successfully generated new token pair",
@@ -629,14 +719,16 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.RefreshReq": {
+        "handlers.SuccessPayload": {
             "type": "object",
-            "required": [
-                "refresh_token"
-            ],
             "properties": {
-                "refresh_token": {
-                    "type": "string"
+                "message": {
+                    "type": "string",
+                    "example": "Avatar file uploaded successfully"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
                 }
             }
         },

@@ -27,6 +27,8 @@ type SpecialistModuleParams struct {
 	Logger         *zap.Logger
 	AuthConfig     config.AuthConfig
 	AuthMiddleware gin.HandlerFunc
+	CookieManager  ports.CookieManager
+	FileHandler    ports.FileHandlers
 }
 
 var SpecialistModule = fx.Module("specialist",
@@ -61,6 +63,9 @@ var SpecialistModule = fx.Module("specialist",
 			fx.As(new(ports.SpecialistHandlers)),
 		),
 
+		fx.Annotate(services.NewCookieManager,
+			fx.As(new(ports.CookieManager))),
+
 		middleware.NewAuthMiddleware,
 	),
 	fx.Invoke(
@@ -73,6 +78,8 @@ var SpecialistModule = fx.Module("specialist",
 			protected := specRouterGroup.Use(mp.AuthMiddleware)
 			protected.GET("/me", handler.Me)
 			protected.PATCH("/change-password", handler.ChangePassword)
+			protected.POST("/logout", handler.Logout)
+			protected.POST("/avatar", mp.FileHandler.UploadAvatar)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),

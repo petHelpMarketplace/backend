@@ -12,6 +12,7 @@ type SpecialistHandlers interface {
 	Login(c *gin.Context)
 	Me(c *gin.Context)
 	ChangePassword(c *gin.Context)
+	Logout(c *gin.Context)
 }
 
 type SpecialistService interface {
@@ -20,6 +21,7 @@ type SpecialistService interface {
 	ShowByID(ctx context.Context, id int64) (domain.SpecialistProfileDTO, error)
 	ShowByEmail(ctx context.Context, email string) (domain.SpecialistProfileDTO, error)
 	ChangePassword(ctx context.Context, id int64, oldPass, newPass string) error
+	UpdateAvatar(ctx context.Context, specialistID int64, avatarURL string) error
 }
 
 type SpecialistRepository interface {
@@ -28,4 +30,5 @@ type SpecialistRepository interface {
 	GetByID(ctx context.Context, id int64) (domain.Specialist, error)
 	CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error)
 	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
+	UpdateAvatar(ctx context.Context, id int64, avatarURL string) error
 }

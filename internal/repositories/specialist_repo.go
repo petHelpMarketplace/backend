@@ -219,7 +219,7 @@ func (sr *SpecialistRepositoryImpl) CheckFieldValueExists(ctx context.Context, f
 	defer tx.Rollback(ctx)
 
 	var exists bool
-	err = sr.DBPool.Pool().QueryRow(ctx, finalSQL, finalArgs...).Scan(&exists)
+	err = tx.QueryRow(ctx, finalSQL, finalArgs...).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
 	}
@@ -278,4 +278,47 @@ func (sr *SpecialistRepositoryImpl) UpdatePasswordHash(ctx context.Context, id i
 		return fmt.Errorf("%s failed to commit sql transaction: %w", operationSpecialist, err)
 	}
 	return nil
+}
+
+func (sr *SpecialistRepositoryImpl) UpdateAvatar(ctx context.Context, id int64, avatarURL string) error {
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	query, args, err := sq.Update(currentTableName).
+		Set("avatar", avatarURL).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build update avatar query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute update avatar query: %w", operationSpecialist, err)
+	}
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+	return tx.Commit(ctx)
 }

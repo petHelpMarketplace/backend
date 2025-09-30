@@ -67,7 +67,24 @@ func NewAuthMiddleware(p AuthMiddlewareParams) gin.HandlerFunc {
 			}
 		}
 
-		// Якщо токен дійсний, зберігаємо дані в контекст
+		isBlacklisted, err := p.TokenService.IsAccessTokenBlacklisted(c.Request.Context(), jti)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError,
+				domain.ErrorResponse{
+					Code:    http.StatusInternalServerError,
+					Message: "Failed to check token in blacklist",
+				})
+			return
+		}
+		if isBlacklisted {
+			c.AbortWithStatusJSON(http.StatusUnauthorized,
+				domain.ErrorResponse{
+					Code:    http.StatusUnauthorized,
+					Message: "Access token has been revoked (blacklisted)",
+				})
+			return
+		}
+
 		c.Set("userID", userID)
 		c.Set("jti", jti)
 

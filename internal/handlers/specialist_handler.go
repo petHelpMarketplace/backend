@@ -7,11 +7,15 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
 
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
+	"github.com/oklog/ulid/v2"
 	"go.uber.org/zap"
 )
 
@@ -23,16 +27,18 @@ type SpecialistHandlerImpl struct {
 	validator         ports.SpecialistValidator
 	specialistService ports.SpecialistService
 	tokenService      ports.TokenService
+	cookieManager     ports.CookieManager
 	logger            *zap.Logger
 }
 
 var _ ports.SpecialistHandlers = (*SpecialistHandlerImpl)(nil)
 
-func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.TokenService, validator ports.SpecialistValidator, logger *zap.Logger) *SpecialistHandlerImpl {
+func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.TokenService, validator ports.SpecialistValidator, cookieMngr ports.CookieManager, logger *zap.Logger) *SpecialistHandlerImpl {
 	return &SpecialistHandlerImpl{
 		validator:         validator,
 		specialistService: specialistSrv,
 		tokenService:      tokenSrv,
+		cookieManager:     cookieMngr,
 		logger:            logger,
 	}
 }
@@ -113,6 +119,16 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		return
 	}
 
+	sessionID := ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
+
+	// Write session
+	sh.cookieManager.Set(c, "session_id", sessionID)
+	sh.cookieManager.Set(c, "request_id", requestid.Get(c))
+	err = sh.cookieManager.Save(c)
+	if err != nil {
+		sh.logger.Error("failed to save registration cookie ", zap.Error(err))
+	}
+
 	// — Success response
 	c.JSON(http.StatusCreated, successRegistration{
 		ID:      strconv.FormatInt(id, 10),
@@ -187,7 +203,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	tokens, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
+	tokens, jti, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
@@ -195,6 +211,32 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		})
 		return
 	}
+
+	sessionID := ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
+	sessionValues := map[string]interface{}{
+		"session_id":    sessionID,
+		"request_id":    requestid.Get(c),
+		"user_id":       spec.ID,
+		"jti":           jti,
+		"refresh_token": tokens.Refresh,
+	}
+
+	// Write session
+	sh.cookieManager.BulkSet(c, sessionValues)
+	err = sh.cookieManager.Save(c)
+	if err != nil {
+		sh.logger.Error("failed to save login cookie ", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	sh.logger.Info("Session cookie set with",
+		zap.String("session_id", sessionID),
+		zap.Int64("user_id", spec.ID),
+		zap.String("jti", jti))
 
 	//return both tokens in the response body
 	c.JSON(http.StatusOK, tokens)
@@ -212,33 +254,9 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 // @Router       /specialist/me [get]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
-	userIDRaw, exists := c.Get("userID")
-	if !exists {
-		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
-		return
-	}
 
-	userIDStr, ok := userIDRaw.(string)
+	userID, ok := getUserIDFromContext(c, sh.logger)
 	if !ok {
-		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
-		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
 		return
 	}
 
@@ -273,30 +291,9 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 // @Router       /specialist/change-password [patch]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
-	userIDRaw, exists := c.Get("userID")
-	if !exists {
-		sh.logger.Warn("userID not found in context, middleware might not have run or failed")
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
-			Code:    http.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
-		return
-	}
 
-	userIDStr, ok := userIDRaw.(string)
+	userID, ok := getUserIDFromContext(c, sh.logger)
 	if !ok {
-		sh.logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
-		sh.logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
 		return
 	}
 
@@ -343,7 +340,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err = sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
+	err := sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Code: http.StatusUnauthorized, Message: "Invalid old password"})
@@ -363,7 +360,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), userIDStr)
+	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
@@ -376,4 +373,57 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		Message: "Password changed successfully.",
 	})
 
+}
+
+// Logout godoc
+// @Summary      Logout specialist
+// @Description  Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  domain.SuccessResponse "Logout successful"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error during logout process"
+// @Router       /specialist/logout [post]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	authHeader := c.GetHeader("Authorization")
+	if accessToken := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer ")); accessToken != "" {
+		if err := sh.tokenService.BlacklistAccessToken(ctx, accessToken); err != nil {
+			// Log the error but don't fail the request. The token will expire naturally.
+			sh.logger.Error("failed to blacklist access token during logout", zap.Error(err))
+		}
+	}
+
+	cookieRefreshToken, err := sh.cookieManager.Get(c, "refresh_token")
+	if err == nil {
+		if refreshToken, ok := cookieRefreshToken.(string); ok && refreshToken != "" {
+			if err := sh.tokenService.RevokeRefreshToken(ctx, refreshToken); err != nil {
+				sh.logger.Error("failed to revoke refresh token during logout", zap.Error(err))
+			} else {
+				sh.logger.Info("refresh token revoked successfully")
+			}
+		}
+	} else {
+		sh.logger.Warn("could not retrieve refresh token cookie during logout", zap.Error(err))
+	}
+
+	//Clear the session cookie on the client side
+	if err := sh.cookieManager.Clear(c); err != nil {
+		sh.logger.Error("failed to clear session cookie during logout", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to clear session. Please clear your browser cookies.",
+		})
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	sh.logger.Info("user logged out successfully", zap.Any("userID", userID))
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: "Logout successful.",
+	})
 }

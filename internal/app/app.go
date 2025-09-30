@@ -2,7 +2,6 @@ package app
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"pethelp-backend/pkg/logger"
@@ -14,6 +13,8 @@ import (
 
 	"pethelp-backend/pkg/database/postgres"
 	redisDB "pethelp-backend/pkg/database/redis"
+
+	"os"
 )
 
 func NewApp() fx.Option {
@@ -36,8 +37,15 @@ func NewApp() fx.Option {
 		log.Fatal(err)
 	}
 
+	confPath, ok := os.LookupEnv("CONFIG_PATH")
+	if !ok || confPath == "" {
+		log.Fatal("CONFIG_PATH env var is required (e.g., configs/config.yml)")
+	}
+
 	return fx.Options(
 		fx.Supply(logger),
+		fx.Supply(confPath),
+
 		// Core services
 		fx.Provide(
 			config.NewPostgresConfig,
@@ -45,6 +53,8 @@ func NewApp() fx.Option {
 			config.NewServersConfig,
 			config.LoadOAuthConf,
 			config.LoadAuthConfig,
+			config.LoadCookieConfig,
+			config.LoadS3Config,
 			NewHTTPServer,
 			NewGinServer,
 		),
@@ -59,6 +69,7 @@ func NewApp() fx.Option {
 		OauthModule,
 		DocsModule,
 		TokenModule,
+		FileUploadModule,
 		UnauthAppointmentModule,
 
 		fx.StartTimeout(10*time.Second),
