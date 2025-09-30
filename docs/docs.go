@@ -464,6 +464,52 @@ const docTemplate = `{
                 }
             }
         }
+        "/public-appointment-request": {
+            "post": {
+                "description": "Book appointment with a specialist without registration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "UnauthAppointment"
+                ],
+                "summary": "Booking appointment",
+                "parameters": [
+                    {
+                        "description": "Book appointment as unauthorized user",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully booked appiuntment as unauthorized user",
+                        "schema": {
+                            "$ref": "#/definitions/domain.successSaveUnauthAppointment"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }    
     },
     "definitions": {
         "app.HealthCheckResponse": {

@@ -33,8 +33,8 @@ definitions:
         minLength: 12
         type: string
     required:
-    - current_password
-    - new_password
+      - current_password
+      - new_password
     type: object
   domain.ErrorResponse:
     properties:
@@ -43,7 +43,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: "#/definitions/domain.FieldError"
         type: array
       message:
         example: Validation failed
@@ -77,8 +77,8 @@ definitions:
         example: MySecretPassword123!
         type: string
     required:
-    - email
-    - password
+      - email
+      - password
     type: object
   domain.RegistrationRequest:
     description: User registration request payload
@@ -139,11 +139,11 @@ definitions:
         minLength: 13
         type: string
     required:
-    - email
-    - name
-    - password
-    - password_confirmation
-    - phone
+      - email
+      - name
+      - password
+      - password_confirmation
+      - phone
     type: object
   domain.SpecialistProfileDTO:
     description: Specialist profile data returned to clients.
@@ -267,12 +267,12 @@ paths:
     get:
       description: Checks if the application is running and responsive.
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Application is healthy
           schema:
-            $ref: '#/definitions/app.HealthCheckResponse'
+            $ref: "#/definitions/app.HealthCheckResponse"
         "503":
           description: Application is unhealthy or service unavailable
           schema:
@@ -281,284 +281,381 @@ paths:
             type: object
       summary: Performs a health check on the application
       tags:
-      - System
+        - System
   /oauth/{provider}:
     get:
       consumes:
-      - application/json
+        - application/json
       description: Handles the callback from an OAuth2.0 provider after user authentication.
       parameters:
-      - description: OAuth2.0 provider name (e.g., google, github)
-        in: path
-        name: provider
-        required: true
-        type: string
+        - description: OAuth2.0 provider name (e.g., google, github)
+          in: path
+          name: provider
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "201":
           description: Successfully authenticated and generated tokens
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: "#/definitions/domain.TokensPair"
         "404":
           description: Account with this email not found
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal server error or failed to complete OAuth2.0 authentication
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       summary: OAuth2.0 Provider Callback
       tags:
-      - OAuth
+        - OAuth
   /specialist/avatar:
     post:
       consumes:
-      - multipart/form-data
-      description: Uploads a new avatar for the authenticated specialist. The file
+        - multipart/form-data
+      description:
+        Uploads a new avatar for the authenticated specialist. The file
         should be sent as multipart/form-data with the key 'file'. The server validates
         file size (max 10MB) and type (jpeg, png, webp, heic).
       parameters:
-      - description: Avatar file to upload
-        in: formData
-        name: file
-        required: true
-        type: file
+        - description: Avatar file to upload
+          in: formData
+          name: file
+          required: true
+          type: file
       produces:
-      - application/json
+        - application/json
       responses:
         "201":
           description: Avatar uploaded successfully
           schema:
-            $ref: '#/definitions/handlers.SuccessPayload'
+            $ref: "#/definitions/handlers.SuccessPayload"
         "400":
-          description: 'Bad Request: file is required, extension mismatch, or other
-            validation errors'
+          description:
+            "Bad Request: file is required, extension mismatch, or other
+            validation errors"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "401":
-          description: 'Unauthorized: User is not authenticated'
+          description: "Unauthorized: User is not authenticated"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "413":
-          description: 'Payload Too Large: File size exceeds the 10MB limit'
+          description: "Payload Too Large: File size exceeds the 10MB limit"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "415":
-          description: 'Unsupported Media Type: File type is not allowed'
+          description: "Unsupported Media Type: File type is not allowed"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       summary: Upload specialist avatar
       tags:
-      - Specialist
+        - Specialist
   /specialist/change-password:
     patch:
       consumes:
-      - application/json
-      description: Allows an authenticated specialist to change their password. All
+        - application/json
+      description:
+        Allows an authenticated specialist to change their password. All
         active sessions will be terminated upon successful password change.
       parameters:
-      - description: Change password request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/domain.ChangePassReq'
+        - description: Change password request
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: "#/definitions/domain.ChangePassReq"
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Password updated successfully
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: "#/definitions/domain.SuccessResponse"
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "401":
           description: Unauthorized or invalid old password
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "404":
           description: Specialist account not found
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "409":
-          description: 'Conflict: New password is the same as the old one'
+          description: "Conflict: New password is the same as the old one"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       summary: Change specialist password
       tags:
-      - Specialist
+        - Specialist
   /specialist/login:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Login specialist
       parameters:
-      - description: Login request body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/domain.LoginReq'
+        - description: Login request body
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: "#/definitions/domain.LoginReq"
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Login succeeded
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: "#/definitions/domain.TokensPair"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       summary: Login
       tags:
-      - Specialist
+        - Specialist
   /specialist/logout:
     post:
       consumes:
-      - application/json
-      description: Logs out the specialist by blacklisting the current access token,
+        - application/json
+      description:
+        Logs out the specialist by blacklisting the current access token,
         revoking the refresh token and clearing the session cookie.
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Logout successful
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: "#/definitions/domain.SuccessResponse"
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal server error during logout process
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       summary: Logout specialist
       tags:
-      - Specialist
+        - Specialist
   /specialist/me:
     get:
-      description: Get information about the currently authenticated specialist. Requires
+      description:
+        Get information about the currently authenticated specialist. Requires
         a valid Bearer token.
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Successfully retrieved specialist data
           schema:
-            $ref: '#/definitions/domain.SpecialistProfileDTO'
+            $ref: "#/definitions/domain.SpecialistProfileDTO"
         "401":
           description: Unauthorized. The user is not authenticated.
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "404":
           description: Specialist account associated with the token not found.
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal server error.
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       security:
-      - BearerAuth: []
+        - BearerAuth: []
       summary: Get current specialist
       tags:
-      - Specialist
+        - Specialist
   /specialist/register:
     post:
       consumes:
-      - application/json
+        - application/json
       description: New specialist registration
       parameters:
-      - description: Registration request body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/domain.RegistrationRequest'
+        - description: Registration request body
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: "#/definitions/domain.RegistrationRequest"
       produces:
-      - application/json
+        - application/json
       responses:
         "201":
           description: Sign-up succeeded
           schema:
-            $ref: '#/definitions/handlers.successRegistration'
+            $ref: "#/definitions/handlers.successRegistration"
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       summary: Registration
       tags:
-      - Specialist
+        - Specialist
   /token/refresh:
     post:
-      description: Exchanges a valid refresh token (from an HTTP-only cookie) for
+      description:
+        Exchanges a valid refresh token (from an HTTP-only cookie) for
         a new access token and a new refresh token. The used refresh token is revoked.
         This endpoint does not accept a request body.
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: Successfully generated new token pair
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: "#/definitions/domain.TokensPair"
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "401":
-          description: 'Unauthorized: Invalid, expired, or malformed refresh token'
+          description: "Unauthorized: Invalid, expired, or malformed refresh token"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "403":
-          description: 'Forbidden: Refresh token has been revoked or is otherwise
-            not allowed'
+          description:
+            "Forbidden: Refresh token has been revoked or is otherwise
+            not allowed"
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.ErrorResponse'
+            $ref: "#/definitions/domain.ErrorResponse"
       summary: Update access and refresh tokens
       tags:
-      - Token
+        - Token
+      domain.SaveUnauthAppointmentRequest:
+    description: Unauthenticated appointment booking request payload
+    type: object
+    properties:
+      service_id:
+        type: integer
+        description: ID of the service to be booked
+        example: 45
+      city_id:
+        type: integer
+        description: ID of the city for the appointment
+        example: 3
+      district_id:
+        type: integer
+        description: ID of the district for the appointment
+        example: 7
+      street:
+        type: string
+        description: Street name for the appointment location
+        example: "Main Street"
+      location_type:
+        type: string
+        description: Type of location (e.g., home, clinic)
+        example: "home"
+      unit:
+        type: string
+        description: Unit or building number
+        example: "12B"
+      apt:
+        type: string
+        description: Apartment number
+        example: "34"
+      animal_size_id:
+        type: integer
+        description: ID representing the animal size
+        example: 2
+      description:
+        type: string
+        description: Description of the appointment or animal condition
+        example: "Small dog, routine check-up"
+      specialist_id:
+        type: integer
+        description: ID of the specialist to book
+        example: 123
+      date:
+        type: string
+        format: date
+        description: Date of the appointment
+        example: "2025-09-01"
+      start_time:
+        type: string
+        format: time
+        description: Start time of the appointment
+        example: "14:30"
+      end_time:
+        type: string
+        format: time
+        description: End time of the appointment
+        example: "15:00"
+      amount:
+        type: number
+        format: float
+        description: Payment amount for the appointment
+        example: 75.50
+      email:
+        type: string
+        format: email
+        description: Email address of the user booking the appointment
+        example: "user@example.com"
+      phone:
+        type: string
+        description: Contact phone number (optional)
+        example: "+1 (555) 123-4567"
+    required:
+      - service_id
+      - city_id
+      - district_id
+      - street
+      - location_type
+      - unit
+      - apt
+      - animal_size_id
+      - description
+      - specialist_id
+      - date
+      - start_time
+      - end_time
+      - amount
+      - email
+      - specialist_id
 schemes:
-- https
-- http
+  - https
+  - http
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

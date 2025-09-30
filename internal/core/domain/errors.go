@@ -29,6 +29,8 @@ var (
 	ErrForbidden                 = errors.New("forbidden")
 	ErrSessionTerminated         = errors.New("session terminated")
 	ErrPasswordReuse             = errors.New("password reuse")
+	ErrTimeUnavailable           = errors.New("time is unavailable")
+	ErrInvalidTimeWindow         = errors.New("invalid time window")
 )
 
 // FieldError contains validation error details for a specific field.

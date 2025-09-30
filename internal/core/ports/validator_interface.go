@@ -6,3 +6,7 @@ type SpecialistValidator interface {
 	ValidateRegistrationReq(domain.RegistrationRequest) []domain.FieldError
 	ValidateChangePasswordReq(domain.ChangePassReq) []domain.FieldError
 }
+
+type UnauthAppointmentValidator interface {
+	ValidateUnauthAppointmentRequest(domain.SaveUnauthAppointmentRequest) []domain.FieldError
+}
