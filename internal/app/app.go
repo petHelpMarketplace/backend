@@ -70,6 +70,7 @@ func NewApp() fx.Option {
 		DocsModule,
 		TokenModule,
 		FileUploadModule,
+		UnauthAppointmentModule,
 
 		fx.StartTimeout(10*time.Second),
 	)

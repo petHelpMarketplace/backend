@@ -146,7 +146,7 @@ func (sv *SpecialistValidatorImpl) ValidateSpecialistProfileUpdateReq(reqData do
 			case "FamilyName":
 				fe.Message = "Invalid family name. It must be 2-100 characters and contain only letters, spaces, hyphens, or apostrophes."
 			case "Phone":
-				fe.Message = "Phone must be compatible with E.164 and E.123 formats (e.g., +38(XXX)XXX-XX-XX and contain at least 13 digits."
+				fe.Message = "Phone must be compatible with E.164 and E.123 formats (e.g., +38(XXX)XXX-XX-XX) and contain at least 13 digits."
 			case "Experience":
 				fe.Message = "Experience years must be a non-negative number."
 			case "Bio":
