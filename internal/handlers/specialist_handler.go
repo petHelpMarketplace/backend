@@ -247,7 +247,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 // @Description  Get information about the currently authenticated specialist. Requires a valid Bearer token.
 // @Tags         Specialist
 // @Produce      json
-// @Success      200  {object}  domain.SpecialistProfileDTO "Successfully retrieved specialist data"
+// @Success      200  {object}  domain.SpecialistProfDTO "Successfully retrieved specialist data"
 // @Failure      401  {object}  domain.ErrorResponse "Unauthorized. The user is not authenticated."
 // @Failure      404  {object}  domain.ErrorResponse "Specialist account associated with the token not found."
 // @Failure      500  {object}  domain.ErrorResponse "Internal server error."
@@ -425,5 +425,98 @@ func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, domain.SuccessResponse{
 		Code:    http.StatusOK,
 		Message: "Logout successful.",
+	})
+}
+
+// updateProfileSuccessResponse defines the successful response for the profile update endpoint.
+type updateProfileSuccessResponse struct {
+	Code    int                      `json:"code" example:"200"`
+	Message string                   `json:"message" example:"Profile updated successfully."`
+	Data    domain.SpecialistProfDTO `json:"data"`
+}
+
+// UpdateProfile
+// @Summary      Update specialist profile
+// @Description  Allows an authenticated specialist to update their profile information (name, family_name, phone, experience_years, bio).
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body domain.SpecialistProfUpdateReq true "Specialist profile update request"
+// @Success      200  {object}  updateProfileSuccessResponse "Profile updated successfully"
+// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or validation failed"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
+// @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
+// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
+// @Router       /specialist/profile [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return // getUserIDFromContext already handled the error response
+	}
+
+	var reqData domain.SpecialistProfUpdateReq
+
+	if err := c.ShouldBindJSON(&reqData); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid request payload"
+
+		var jsonErr *json.UnmarshalTypeError
+		var syntaxErr *json.SyntaxError
+
+		bindErr := fmt.Errorf("%s invalid specialist profile update payload: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} else if errors.As(err, &syntaxErr) {
+			message = "The request body is not valid JSON."
+		} else if err == io.EOF {
+			message = "Request body cannot be empty."
+		}
+
+		sh.logger.Error("bind JSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: message,
+			Details: fieldErrors,
+		})
+		return
+	}
+
+	if validationErrors := sh.validator.ValidateSpecialistProfileUpdateReq(reqData); len(validationErrors) > 0 {
+		sh.logger.Error("validation failed for specialist profile update", zap.Any("errors", validationErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "validation failed",
+			Details: validationErrors,
+		})
+		return
+	}
+
+	specProf, err := sh.specialistService.UpdateProfile(c.Request.Context(), userID, reqData)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to update specialist profile", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, updateProfileSuccessResponse{
+		Code:    http.StatusOK,
+		Message: "Profile updated successfully.",
+		Data:    specProf,
 	})
 }

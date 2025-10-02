@@ -145,7 +145,7 @@ definitions:
       - password_confirmation
       - phone
     type: object
-  domain.SpecialistProfileDTO:
+  domain.SpecialistProfDTO:
     description: Specialist profile data returned to clients.
     properties:
       avatar_url:
@@ -212,11 +212,61 @@ definitions:
           example: Veterinarian
         type: string
     type: object
+  domain.SpecialistProfUpdateReq:
+    description: Specialist profile update request payload
+    properties:
+      bio:
+        description: |-
+          Short biography or summary of the specialist.
+          maxLength: 1000
+          example: Experienced veterinarian specializing in small animal care.
+        maxLength: 1000
+        type: string
+      experience_years:
+        description: |-
+          Years of professional experience.
+          minimum: 0
+          example: 7
+        minimum: 0
+        type: integer
+      family_name:
+        description: |-
+          Family name (surname) of the specialist.
+          minLength: 2
+          maxLength: 100
+          pattern: "^[\\p{L}\\s\\-'\\u2019]+$"
+          example: Walls
+        maxLength: 100
+        minLength: 2
+        type: string
+      name:
+        description: |-
+          Name of the specialist.
+          Allows Unicode letters, spaces, hyphens, and apostrophes.
+          minLength: 2
+          maxLength: 100
+          pattern: "^[\\p{L}\\s\\-'\\u2019]+$"
+          example: Kateryna
+        maxLength: 100
+        minLength: 2
+        type: string
+      phone:
+        description: |-
+          Phone number of the specialist in a flexible E.123-like international format.
+          Must start with '+' followed by country code (1-3 digits).
+          Allows spaces, parentheses, and hyphens as separators.
+          minLength: 13
+          pattern: "^\\+\\d{1,3}(?:[()\\s-]*\\d+)*$"
+          example: "+38 (096) 123-45-67"
+        minLength: 13
+        type: string
+    type: object
   domain.SuccessResponse:
     properties:
       code:
         example: 200
         type: integer
+      data: {}
       message:
         example: Operation was successful
         type: string
@@ -244,6 +294,17 @@ definitions:
         type: string
       message:
         default: Registration successful
+        type: string
+    type: object
+  handlers.updateProfileSuccessResponse:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/domain.SpecialistProfDTO'
+      message:
+        example: Profile updated successfully.
         type: string
     type: object
 externalDocs:
@@ -477,7 +538,11 @@ paths:
         "200":
           description: Successfully retrieved specialist data
           schema:
+<<<<<<< HEAD
+            $ref: '#/definitions/domain.SpecialistProfDTO'
+=======
             $ref: "#/definitions/domain.SpecialistProfileDTO"
+>>>>>>> dev2
         "401":
           description: Unauthorized. The user is not authenticated.
           schema:
@@ -494,7 +559,52 @@ paths:
         - BearerAuth: []
       summary: Get current specialist
       tags:
+<<<<<<< HEAD
+      - Specialist
+  /specialist/profile:
+    patch:
+      consumes:
+      - application/json
+      description: Allows an authenticated specialist to update their profile information
+        (name, family_name, phone, experience_years, bio).
+      parameters:
+      - description: Specialist profile update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SpecialistProfUpdateReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/handlers.updateProfileSuccessResponse'
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update specialist profile
+      tags:
+      - Specialist
+=======
         - Specialist
+>>>>>>> dev2
   /specialist/register:
     post:
       consumes:

@@ -322,3 +322,73 @@ func (sr *SpecialistRepositoryImpl) UpdateAvatar(ctx context.Context, id int64, 
 	}
 	return tx.Commit(ctx)
 }
+
+func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.Specialist, error) {
+
+	var updatedSpecialist domain.Specialist
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return updatedSpecialist, locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	builder := sq.Update(currentTableName).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id})
+
+	if req.Name != nil {
+		builder = builder.Set("name", *req.Name)
+	}
+	if req.FamilyName != nil {
+		builder = builder.Set("family_name", *req.FamilyName)
+	}
+	if req.Phone != nil {
+		builder = builder.Set("phone", *req.Phone)
+	}
+	if req.Experience != nil {
+		builder = builder.Set("experience", *req.Experience)
+	}
+	if req.Bio != nil {
+		builder = builder.Set("bio", *req.Bio)
+	}
+
+	query, args, err := builder.
+		Suffix("RETURNING *").
+		PlaceholderFormat(sq.Dollar).ToSql()
+
+	if err != nil {
+		return updatedSpecialist, fmt.Errorf("%s failed to build update profile query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return updatedSpecialist, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return updatedSpecialist, fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return updatedSpecialist, fmt.Errorf("%s failed to execute update profile query: %w", operationSpecialist, err)
+	}
+
+	updatedSpecialist, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return updatedSpecialist, sql.ErrNoRows
+		}
+		return updatedSpecialist, fmt.Errorf("%s failed to scan returned data from update: %w", operationSpecialist, err)
+	}
+
+	return updatedSpecialist, tx.Commit(ctx)
+}

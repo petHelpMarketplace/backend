@@ -344,7 +344,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved specialist data",
                         "schema": {
-                            "$ref": "#/definitions/domain.SpecialistProfileDTO"
+                            "$ref": "#/definitions/domain.SpecialistProfDTO"
                         }
                     },
                     "401": {
@@ -361,6 +361,69 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error.",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/profile": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows an authenticated specialist to update their profile information (name, family_name, phone, experience_years, bio).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Update specialist profile",
+                "parameters": [
+                    {
+                        "description": "Specialist profile update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SpecialistProfUpdateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.updateProfileSuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or validation failed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/domain.ErrorResponse"
                         }
@@ -641,7 +704,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SpecialistProfileDTO": {
+        "domain.SpecialistProfDTO": {
             "description": "Specialist profile data returned to clients.",
             "type": "object",
             "properties": {
@@ -695,6 +758,39 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.SpecialistProfUpdateReq": {
+            "description": "Specialist profile update request payload",
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "description": "Short biography or summary of the specialist.\nmaxLength: 1000\nexample: Experienced veterinarian specializing in small animal care.",
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "experience_years": {
+                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "family_name": {
+                    "description": "Family name (surname) of the specialist.\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: Walls",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "name": {
+                    "description": "Name of the specialist.\nAllows Unicode letters, spaces, hyphens, and apostrophes.\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: Kateryna",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "phone": {
+                    "description": "Phone number of the specialist in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nminLength: 13\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
+                    "type": "string",
+                    "minLength": 13
+                }
+            }
+        },
         "domain.SuccessResponse": {
             "type": "object",
             "properties": {
@@ -702,6 +798,7 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 200
                 },
+                "data": {},
                 "message": {
                     "type": "string",
                     "example": "Operation was successful"
@@ -742,6 +839,22 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "default": "Registration successful"
+                }
+            }
+        },
+        "handlers.updateProfileSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/domain.SpecialistProfDTO"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Profile updated successfully."
                 }
             }
         }

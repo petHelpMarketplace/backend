@@ -73,12 +73,12 @@ func (ss *SpecialistServiceImpl) Registration(ctx context.Context, specialist do
 	return id, nil
 }
 
-func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password string) (domain.SpecialistProfileDTO, error) {
+func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password string) (domain.SpecialistProfDTO, error) {
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	specialistDTO := domain.SpecialistProfileDTO{}
+	specialistDTO := domain.SpecialistProfDTO{}
 
 	// Check email exists
 	specialistModel, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
@@ -107,12 +107,12 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	return specialistDTO, nil
 }
 
-func (ss *SpecialistServiceImpl) ShowByID(ctx context.Context, id int64) (domain.SpecialistProfileDTO, error) {
+func (ss *SpecialistServiceImpl) ShowByID(ctx context.Context, id int64) (domain.SpecialistProfDTO, error) {
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	specialistDTO := domain.SpecialistProfileDTO{}
+	specialistDTO := domain.SpecialistProfDTO{}
 
 	specialistModel, err := ss.specialistRepo.GetByID(timeoutCtx, id)
 	if err != nil {
@@ -133,11 +133,11 @@ func (ss *SpecialistServiceImpl) ShowByID(ctx context.Context, id int64) (domain
 	return specialistDTO, nil
 }
 
-func (ss *SpecialistServiceImpl) ShowByEmail(ctx context.Context, email string) (domain.SpecialistProfileDTO, error) {
+func (ss *SpecialistServiceImpl) ShowByEmail(ctx context.Context, email string) (domain.SpecialistProfDTO, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	specialistDTO := domain.SpecialistProfileDTO{}
+	specialistDTO := domain.SpecialistProfDTO{}
 
 	specialistModel, err := ss.specialistRepo.GetByEmail(timeoutCtx, email)
 	if err != nil {
@@ -221,4 +221,52 @@ func (ss *SpecialistServiceImpl) UpdateAvatar(ctx context.Context, specialistID 
 	}
 
 	return nil
+}
+
+func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.SpecialistProfDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	updatedSpec := domain.SpecialistProfDTO{}
+	// First, check if the specialist exists.
+	// This also helps to ensure we're not trying to update a non-existent record and provides a better error message.
+	if _, err := ss.specialistRepo.GetByID(timeoutCtx, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("attempt to update profile for non-existent specialist", zap.Int64("id", id))
+			return updatedSpec, domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to get specialist by ID during profile update check",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return updatedSpec, domain.ErrInternalServer
+	}
+
+	// Normalize the phone number only if it's provided in the request.
+	if req.Phone != nil {
+		phone, err := utils.NormalizePhoneNumber(*req.Phone)
+		if err != nil {
+			ss.logger.Error("failed to convert phone number before save",
+				zap.String("phone", *req.Phone),
+				zap.Error(err))
+			return updatedSpec, domain.ErrInternalServer
+		}
+		*req.Phone = phone
+	}
+
+	// Perform the update and get the updated model back
+	updatedModel, err := ss.specialistRepo.UpdateProfile(timeoutCtx, id, req)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// This can happen in a race condition if the user is deleted between the check and the update.
+			ss.logger.Warn("specialist disappeared during profile update", zap.Int64("id", id))
+			return updatedSpec, domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to update specialist profile in database",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return updatedSpec, domain.ErrInternalServer
+	}
+
+	// Convert the updated model to a DTO and return it
+	return utils.ToSpecialistProfileDTO(updatedModel), nil
 }
