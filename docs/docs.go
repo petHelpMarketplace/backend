@@ -97,6 +97,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/public-appointment-request": {
+            "post": {
+                "description": "New  appointment booking by unauth user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SpecialistAppointment"
+                ],
+                "summary": "Book un appointment",
+                "parameters": [
+                    {
+                        "description": "UnauthAppointment request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Booking appointment succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/avatar": {
             "post": {
                 "security": [
@@ -128,7 +180,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Avatar uploaded successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SuccessPayload"
+                            "$ref": "#/definitions/handlers.successAvatarPayload"
                         }
                     },
                     "400": {
@@ -368,6 +420,131 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialist/portfolio": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Upload specialist portfolio images",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Portfolio image files to upload",
+                        "name": "files[]",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Portfolio files uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successPortfolioPayload"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: no files uploaded, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large: A file's size exceeds the 8MB limit",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type: A file's type is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/portfolio/image": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a specific image from the authenticated specialist's portfolio. The full URL of the image to be deleted must be provided as a query parameter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Delete specialist portfolio image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Full URL of the image to delete",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: URL parameter is missing",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/profile": {
             "patch": {
                 "security": [
@@ -527,52 +704,6 @@ const docTemplate = `{
                 }
             }
         }
-        "/public-appointment-request": {
-            "post": {
-                "description": "Book appointment with a specialist without registration.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "UnauthAppointment"
-                ],
-                "summary": "Booking appointment",
-                "parameters": [
-                    {
-                        "description": "Book appointment as unauthorized user",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully booked appiuntment as unauthorized user",
-                        "schema": {
-                            "$ref": "#/definitions/domain.successSaveUnauthAppointment"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        }    
     },
     "definitions": {
         "app.HealthCheckResponse": {
@@ -704,6 +835,95 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.SaveUnauthAppointmentRequest": {
+            "description": "Anauthorized user' appointment request",
+            "type": "object",
+            "required": [
+                "amount",
+                "animal_size_id",
+                "appointment_date",
+                "apt",
+                "area_id",
+                "city_id",
+                "description",
+                "email",
+                "end_time",
+                "location_type",
+                "service_id",
+                "specialist_id",
+                "start_time",
+                "status",
+                "street",
+                "unit"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 500
+                },
+                "animal_size_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "appointment_date": {
+                    "type": "string",
+                    "example": "2025-07-22"
+                },
+                "apt": {
+                    "type": "string",
+                    "example": "14"
+                },
+                "area_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "city_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Пудель, потрібен грумінг перед виставкою."
+                },
+                "email": {
+                    "description": "unauth user email",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "john.doe@example.com"
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "10:00"
+                },
+                "location_type": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "specialist_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "08:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "street": {
+                    "type": "string",
+                    "example": "вул. Володимирська"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "14"
+                }
+            }
+        },
         "domain.SpecialistProfDTO": {
             "description": "Specialist profile data returned to clients.",
             "type": "object",
@@ -816,7 +1036,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.SuccessPayload": {
+        "handlers.successAvatarPayload": {
             "type": "object",
             "properties": {
                 "message": {
@@ -826,6 +1046,25 @@ const docTemplate = `{
                 "url": {
                     "type": "string",
                     "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
+                }
+            }
+        },
+        "handlers.successPortfolioPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Portfolio files uploaded successfully"
+                },
+                "urls_map": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"photo.jpg\"": "\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}",
+                        "{\"original_cv.webp\"": "\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\""
+                    }
                 }
             }
         },
@@ -839,6 +1078,19 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "default": "Registration successful"
+                }
+            }
+        },
+        "handlers.successSaveUnauthAppointment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "message": {
+                    "type": "string",
+                    "default": "An appointment booked successfully"
                 }
             }
         },

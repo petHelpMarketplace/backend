@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"golang.org/x/sync/errgroup"
 )
 
 type s3Repository struct {
@@ -100,6 +101,33 @@ func (r *s3Repository) Delete(ctx context.Context, key string) error {
 	}
 
 	return nil
+}
+
+// SaveBatch uploads multiple files to S3 concurrently.
+func (r *s3Repository) SaveBatch(ctx context.Context, files []*domain.FileUpload) ([]string, error) {
+	g, gCtx := errgroup.WithContext(ctx)
+	urls := make([]string, len(files))
+
+	for i, file := range files {
+		// Create local copies for the goroutine
+		index := i
+		currentFile := file
+
+		g.Go(func() error {
+			url, err := r.Save(gCtx, currentFile)
+			if err != nil {
+				return fmt.Errorf("failed to upload file %s: %w", currentFile.Name, err)
+			}
+			urls[index] = url
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return urls, nil
 }
 
 // Bucket method return bucket name

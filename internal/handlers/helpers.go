@@ -3,10 +3,15 @@ package handlers
 
 import (
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"pethelp-backend/internal/core/domain"
 	"strconv"
+	"strings"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -45,4 +50,75 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 	}
 
 	return userID, true
+}
+
+func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.FileHeader) ([]byte, *mimetype.MIME, bool) {
+	if fileH.Size > maxUploadSize {
+		logger.Warn("upload attempt with oversized file",
+			zap.String("filename", fileH.Filename),
+			zap.Int64("size", fileH.Size),
+		)
+		c.JSON(http.StatusRequestEntityTooLarge, domain.ErrorResponse{
+			Code:    http.StatusRequestEntityTooLarge,
+			Message: fmt.Sprintf("file is too large. Maximum size is %d MB", maxUploadSize/1024/1024),
+		})
+		return nil, nil, false
+	}
+
+	src, err := fileH.Open()
+	if err != nil {
+		logger.Error("failed to open uploaded file",
+			zap.String("filename", fileH.Filename),
+			zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "failed to open file",
+		})
+		return nil, nil, false
+	}
+	defer src.Close()
+
+	// Read the file content into a buffer to detect MIME type and reuse the reader
+	buf, err := io.ReadAll(src)
+	if err != nil {
+		logger.Error("failed to read file content", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "could not process file",
+		})
+		return buf, nil, false
+	}
+
+	// Detect the MIME type from the file content
+	mtype := mimetype.Detect(buf)
+
+	// Validate the detected MIME type against allowed list
+	expectedExtension, isAllowed := allowedMIMETypes[mtype.String()]
+	if !isAllowed {
+		logger.Warn("upload attempt with disallowed file type",
+			zap.String("filename", fileH.Filename),
+			zap.String("detected_type", mtype.String()),
+		)
+		c.JSON(http.StatusUnsupportedMediaType, domain.ErrorResponse{
+			Code:    http.StatusUnsupportedMediaType,
+			Message: fmt.Sprintf("file type '%s' is not allowed", mtype.String())})
+		return buf, mtype, false
+	}
+
+	// Validate file extension against detected type for an extra layer of security
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(fileH.Filename), "."))
+	if ext != expectedExtension && !(ext == "jpeg" && expectedExtension == "jpg") {
+		logger.Warn("file extension does not match detected content type",
+			zap.String("filename", fileH.Filename),
+			zap.String("extension", ext),
+			zap.String("detected_extension", expectedExtension),
+		)
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "file extension mismatch",
+		})
+		return buf, mtype, false
+	}
+
+	return buf, mtype, true
 }
