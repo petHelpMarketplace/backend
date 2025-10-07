@@ -53,17 +53,6 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 }
 
 func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.FileHeader) ([]byte, *mimetype.MIME, bool) {
-	if fileH.Size > maxUploadSize {
-		logger.Warn("upload attempt with oversized file",
-			zap.String("filename", fileH.Filename),
-			zap.Int64("size", fileH.Size),
-		)
-		c.JSON(http.StatusRequestEntityTooLarge, domain.ErrorResponse{
-			Code:    http.StatusRequestEntityTooLarge,
-			Message: fmt.Sprintf("file is too large. Maximum size is %d MB", maxUploadSize/1024/1024),
-		})
-		return nil, nil, false
-	}
 
 	src, err := fileH.Open()
 	if err != nil {
@@ -86,7 +75,21 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 			Code:    http.StatusInternalServerError,
 			Message: "could not process file",
 		})
-		return buf, nil, false
+		c.Abort()
+		return nil, nil, false
+	}
+
+	if int64(len(buf)) > maxUploadSize {
+		logger.Warn("upload attempt exceeded server read cap",
+			zap.String("filename", fileH.Filename),
+			zap.Int("read_bytes", len(buf)),
+		)
+		c.JSON(http.StatusRequestEntityTooLarge, domain.ErrorResponse{
+			Code:    http.StatusRequestEntityTooLarge,
+			Message: fmt.Sprintf("file is too large. Maximum size is %d MB", maxUploadSize/1024/1024),
+		})
+		c.Abort()
+		return nil, nil, false
 	}
 
 	// Detect the MIME type from the file content
@@ -102,7 +105,8 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 		c.JSON(http.StatusUnsupportedMediaType, domain.ErrorResponse{
 			Code:    http.StatusUnsupportedMediaType,
 			Message: fmt.Sprintf("file type '%s' is not allowed", mtype.String())})
-		return buf, mtype, false
+		c.Abort()
+		return nil, mtype, false
 	}
 
 	// Validate file extension against detected type for an extra layer of security
@@ -117,7 +121,8 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 			Code:    http.StatusBadRequest,
 			Message: "file extension mismatch",
 		})
-		return buf, mtype, false
+		c.Abort()
+		return nil, mtype, false
 	}
 
 	return buf, mtype, true

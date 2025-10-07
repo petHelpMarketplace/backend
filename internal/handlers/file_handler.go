@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"bytes"
+	"errors"
 	"maps"
 	"net/http"
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
@@ -256,13 +258,25 @@ func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
 		return
 	}
 
+	if !strings.Contains(imageURL, strconv.FormatInt(userID, 10)) {
+		fh.logger.Error("URL doesn't contain user ID", zap.String("url", imageURL), zap.Int64("userID", userID))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "URL doesn't contain user ID",
+		})
+		return
+	}
+
 	// remove the image URL from the specialist's record in the database.
 	err := fh.specialistService.DeleteImage(c.Request.Context(), userID, imageURL)
 	if err != nil {
-		// The service layer handles logging and mapping to domain errors.
-		// We just need to translate the domain error to an HTTP response.
+		fh.logger.Error("failed to delete specialist portfolio files from DB", zap.String("url", imageURL), zap.Int64("userID", userID), zap.Error(err))
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			status = http.StatusNotFound
+		}
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
+			Code:    status,
 			Message: "Failed to remove profile image from DB",
 		})
 		return

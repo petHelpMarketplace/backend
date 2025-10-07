@@ -442,13 +442,20 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 		return nil
 	}
 
-	updateTime := time.Now().UTC()
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return fmt.Errorf("%s failed to load time location: %w", operationSpecialist, err)
+	}
+	updateTime := time.Now().In(loc)
 
 	// Use the simple and efficient ARRAY_REMOVE function for a single element.
 	query, args, err := sq.Update(currentTableName).
 		Set("image_id", sq.Expr("ARRAY_REMOVE(image_id, ?)", imageURL)).
 		Set("updated_at", updateTime).
-		Where(sq.Eq{"id": specialistID}).
+		Where(sq.And{
+			sq.Eq{"id": specialistID},
+			sq.Expr("? = ANY(image_id)", imageURL),
+		}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 
@@ -468,7 +475,7 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 	}
 
 	if result.RowsAffected() == 0 {
-		return sql.ErrNoRows // No specialist found with that ID
+		return sql.ErrNoRows //No specialist or image not present
 	}
 
 	return nil
