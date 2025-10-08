@@ -368,6 +368,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialist/me/status": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Allows an authenticated specialist to deactivate or activate their profile.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Deactivate or activate specialist profile",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Set to true to activate, false to deactivate the profile.",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile status updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid status parameter",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "objefct"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/profile": {
             "patch": {
                 "security": [
@@ -527,52 +588,6 @@ const docTemplate = `{
                 }
             }
         }
-        "/public-appointment-request": {
-            "post": {
-                "description": "Book appointment with a specialist without registration.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "UnauthAppointment"
-                ],
-                "summary": "Booking appointment",
-                "parameters": [
-                    {
-                        "description": "Book appointment as unauthorized user",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully booked appiuntment as unauthorized user",
-                        "schema": {
-                            "$ref": "#/definitions/domain.successSaveUnauthAppointment"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        }    
     },
     "definitions": {
         "app.HealthCheckResponse": {
@@ -751,6 +766,13 @@ const docTemplate = `{
                 "phone": {
                     "description": "Phone number of the specialist in E.164 format.\nexample: +380961234567",
                     "type": "string"
+                },
+                "portfolio_urls": {
+                    "description": "URLs to the specialist's portfolio images.\nformat: array\nexample: [\"https://your-cdn.com/portfolio/image1.jpg\", \"https://your-cdn.com/portfolio/video1.mp4\"]",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "position": {
                     "description": "Professional position or title (e.g., \"Veterinarian\", \"Dog Groomer\").\nexample: Veterinarian",

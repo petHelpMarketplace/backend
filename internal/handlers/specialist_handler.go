@@ -520,3 +520,72 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 		Data:    specProf,
 	})
 }
+
+// DeactivateProfile
+// @Summary      Deactivate or activate specialist profile
+// @Description  Allows an authenticated specialist to deactivate or activate their profile.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        status query boolean true "Set to true to activate, false to deactivate the profile."
+// @Success      200  {object}  domain.SuccessResponse "Profile status updated successfully"
+// @Failure      400  {object}  domain.ErrorResponse "Invalid status parameter"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
+// @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
+// @Failure      500  {objefct}  domain.ErrorResponse "Internal server error"
+// @Router       /specialist/me/status [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return // getUserIDFromContext already handled the error response
+	}
+
+	statusStr := c.Query("status")
+	if statusStr == "" {
+		sh.logger.Warn("missing 'status' query parameter for profile deactivation")
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Query parameter 'status' is required (true/false)",
+		})
+		return
+	}
+
+	isActive, err := strconv.ParseBool(statusStr)
+	if err != nil {
+		sh.logger.Warn("invalid 'status' query parameter", zap.String("status", statusStr), zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid value for 'status' parameter, must be 'true' or 'false'",
+		})
+		return
+	}
+
+	err = sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
+	if err != nil {
+		sh.logger.Error("failed to update specialist profile active status", zap.Int64("userID", userID), zap.Bool("status", isActive), zap.Error(err))
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.ErrorResponse{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	message := "Profile deactivated successfully."
+	if isActive {
+		message = "Profile activated successfully."
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: message,
+	})
+}

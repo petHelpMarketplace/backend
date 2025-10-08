@@ -100,7 +100,9 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	}
 
 	specialistDTO.ID = specialistModel.ID
-	specialistDTO.Name = specialistModel.Name
+	if specialistModel.Name.Valid {
+		specialistDTO.Name = &specialistModel.Name.String
+	}
 	specialistDTO.Email = specialistModel.Email
 	specialistDTO.IsVerified = specialistModel.IsVerified
 
@@ -269,4 +271,37 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 
 	// Convert the updated model to a DTO and return it
 	return utils.ToSpecialistProfileDTO(updatedModel), nil
+}
+
+func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64, isActive bool) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	//check if the specialist exists.
+	if _, err := ss.specialistRepo.GetByID(timeoutCtx, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("attempt to change active status for non-existent specialist", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to get specialist by ID during profile deactivation/activation check",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	err := ss.specialistRepo.UpdateIsActive(timeoutCtx, id, isActive)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist disappeared during profile active status update", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to update specialist profile active status in database",
+			zap.Int64("id", id),
+			zap.Bool("isActive", isActive),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	return nil
+
 }
