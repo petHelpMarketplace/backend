@@ -81,6 +81,8 @@ var SpecialistModule = fx.Module("specialist",
 			protected.POST("/logout", handler.Logout)
 			protected.PATCH("/profile", handler.UpdateProfile)
 			protected.POST("/avatar", mp.FileHandler.UploadAvatar)
+			protected.POST("/portfolio", mp.FileHandler.UploadPortfolio)
+			protected.DELETE("/portfolio/image", mp.FileHandler.DeletePortfolioImage)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),

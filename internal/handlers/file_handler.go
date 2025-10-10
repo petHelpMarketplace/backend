@@ -2,23 +2,23 @@ package handlers
 
 import (
 	"bytes"
-	"fmt"
-	"io"
+	"errors"
+	"maps"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 const (
-	maxUploadSize = 10 * 1024 * 1024 // 10 MB
+	maxUploadSize = 8 * 1024 * 1024 // 8 MB
 )
 
 // Define allowed MIME types for better security and clarity.
@@ -30,9 +30,14 @@ var allowedMIMETypes = map[string]string{
 }
 
 // SuccessPayload is the response for a successful file upload.
-type SuccessPayload struct {
+type successAvatarPayload struct {
 	Message string `json:"message" example:"Avatar file uploaded successfully"`
 	URL     string `json:"url" example:"https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"`
+}
+
+type successPortfolioPayload struct {
+	Message string            `json:"message" example:"Portfolio files uploaded successfully"`
+	URLs    map[string]string `json:"urls_map" example:"{\"original_cv.webp\":\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\",\"photo.jpg\":\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}"`
 }
 
 type FileHandler struct {
@@ -58,7 +63,7 @@ func NewFileHandler(fileService ports.FileUploadService, spec ports.SpecialistSe
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file formData file true "Avatar file to upload"
-// @Success      201  {object}  SuccessPayload "Avatar uploaded successfully"
+// @Success      201  {object}  successAvatarPayload "Avatar uploaded successfully"
 // @Failure      400  {object}  domain.ErrorResponse "Bad Request: file is required, extension mismatch, or other validation errors"
 // @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
 // @Failure      413  {object}  domain.ErrorResponse "Payload Too Large: File size exceeds the 10MB limit"
@@ -82,71 +87,9 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Validate file size
-	if fileHeader.Size > maxUploadSize {
-		fh.logger.Warn("upload attempt with oversized file",
-			zap.String("filename", fileHeader.Filename),
-			zap.Int64("size", fileHeader.Size),
-		)
-		c.JSON(http.StatusRequestEntityTooLarge, domain.ErrorResponse{
-			Code:    http.StatusRequestEntityTooLarge,
-			Message: fmt.Sprintf("file is too large. Maximum size is %d MB", maxUploadSize/1024/1024),
-		})
-		return
-	}
-
-	src, err := fileHeader.Open()
-	if err != nil {
-		fh.logger.Error("failed to open uploaded file",
-			zap.String("filename", fileHeader.Filename),
-			zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "failed to open file",
-		})
-		return
-	}
-	defer src.Close()
-
-	// Read the file content into a buffer to detect MIME type and reuse the reader
-	buf, err := io.ReadAll(src)
-	if err != nil {
-		fh.logger.Error("failed to read file content", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "could not process file",
-		})
-		return
-	}
-
-	// Detect the MIME type from the file content
-	mtype := mimetype.Detect(buf)
-
-	// Validate the detected MIME type against allowed list
-	expectedExtension, isAllowed := allowedMIMETypes[mtype.String()]
-	if !isAllowed {
-		fh.logger.Warn("upload attempt with disallowed file type",
-			zap.String("filename", fileHeader.Filename),
-			zap.String("detected_type", mtype.String()),
-		)
-		c.JSON(http.StatusUnsupportedMediaType, domain.ErrorResponse{
-			Code:    http.StatusUnsupportedMediaType,
-			Message: fmt.Sprintf("file type '%s' is not allowed", mtype.String())})
-		return
-	}
-
-	// Validate file extension against detected type for an extra layer of security
-	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(fileHeader.Filename), "."))
-	if ext != expectedExtension && !(ext == "jpeg" && expectedExtension == "jpg") {
-		fh.logger.Warn("file extension does not match detected content type",
-			zap.String("filename", fileHeader.Filename),
-			zap.String("extension", ext),
-			zap.String("detected_extension", expectedExtension),
-		)
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "file extension mismatch",
-		})
+	// --- Start of validation ---
+	buf, mtype, ok := validateUploadFile(c, fh.logger, fileHeader)
+	if !ok {
 		return
 	}
 
@@ -158,7 +101,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	}
 
 	specDTO, err := fh.specialistService.ShowByID(c.Request.Context(), userID)
-	if err != nil {
+	if err != nil || specDTO.ID == 0 {
 		fh.logger.Error("failed to get specialist by ID", zap.Int64("userID", userID), zap.Error(err))
 	}
 
@@ -175,7 +118,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 		fh.logger.Error("failed to save avatar file in repository", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "failed to upload file",
+			Message: "failed to upload avatar file",
 		})
 		return
 	}
@@ -185,15 +128,167 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 		fh.logger.Error("failed to update specialist avatar URL in DB", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
-			Message: "failed to update specialist avatar",
+			Message: "failed to update specialist avatar file in DB",
 		})
 		return
 	}
 
 	// Return a successful response
-	c.JSON(http.StatusCreated, SuccessPayload{
+	c.JSON(http.StatusCreated, successAvatarPayload{
 		Message: "Avatar file uploaded successfully",
 		URL:     uploadedFile.URL,
 	})
 
+}
+
+// UploadPortfolio handles uploading multiple files for a specialist's portfolio.
+// @Summary      Upload specialist portfolio images
+// @Description  Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).
+// @Tags         Specialist
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        files[] formData file true "Portfolio image files to upload"
+// @Success      201  {object}  successPortfolioPayload "Portfolio files uploaded successfully"
+// @Failure      400  {object}  domain.ErrorResponse "Bad Request: no files uploaded, or other validation errors"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
+// @Failure      413  {object}  domain.ErrorResponse "Payload Too Large: A file's size exceeds the 8MB limit"
+// @Failure      415  {object}  domain.ErrorResponse "Unsupported Media Type: A file's type is not allowed"
+// @Failure      500  {object}  domain.ErrorResponse "Internal Server Error"
+// @Router       /specialist/portfolio [post]
+// @Security 	 BearerAuth
+func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
+	// Use MultipartForm to handle multiple files
+	form, err := c.MultipartForm()
+	if err != nil {
+		fh.logger.Error("failed to parse multipart form", zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid form data",
+		})
+		return
+	}
+
+	// "files[]" is the key for the file array in the form-data
+	fileHeaders := form.File["files[]"]
+	if len(fileHeaders) == 0 {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "No files were uploaded"})
+		return
+	}
+
+	userID, ok := getUserIDFromContext(c, fh.logger)
+	if !ok {
+		return
+	}
+
+	filesToUpload := make([]*domain.FileUpload, 0, len(fileHeaders))
+	for _, fileHeader := range fileHeaders {
+		// --- Start file validation ---
+		buf, mtype, ok := validateUploadFile(c, fh.logger, fileHeader)
+		if !ok {
+			return
+		}
+
+		filesToUpload = append(filesToUpload, &domain.FileUpload{
+			Name:     fileHeader.Filename,
+			Size:     fileHeader.Size,
+			MIMEType: mtype.String(),
+			Content:  bytes.NewBuffer(buf),
+		})
+	}
+
+	// Call the service with the list of files
+	uploadedFiles, err := fh.uploadService.UploadPortfolio(c.Request.Context(), strconv.FormatInt(userID, 10), filesToUpload)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to upload portfolio files to storage",
+		})
+		return
+	}
+
+	urls := make(map[string]string, len(uploadedFiles))
+	for _, file := range uploadedFiles {
+		urls[filepath.Base(file.ID)] = file.URL
+	}
+
+	err = fh.specialistService.AddImages(c.Request.Context(), userID, slices.Sorted(maps.Values(urls)))
+	if err != nil {
+		fh.logger.Error("failed to update specialist avatar URL in DB", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update specialist portfolio files in DB",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, successPortfolioPayload{
+		Message: "Portfolio files uploaded successfully",
+		URLs:    urls,
+	})
+}
+
+// DeletePortfolioImage handles deleting a single image from a specialist's portfolio.
+// @Summary      Delete specialist portfolio image
+// @Description  Deletes a specific image from the authenticated specialist's portfolio. The full URL of the image to be deleted must be provided as a query parameter.
+// @Tags         Specialist
+// @Produce      json
+// @Param        url query string true "Full URL of the image to delete"
+// @Success      200  {object}  domain.SuccessResponse "Image deleted successfully"
+// @Failure      400  {object}  domain.ErrorResponse "Bad Request: URL parameter is missing"
+// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
+// @Failure      404  {object}  domain.ErrorResponse "Not Found: Specialist account not found"
+// @Failure      500  {object}  domain.ErrorResponse "Internal Server Error"
+// @Router       /specialist/portfolio/image [delete]
+// @Security 	 BearerAuth
+func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
+
+	imageURL := c.Query("url")
+	if imageURL == "" {
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "url query parameter is required",
+		})
+		return
+	}
+
+	userID, ok := getUserIDFromContext(c, fh.logger)
+	if !ok {
+		return
+	}
+
+	if !strings.Contains(imageURL, strconv.FormatInt(userID, 10)) {
+		fh.logger.Error("URL doesn't contain user ID", zap.String("url", imageURL), zap.Int64("userID", userID))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "URL doesn't contain user ID",
+		})
+		return
+	}
+
+	// remove the image URL from the specialist's record in the database.
+	err := fh.specialistService.DeleteImage(c.Request.Context(), userID, imageURL)
+	if err != nil {
+		fh.logger.Error("failed to delete specialist portfolio files from DB", zap.String("url", imageURL), zap.Int64("userID", userID), zap.Error(err))
+		status := http.StatusInternalServerError
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    status,
+			Message: "Failed to remove portfolio image from DB",
+		})
+		return
+	}
+
+	// If the DB update was successful, proceed to delete the file from storage.
+	if err := fh.uploadService.DeletePortfolioImage(c.Request.Context(), imageURL); err != nil {
+		fh.logger.Error("failed to delete portfolio image from storage after DB update", zap.String("url", imageURL), zap.Error(err))
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: "Image deleted successfully.",
+	})
 }

@@ -1,37 +1,55 @@
 {
-  "schemes": ["https", "http"],
-  "swagger": "2.0",
-  "info": {
-    "description": "This is a PetHelp project backend",
-    "title": "Swagger Example API",
-    "termsOfService": "http://swagger.io/terms/",
-    "contact": {
-      "name": "API Support",
-      "url": "http://www.swagger.io/support",
-      "email": "support@swagger.io"
+    "schemes": [
+        "https",
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a PetHelp project backend",
+        "title": "Swagger Example API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
     },
-    "license": {
-      "name": "Apache 2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-    },
-    "version": "1.0"
-  },
-  "host": "petbackend-a2vg.onrender.com",
-  "basePath": "/api/v1/",
-  "paths": {
-    "/health": {
-      "get": {
-        "description": "Checks if the application is running and responsive.",
-        "produces": ["application/json"],
-        "tags": ["System"],
-        "summary": "Performs a health check on the application",
-        "responses": {
-          "200": {
-            "description": "Application is healthy",
-            "schema": {
-              "$ref": "#/definitions/app.HealthCheckResponse"
+    "host": "petbackend-a2vg.onrender.com",
+    "basePath": "/api/v1/",
+    "paths": {
+        "/health": {
+            "get": {
+                "description": "Checks if the application is running and responsive.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Performs a health check on the application",
+                "responses": {
+                    "200": {
+                        "description": "Application is healthy",
+                        "schema": {
+                            "$ref": "#/definitions/app.HealthCheckResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Application is unhealthy or service unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
-<<<<<<< HEAD
         },
         "/oauth/{provider}": {
             "get": {
@@ -77,6 +95,58 @@
                 }
             }
         },
+        "/public-appointment-request": {
+            "post": {
+                "description": "New  appointment booking by unauth user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SpecialistAppointment"
+                ],
+                "summary": "Book un appointment",
+                "parameters": [
+                    {
+                        "description": "UnauthAppointment request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Booking appointment succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/avatar": {
             "post": {
                 "security": [
@@ -108,7 +178,7 @@
                     "201": {
                         "description": "Avatar uploaded successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SuccessPayload"
+                            "$ref": "#/definitions/handlers.successAvatarPayload"
                         }
                     },
                     "400": {
@@ -348,6 +418,131 @@
                 }
             }
         },
+        "/specialist/portfolio": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Upload specialist portfolio images",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Portfolio image files to upload",
+                        "name": "files[]",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Portfolio files uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successPortfolioPayload"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: no files uploaded, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large: A file's size exceeds the 8MB limit",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type: A file's type is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/portfolio/image": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a specific image from the authenticated specialist's portfolio. The full URL of the image to be deleted must be provided as a query parameter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Delete specialist portfolio image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Full URL of the image to delete",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: URL parameter is missing",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/specialist/profile": {
             "patch": {
                 "security": [
@@ -505,50 +700,43 @@
                         }
                     }
                 }
-=======
-          },
-          "503": {
-            "description": "Application is unhealthy or service unavailable",
-            "schema": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
->>>>>>> dev2
             }
-          }
         }
-      }
     },
-    "/oauth/{provider}": {
-      "get": {
-        "description": "Handles the callback from an OAuth2.0 provider after user authentication.",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["OAuth"],
-        "summary": "OAuth2.0 Provider Callback",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "OAuth2.0 provider name (e.g., google, github)",
-            "name": "provider",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successfully authenticated and generated tokens",
-            "schema": {
-              "$ref": "#/definitions/domain.TokensPair"
+    "definitions": {
+        "app.HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "healthy"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2023-10-27T10:00:00Z"
+                }
             }
-          },
-          "404": {
-            "description": "Account with this email not found",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
+        },
+        "domain.ChangePassReq": {
+            "description": "Change password request payload",
+            "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "description": "The specialist's current password.\nrequired: true\nexample: MySecretPassword123!",
+                    "type": "string",
+                    "example": "MySecretPassword123!"
+                },
+                "new_password": {
+                    "description": "The new password for the specialist account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\"\nexample: NewStr0ngP@ssw0rd!",
+                    "type": "string",
+                    "minLength": 12,
+                    "example": "NewStr0ngP@ssw0rd!"
+                }
             }
-<<<<<<< HEAD
         },
         "domain.ErrorResponse": {
             "type": "object",
@@ -642,6 +830,95 @@
                     "type": "string",
                     "minLength": 13,
                     "example": "+38 (093) 987-65-32"
+                }
+            }
+        },
+        "domain.SaveUnauthAppointmentRequest": {
+            "description": "Anauthorized user' appointment request",
+            "type": "object",
+            "required": [
+                "amount",
+                "animal_size_id",
+                "appointment_date",
+                "apt",
+                "area_id",
+                "city_id",
+                "description",
+                "email",
+                "end_time",
+                "location_type",
+                "service_id",
+                "specialist_id",
+                "start_time",
+                "status",
+                "street",
+                "unit"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 500
+                },
+                "animal_size_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "appointment_date": {
+                    "type": "string",
+                    "example": "2025-07-22"
+                },
+                "apt": {
+                    "type": "string",
+                    "example": "14"
+                },
+                "area_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "city_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Пудель, потрібен грумінг перед виставкою."
+                },
+                "email": {
+                    "description": "unauth user email",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "john.doe@example.com"
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "10:00"
+                },
+                "location_type": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "specialist_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "08:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "street": {
+                    "type": "string",
+                    "example": "вул. Володимирська"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "14"
                 }
             }
         },
@@ -757,7 +1034,7 @@
                 }
             }
         },
-        "handlers.SuccessPayload": {
+        "handlers.successAvatarPayload": {
             "type": "object",
             "properties": {
                 "message": {
@@ -767,6 +1044,25 @@
                 "url": {
                     "type": "string",
                     "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
+                }
+            }
+        },
+        "handlers.successPortfolioPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Portfolio files uploaded successfully"
+                },
+                "urls_map": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"photo.jpg\"": "\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}",
+                        "{\"original_cv.webp\"": "\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\""
+                    }
                 }
             }
         },
@@ -780,6 +1076,19 @@
                 "message": {
                     "type": "string",
                     "default": "Registration successful"
+                }
+            }
+        },
+        "handlers.successSaveUnauthAppointment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "message": {
+                    "type": "string",
+                    "default": "An appointment booked successfully"
                 }
             }
         },
@@ -798,627 +1107,18 @@
                     "example": "Profile updated successfully."
                 }
             }
-=======
-          },
-          "500": {
-            "description": "Internal server error or failed to complete OAuth2.0 authentication",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
->>>>>>> dev2
         }
-      }
     },
-    "/specialist/avatar": {
-      "post": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Uploads a new avatar for the authenticated specialist. The file should be sent as multipart/form-data with the key 'file'. The server validates file size (max 10MB) and type (jpeg, png, webp, heic).",
-        "consumes": ["multipart/form-data"],
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Upload specialist avatar",
-        "parameters": [
-          {
-            "type": "file",
-            "description": "Avatar file to upload",
-            "name": "file",
-            "in": "formData",
-            "required": true
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Avatar uploaded successfully",
-            "schema": {
-              "$ref": "#/definitions/handlers.SuccessPayload"
-            }
-          },
-          "400": {
-            "description": "Bad Request: file is required, extension mismatch, or other validation errors",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized: User is not authenticated",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "413": {
-            "description": "Payload Too Large: File size exceeds the 10MB limit",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "415": {
-            "description": "Unsupported Media Type: File type is not allowed",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
-      }
     },
-    "/specialist/change-password": {
-      "patch": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Allows an authenticated specialist to change their password. All active sessions will be terminated upon successful password change.",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Change specialist password",
-        "parameters": [
-          {
-            "description": "Change password request",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/domain.ChangePassReq"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Password updated successfully",
-            "schema": {
-              "$ref": "#/definitions/domain.SuccessResponse"
-            }
-          },
-          "400": {
-            "description": "Invalid request payload or validation failed",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized or invalid old password",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "404": {
-            "description": "Specialist account not found",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "409": {
-            "description": "Conflict: New password is the same as the old one",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/specialist/login": {
-      "post": {
-        "description": "Login specialist",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Login",
-        "parameters": [
-          {
-            "description": "Login request body",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/domain.LoginReq"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Login succeeded",
-            "schema": {
-              "$ref": "#/definitions/domain.TokensPair"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/specialist/logout": {
-      "post": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Logout specialist",
-        "responses": {
-          "200": {
-            "description": "Logout successful",
-            "schema": {
-              "$ref": "#/definitions/domain.SuccessResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal server error during logout process",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/specialist/me": {
-      "get": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Get information about the currently authenticated specialist. Requires a valid Bearer token.",
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Get current specialist",
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved specialist data",
-            "schema": {
-              "$ref": "#/definitions/domain.SpecialistProfileDTO"
-            }
-          },
-          "401": {
-            "description": "Unauthorized. The user is not authenticated.",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "404": {
-            "description": "Specialist account associated with the token not found.",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal server error.",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/specialist/register": {
-      "post": {
-        "description": "New specialist registration",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Registration",
-        "parameters": [
-          {
-            "description": "Registration request body",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/domain.RegistrationRequest"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Sign-up succeeded",
-            "schema": {
-              "$ref": "#/definitions/handlers.successRegistration"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/token/refresh": {
-      "post": {
-        "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
-        "produces": ["application/json"],
-        "tags": ["Token"],
-        "summary": "Update access and refresh tokens",
-        "responses": {
-          "200": {
-            "description": "Successfully generated new token pair",
-            "schema": {
-              "$ref": "#/definitions/domain.TokensPair"
-            }
-          },
-          "400": {
-            "description": "Invalid request payload or malformed refresh token",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized: Invalid, expired, or malformed refresh token",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "403": {
-            "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "schema": {
-              "$ref": "#/definitions/domain.ErrorResponse"
-            }
-          }
-        }
-      }
+    "externalDocs": {
+        "description": "OpenAPI",
+        "url": "https://swagger.io/resources/open-api/"
     }
-  },
-  "/public-appointment-request": {
-    "post": {
-      "description": "New unauth appointment booking",
-      "consumes": ["application/json"],
-      "produces": ["application/json"],
-      "tags": ["UnauthAppointment"],
-      "summary": "Booking",
-      "parameters": [
-        {
-          "description": "Unauth appointment request body",
-          "name": "request",
-          "in": "body",
-          "required": true,
-          "schema": {
-            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
-          }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Unauth appointment booking succeeded",
-          "schema": {
-            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
-          }
-        },
-        "400": {
-          "description": "Bad Request",
-          "schema": {
-            "$ref": "#/definitions/domain.ErrorResponse"
-          }
-        },
-        "500": {
-          "description": "Internal Server Error",
-          "schema": {
-            "$ref": "#/definitions/domain.ErrorResponse"
-          }
-        }
-      }
-    }
-  },
-  "definitions": {
-    "app.HealthCheckResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "example": "healthy"
-        },
-        "timestamp": {
-          "type": "string",
-          "example": "2023-10-27T10:00:00Z"
-        }
-      }
-    },
-    "domain.ChangePassReq": {
-      "description": "Change password request payload",
-      "type": "object",
-      "required": ["current_password", "new_password"],
-      "properties": {
-        "current_password": {
-          "description": "The specialist's current password.\nrequired: true\nexample: MySecretPassword123!",
-          "type": "string",
-          "example": "MySecretPassword123!"
-        },
-        "new_password": {
-          "description": "The new password for the specialist account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\"\nexample: NewStr0ngP@ssw0rd!",
-          "type": "string",
-          "minLength": 12,
-          "example": "NewStr0ngP@ssw0rd!"
-        }
-      }
-    },
-    "domain.ErrorResponse": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "example": 400
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/domain.FieldError"
-          }
-        },
-        "message": {
-          "type": "string",
-          "example": "Validation failed"
-        }
-      }
-    },
-    "domain.FieldError": {
-      "type": "object",
-      "properties": {
-        "field": {
-          "type": "string",
-          "example": "email"
-        },
-        "message": {
-          "type": "string",
-          "example": "This field is required."
-        }
-      }
-    },
-    "domain.LoginReq": {
-      "description": "User login request payload",
-      "type": "object",
-      "required": ["email", "password"],
-      "properties": {
-        "email": {
-          "description": "Email address of the user.\nrequired: true\nformat: email\nexample: user@example.com",
-          "type": "string",
-          "example": "user@example.com"
-        },
-        "password": {
-          "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
-          "type": "string",
-          "example": "MySecretPassword123!"
-        }
-      }
-    },
-    "domain.RegistrationRequest": {
-      "description": "User registration request payload",
-      "type": "object",
-      "required": [
-        "email",
-        "name",
-        "password",
-        "password_confirmation",
-        "phone"
-      ],
-      "properties": {
-        "email": {
-          "description": "Email address of the user.\nrequired: true\nformat: email\nmaxLength: 255\nexample: john.doe@example.com",
-          "type": "string",
-          "maxLength": 255,
-          "example": "john.doe@example.com"
-        },
-        "name": {
-          "description": "Name of the user.\nAllows Unicode letters, spaces, hyphens, and apostrophes.\nrequired: true\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: John Doe",
-          "type": "string",
-          "maxLength": 100,
-          "minLength": 2,
-          "example": "John"
-        },
-        "password": {
-          "description": "Password for the user account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255 // Arbitrary max length, adjust as needed\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\"\nexample: Str0ngP@ssw0rd!",
-          "type": "string",
-          "minLength": 12,
-          "example": "Str0ngP@ssw0rd!"
-        },
-        "password_confirmation": {
-          "description": "Password confirmation. Must match the Password field.\nrequired: true\nexample: Str0ngP@ssw0rd!",
-          "type": "string",
-          "example": "Str0ngP@ssw0rd!"
-        },
-        "phone": {
-          "description": "Phone number of the user in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nrequired: true\nminLength: 13 // Minimum length for +38 (093) 987-65-32\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
-          "type": "string",
-          "minLength": 13,
-          "example": "+38 (093) 987-65-32"
-        }
-      }
-    },
-    "domain.SpecialistProfileDTO": {
-      "description": "Specialist profile data returned to clients.",
-      "type": "object",
-      "properties": {
-        "avatar_url": {
-          "description": "URL to the specialist's avatar image.\nformat: uri\nexample: https://your-cdn.com/avatars/kateryna_avatar.jpg",
-          "type": "string"
-        },
-        "bio": {
-          "description": "Short biography or summary of the specialist.\nexample: Experienced veterinarian specializing in small animal care.",
-          "type": "string"
-        },
-        "description": {
-          "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
-          "type": "string"
-        },
-        "email": {
-          "description": "Email address of the specialist.\nformat: email\nexample: kateryna.walls@example.com",
-          "type": "string"
-        },
-        "experience": {
-          "description": "Years of professional experience.\nminimum: 0\nexample: 7",
-          "type": "integer"
-        },
-        "family_name": {
-          "description": "Family name (surname) of the specialist.\nexample: Walls",
-          "type": "string"
-        },
-        "id": {
-          "description": "Unique identifier of the specialist.\nexample: 123",
-          "type": "integer"
-        },
-        "is_active": {
-          "description": "Indicates if the specialist's profile is currently active.\nexample: true",
-          "type": "boolean"
-        },
-        "is_verified": {
-          "description": "Indicates if the specialist's credentials have been verified.\nexample: true",
-          "type": "boolean"
-        },
-        "name": {
-          "description": "Given name of the specialist.\nexample: Kateryna",
-          "type": "string"
-        },
-        "phone": {
-          "description": "Phone number of the specialist in E.164 format.\nexample: +380961234567",
-          "type": "string"
-        },
-        "position": {
-          "description": "Professional position or title (e.g., \"Veterinarian\", \"Dog Groomer\").\nexample: Veterinarian",
-          "type": "string"
-        }
-      }
-    },
-    "domain.SuccessResponse": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "example": 200
-        },
-        "message": {
-          "type": "string",
-          "example": "Operation was successful"
-        }
-      }
-    },
-    "domain.TokensPair": {
-      "type": "object",
-      "properties": {
-        "access_token": {
-          "type": "string"
-        },
-        "refresh_token": {
-          "type": "string"
-        }
-      }
-    },
-    "handlers.SuccessPayload": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string",
-          "example": "Avatar file uploaded successfully"
-        },
-        "url": {
-          "type": "string",
-          "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
-        }
-      }
-    },
-    "handlers.successRegistration": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "example": "1"
-        },
-        "message": {
-          "type": "string",
-          "default": "Registration successful"
-        }
-      }
-    }
-  },
-  "securityDefinitions": {
-    "BearerAuth": {
-      "description": "Type \"Bearer\" followed by a space and JWT token.",
-      "type": "apiKey",
-      "name": "Authorization",
-      "in": "header"
-    }
-  },
-  "externalDocs": {
-    "description": "OpenAPI",
-    "url": "https://swagger.io/resources/open-api/"
-  }
 }

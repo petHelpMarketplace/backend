@@ -14,27 +14,27 @@ import (
 	"go.uber.org/zap"
 )
 
-//prefix log messages so it’s clear which handler produced the log
+// prefix log messages so it’s clear which handler produced the log
 const (
 	operationUnauthAppHandler = "unauth_appointment_handler: "
 )
 
 type UnauthAppointmentHandlerImpl struct {
 	//checks request payload fields for correctness
-	validator         ports.UnauthAppointmentValidator
+	validator                ports.UnauthAppointmentValidator
 	unauthAppointmentService ports.UnauthAppointmentService
-	logger            *zap.Logger
+	logger                   *zap.Logger
 }
 
-//Compile-time check that this struct implements the SpecialistHandlers interface
+// Compile-time check that this struct implements the SpecialistHandlers interface
 var _ ports.UnauthAppointmentHandler = (*UnauthAppointmentHandlerImpl)(nil)
 
-//Creates a new handler and injects dependencies.
+// Creates a new handler and injects dependencies.
 func NewUnauthAppointmentHandler(unauthAppointmentSrv ports.UnauthAppointmentService, validator ports.UnauthAppointmentValidator, logger *zap.Logger) *UnauthAppointmentHandlerImpl {
 	return &UnauthAppointmentHandlerImpl{
-		validator:         validator,
+		validator:                validator,
 		unauthAppointmentService: unauthAppointmentSrv,
-		logger:            logger,
+		logger:                   logger,
 	}
 }
 
@@ -52,9 +52,7 @@ type successSaveUnauthAppointment struct {
 // @Success 201 {object} successSaveUnauthAppointment "Booking appointment succeeded"
 // @Failure      400,409,500 {object} domain.ErrorResponse
 // @Router /public-appointment-request [post]
-
-//Handles HTTP POST requests to create unauthenticated appointments
-func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
+func (ah *UnauthAppointmentHandlerImpl) Book(c *gin.Context) {
 
 	//Bind JSON request
 	req := domain.SaveUnauthAppointmentRequest{}
@@ -79,7 +77,7 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 			})
 		} else if errors.As(err, &syntaxErr) {
 			message = "The request body is not valid JSON."
-		//io.EOF --> empty body.
+			//io.EOF --> empty body.
 		} else if err == io.EOF {
 			message = "Request body cannot be empty."
 		}
@@ -108,20 +106,20 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, domain.ErrTimeUnavailable) {
 			c.JSON(http.StatusConflict, domain.ErrorResponse{
-				Code:    http.StatusConflict,
+				Code: http.StatusConflict,
 				Message: fmt.Sprintf("time %s %s-%s already booked",
-				req.Date.Format("2006-01-02"),
-				req.StartTime.Format("15:04"),
-				req.EndTime.Format("15:04"),),
-				})
+					req.Date.Format("2006-01-02"),
+					req.StartTime.Format("15:04"),
+					req.EndTime.Format("15:04")),
+			})
 			return
 		} else if errors.Is(err, domain.ErrInvalidTimeWindow) {
 			c.JSON(http.StatusBadRequest, domain.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "invalid time window: start_time must be before end_time",
-     })
-     return
-   }
+				Code:    http.StatusBadRequest,
+				Message: "invalid time window: start_time must be before end_time",
+			})
+			return
+		}
 
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,
@@ -137,8 +135,3 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 	})
 
 }
-
-
-
-
-
