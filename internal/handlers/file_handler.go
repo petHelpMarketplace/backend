@@ -277,7 +277,7 @@ func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    status,
-			Message: "Failed to remove profile image from DB",
+			Message: "Failed to remove portfolio image from DB",
 		})
 		return
 	}

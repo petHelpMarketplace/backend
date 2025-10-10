@@ -68,7 +68,8 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 	defer src.Close()
 
 	// Read the file content into a buffer to detect MIME type and reuse the reader
-	buf, err := io.ReadAll(src)
+	limited := io.LimitReader(src, maxUploadSize+1)
+	buf, err := io.ReadAll(limited)
 	if err != nil {
 		logger.Error("failed to read file content", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
