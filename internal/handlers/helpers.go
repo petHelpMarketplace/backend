@@ -23,7 +23,7 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 	userIDRaw, exists := c.Get("userID")
 	if !exists {
 		logger.Warn("userID not found in context, middleware might not have run or failed")
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, domain.UnauthorizedError{
 			Code:    http.StatusUnauthorized,
 			Message: "Unauthorized user access attempt",
 		})
@@ -33,7 +33,7 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 	userIDStr, ok := userIDRaw.(string)
 	if !ok {
 		logger.Error("userID in context is not a string", zap.Any("type", fmt.Sprintf("%T", userIDRaw)))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -43,7 +43,7 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error"})
 		return 0, false
@@ -59,7 +59,7 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 		logger.Error("failed to open uploaded file",
 			zap.String("filename", fileH.Filename),
 			zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to open file",
 		})
@@ -72,7 +72,7 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 	buf, err := io.ReadAll(limited)
 	if err != nil {
 		logger.Error("failed to read file content", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "could not process file",
 		})
@@ -85,7 +85,7 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 			zap.String("filename", fileH.Filename),
 			zap.Int("read_bytes", len(buf)),
 		)
-		c.JSON(http.StatusRequestEntityTooLarge, domain.ErrorResponse{
+		c.JSON(http.StatusRequestEntityTooLarge, domain.PayloadTooLargeError{
 			Code:    http.StatusRequestEntityTooLarge,
 			Message: fmt.Sprintf("file is too large. Maximum size is %d MB", maxUploadSize/1024/1024),
 		})
@@ -103,7 +103,7 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 			zap.String("filename", fileH.Filename),
 			zap.String("detected_type", mtype.String()),
 		)
-		c.JSON(http.StatusUnsupportedMediaType, domain.ErrorResponse{
+		c.JSON(http.StatusUnsupportedMediaType, domain.UnsupportedMediaTypeError{
 			Code:    http.StatusUnsupportedMediaType,
 			Message: fmt.Sprintf("file type '%s' is not allowed", mtype.String())})
 		c.Abort()
@@ -118,7 +118,7 @@ func validateUploadFile(c *gin.Context, logger *zap.Logger, fileH *multipart.Fil
 			zap.String("extension", ext),
 			zap.String("detected_extension", expectedExtension),
 		)
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "file extension mismatch",
 		})

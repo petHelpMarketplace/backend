@@ -64,11 +64,11 @@ func NewFileHandler(fileService ports.FileUploadService, spec ports.SpecialistSe
 // @Produce      json
 // @Param        file formData file true "Avatar file to upload"
 // @Success      201  {object}  successAvatarPayload "Avatar uploaded successfully"
-// @Failure      400  {object}  domain.ErrorResponse "Bad Request: file is required, extension mismatch, or other validation errors"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
-// @Failure      413  {object}  domain.ErrorResponse "Payload Too Large: File size exceeds the 10MB limit"
-// @Failure      415  {object}  domain.ErrorResponse "Unsupported Media Type: File type is not allowed"
-// @Failure      500  {object}  domain.ErrorResponse "Internal Server Error"
+// @Failure      400  {object}  domain.BadRequestError "Bad Request: file is required, extension mismatch, or other validation errors"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized: User is not authenticated"
+// @Failure      413  {object}  domain.PayloadTooLargeError "Payload Too Large: File size exceeds the 10MB limit"
+// @Failure      415  {object}  domain.UnsupportedMediaTypeError "Unsupported Media Type: File type is not allowed"
+// @Failure      500  {object}  domain.InternalServerError "Internal Server Error"
 // @Router       /specialist/avatar [post]
 // @Security 	 BearerAuth
 func (fh *FileHandler) UploadAvatar(c *gin.Context) {
@@ -76,7 +76,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	// Parse the multipart form
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "file is required"})
 		return
@@ -116,7 +116,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	uploadedFile, err := fh.uploadService.UploadAvatar(c.Request.Context(), strconv.FormatInt(userID, 10), &file)
 	if err != nil {
 		fh.logger.Error("failed to save avatar file in repository", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to upload avatar file",
 		})
@@ -126,7 +126,7 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 	err = fh.specialistService.UpdateAvatar(c.Request.Context(), userID, uploadedFile.URL)
 	if err != nil {
 		fh.logger.Error("failed to update specialist avatar URL in DB", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to update specialist avatar file in DB",
 		})
@@ -149,11 +149,11 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 // @Produce      json
 // @Param        files[] formData file true "Portfolio image files to upload"
 // @Success      201  {object}  successPortfolioPayload "Portfolio files uploaded successfully"
-// @Failure      400  {object}  domain.ErrorResponse "Bad Request: no files uploaded, or other validation errors"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
-// @Failure      413  {object}  domain.ErrorResponse "Payload Too Large: A file's size exceeds the 8MB limit"
-// @Failure      415  {object}  domain.ErrorResponse "Unsupported Media Type: A file's type is not allowed"
-// @Failure      500  {object}  domain.ErrorResponse "Internal Server Error"
+// @Failure      400  {object}  domain.BadRequestError "Bad Request: file is required, extension mismatch, or other validation errors"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized: User is not authenticated"
+// @Failure      413  {object}  domain.PayloadTooLargeError "Payload Too Large: File size exceeds the 10MB limit"
+// @Failure      415  {object}  domain.UnsupportedMediaTypeError "Unsupported Media Type: File type is not allowed"
+// @Failure      500  {object}  domain.InternalServerError "Internal Server Error"
 // @Router       /specialist/portfolio [post]
 // @Security 	 BearerAuth
 func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
@@ -161,7 +161,7 @@ func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		fh.logger.Error("failed to parse multipart form", zap.Error(err))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid form data",
 		})
@@ -171,7 +171,7 @@ func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
 	// "files[]" is the key for the file array in the form-data
 	fileHeaders := form.File["files[]"]
 	if len(fileHeaders) == 0 {
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "No files were uploaded"})
 		return
@@ -201,7 +201,7 @@ func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
 	// Call the service with the list of files
 	uploadedFiles, err := fh.uploadService.UploadPortfolio(c.Request.Context(), strconv.FormatInt(userID, 10), filesToUpload)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to upload portfolio files to storage",
 		})
@@ -216,7 +216,7 @@ func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
 	err = fh.specialistService.AddImages(c.Request.Context(), userID, slices.Sorted(maps.Values(urls)))
 	if err != nil {
 		fh.logger.Error("failed to update specialist avatar URL in DB", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to update specialist portfolio files in DB",
 		})
@@ -236,17 +236,17 @@ func (fh *FileHandler) UploadPortfolio(c *gin.Context) {
 // @Produce      json
 // @Param        url query string true "Full URL of the image to delete"
 // @Success      200  {object}  domain.SuccessResponse "Image deleted successfully"
-// @Failure      400  {object}  domain.ErrorResponse "Bad Request: URL parameter is missing"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: User is not authenticated"
-// @Failure      404  {object}  domain.ErrorResponse "Not Found: Specialist account not found"
-// @Failure      500  {object}  domain.ErrorResponse "Internal Server Error"
+// @Failure      400  {object}  domain.BadRequestError "Bad Request: file is required, extension mismatch, or other validation errors"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized: User is not authenticated"
+// @Failure      404  {object}  domain.NotFoundError "Not Found: Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal Server Error"
 // @Router       /specialist/portfolio/image [delete]
 // @Security 	 BearerAuth
 func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
 
 	imageURL := c.Query("url")
 	if imageURL == "" {
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "url query parameter is required",
 		})
@@ -260,7 +260,7 @@ func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
 
 	if !strings.Contains(imageURL, strconv.FormatInt(userID, 10)) {
 		fh.logger.Error("URL doesn't contain user ID", zap.String("url", imageURL), zap.Int64("userID", userID))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "URL doesn't contain user ID",
 		})
@@ -275,7 +275,7 @@ func (fh *FileHandler) DeletePortfolioImage(c *gin.Context) {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			status = http.StatusNotFound
 		}
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    status,
 			Message: "Failed to remove portfolio image from DB",
 		})
