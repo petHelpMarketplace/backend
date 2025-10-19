@@ -31,6 +31,8 @@ var (
 	ErrPasswordReuse             = errors.New("password reuse")
 	ErrTimeUnavailable           = errors.New("time is unavailable")
 	ErrInvalidTimeWindow         = errors.New("invalid time window")
+	ErrNotFound                  = errors.New("results not found")
+	ErrSpecislistsNotFound       = errors.New("specialists not found")	
 )
 
 // FieldError contains validation error details for a specific field.

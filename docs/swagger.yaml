@@ -302,7 +302,7 @@ definitions:
         example: 200
         type: integer
       data:
-        $ref: '#/definitions/domain.SpecialistProfDTO'
+        $ref: "#/definitions/domain.SpecialistProfDTO"
       message:
         example: Profile updated successfully.
         type: string
@@ -538,11 +538,7 @@ paths:
         "200":
           description: Successfully retrieved specialist data
           schema:
-<<<<<<< HEAD
-            $ref: '#/definitions/domain.SpecialistProfDTO'
-=======
             $ref: "#/definitions/domain.SpecialistProfileDTO"
->>>>>>> dev2
         "401":
           description: Unauthorized. The user is not authenticated.
           schema:
@@ -559,52 +555,7 @@ paths:
         - BearerAuth: []
       summary: Get current specialist
       tags:
-<<<<<<< HEAD
-      - Specialist
-  /specialist/profile:
-    patch:
-      consumes:
-      - application/json
-      description: Allows an authenticated specialist to update their profile information
-        (name, family_name, phone, experience_years, bio).
-      parameters:
-      - description: Specialist profile update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/domain.SpecialistProfUpdateReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Profile updated successfully
-          schema:
-            $ref: '#/definitions/handlers.updateProfileSuccessResponse'
-        "400":
-          description: Invalid request payload or validation failed
-          schema:
-            $ref: '#/definitions/domain.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/domain.ErrorResponse'
-        "404":
-          description: Specialist account not found
-          schema:
-            $ref: '#/definitions/domain.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/domain.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update specialist profile
-      tags:
-      - Specialist
-=======
         - Specialist
->>>>>>> dev2
   /specialist/register:
     post:
       consumes:
@@ -763,6 +714,35 @@ paths:
       - amount
       - email
       - specialist_id
+  /specialist/specialists:
+    get:
+  summary: Search specialists by filters
+  description: >
+    Returns a list of specialists filtered by optional query parameters.
+    All parameters are optional; the endpoint may return an empty list.
+  operationId: GetSpecialistsByAreaAnimalService
+  parameters:
+    - in: query
+      name: request
+      required: true
+      schema:
+        $ref: "#/definitions/domain.SearchSpecialistParams"
+      description: Search parameters encoded as query parameters (e.g. request.animalCategoryID=1)
+  responses:
+    "200":
+      description: OK
+      schema:
+        type: array
+        items:
+          $ref: "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+    "400":
+      description: Invalid query parameters
+      schema:
+        $ref: "#/definitions/domain.ErrorResponse"
+    "500":
+      description: Internal server error
+      schema:
+        $ref: "#/definitions/domain.ErrorResponse"
 schemes:
   - https
   - http

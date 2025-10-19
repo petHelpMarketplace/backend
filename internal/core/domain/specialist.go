@@ -165,3 +165,48 @@ type SpecialistProfUpdateReq struct {
 	// example: Experienced veterinarian specializing in small animal care.
 	Bio *string `json:"bio" validate:"omitempty,max=1000"`
 }
+
+
+type SearchSpecialistParams struct {
+	Animal     	    int64          `json:"animal_id" db:"animal_id"`
+	AnimalSize      int64          `json:"animal_size_id" db:"animal_size_id"`
+	Service         int64          `json:"service_id" db:"service_id"`
+	City            int64          `json:"city_id" db:"city_id"`
+	Area            int64          `json:"area_id" db:"area_id"`
+}
+
+type SpecialistProfileSearchResponseDTO struct {
+	// Unique identifier of the specialist.
+	// example: 123
+	ID int64 `json:"id,omitempty"`
+
+	// Given name of the specialist.
+	// example: Kateryna
+	Name string `json:"name,omitempty"`
+
+	// Family name (surname) of the specialist.
+	// example: Walls
+	FamilyName string `json:"family_name,omitempty"`
+
+	// URL to the specialist's avatar image.
+	// format: uri
+	// example: https://your-cdn.com/avatars/kateryna_avatar.jpg
+	AvatarURL string `json:"avatar_url,omitempty"`
+
+	// Years of professional experience.
+	// minimum: 0
+	// example: 7
+	Experience int32 `json:"experience,omitempty"`
+
+	// Detailed description of services offered or qualifications.
+	// example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
+	Description string `json:"description,omitempty"`
+
+	// Indicates if the specialist's profile is currently active.
+	// example: true
+	IsActive bool `json:"is_active,omitempty"`
+
+	// Indicates if the specialist's credentials have been verified.
+	// example: true
+	IsVerified bool `json:"is_verified,omitempty"`
+}

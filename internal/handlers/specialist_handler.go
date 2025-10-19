@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -519,4 +520,65 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 		Message: "Profile updated successfully.",
 		Data:    specProf,
 	})
+}
+
+func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+
+ 	var req domain.SearchSpecialistParams
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid request payload"
+
+		var jsonErr *json.UnmarshalTypeError
+		var syntaxErr *json.SyntaxError
+
+		bindErr := fmt.Errorf("%s invalid search request payload: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} else if errors.As(err, &syntaxErr) {
+			message = "The request body is not valid JSON."
+		} else if err == io.EOF {
+			message = "Request body cannot be empty."
+		}
+
+		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: message,
+			Details: fieldErrors,
+		})
+		return
+	}
+
+
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
+	if err != nil {
+		// Distinguish context cancellations/timeouts if you like
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
+			c.JSON(http.StatusRequestTimeout, domain.ErrorResponse{
+				Code:    http.StatusRequestTimeout,
+				Message: "Request timeout",
+			})
+			return
+		}
+
+		sh.logger.Error("SearchSpecialists: service error", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+
+	// Return 200 with possibly empty list — that’s normal for searches
+	c.JSON(http.StatusOK, result)
+
 }

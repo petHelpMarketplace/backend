@@ -14,6 +14,7 @@ type SpecialistHandlers interface {
 	ChangePassword(c *gin.Context)
 	Logout(c *gin.Context)
 	UpdateProfile(c *gin.Context)
+	GetSpecialistsByAreaAnimalService(c *gin.Context) 
 }
 
 type SpecialistService interface {
@@ -24,6 +25,7 @@ type SpecialistService interface {
 	ChangePassword(ctx context.Context, id int64, oldPass, newPass string) error
 	UpdateAvatar(ctx context.Context, specialistID int64, avatarURL string) error
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.SpecialistProfDTO, error)
+	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) 
 }
 
 type SpecialistRepository interface {
@@ -34,4 +36,5 @@ type SpecialistRepository interface {
 	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
 	UpdateAvatar(ctx context.Context, id int64, avatarURL string) error
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.Specialist, error)
+	SearchSpecialistByServicePetArea(ctx context.Context, areaId, serviceId, animalId, animalSizeId int64, limit, offset int) ([]domain.Specialist, error) 
 }

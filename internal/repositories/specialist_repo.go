@@ -17,6 +17,7 @@ import (
 
 const (
 	currentTableName    = "specialists"
+	serviceSpecialistTableName    = "specialist_services"
 	operationSpecialist = "specialist_repo: "
 )
 
@@ -392,3 +393,62 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 
 	return updatedSpecialist, tx.Commit(ctx)
 }
+
+func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context.Context, areaId, serviceId, animalId, animalSizeId int64, limit, offset int) ([]domain.Specialist, error) {
+
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+
+	if offset < 0 {
+		offset = 0
+	}
+
+	var items []domain.Specialist
+	builder  := sq.Select("sp.*").
+                            From(currentTableName + " AS sp").
+							Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
+							Join(addressTableName + " AS adr ON adr.id = sp.addresses_id").
+							PlaceholderFormat(sq.Dollar).Limit(uint64(limit)).Offset(uint64(offset))
+
+	var conds []sq.Sqlizer
+	if serviceId != 0 {
+		conds = append(conds, sq.Eq{"s.service_id": serviceId})
+	}
+	if areaId != 0 {
+		conds = append(conds, sq.Eq{"adr.area_id": areaId})
+	}
+	if len(conds) > 0 {
+		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
+	}
+
+	builder = builder.Where(sq.Or(conds))
+
+
+	query, args, err := builder.ToSql()
+
+
+	if err != nil {
+		return items, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return items, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		return items, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+	}
+	defer rows.Close()
+
+	items, err = pgx.CollectRows(rows, pgx.RowToStructByName[domain.Specialist])
+	if err != nil {
+		return nil, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
+	}
+
+	return items, nil
+}
+

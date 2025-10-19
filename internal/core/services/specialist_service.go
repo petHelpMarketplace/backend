@@ -270,3 +270,53 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 	// Convert the updated model to a DTO and return it
 	return utils.ToSpecialistProfileDTO(updatedModel), nil
 }
+
+func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	specialistDTO := []domain.SpecialistProfDTO{}
+
+	limit := 0
+	offset := 0
+
+	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist.Animal, specialist.AnimalSize, specialist.Service, specialist.Area, limit, offset) 
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return nil, err
+	}
+	
+	if err != nil { 
+		if errors.Is(err, sql.ErrNoRows)  || errors.Is(err, domain.ErrNotFound){
+			ss.logger.Warn("specialist not found by search params",
+				zap.Int64("animal", specialist.Animal),
+				zap.Int64("animal_size", specialist.AnimalSize),
+				zap.Int64("service", specialist.Service),
+				zap.Int64("area", specialist.Area),
+				zap.Int("limit", limit),
+				zap.Int("offset", offset),
+				zap.Error(err))
+			return nil, domain.ErrSpecislistsNotFound 
+		}
+		ss.logger.Error("failed to retrieve specialist by service/pet/area from database",
+		    zap.Int64("animal", specialist.Animal),
+			zap.Int64("animal_size", specialist.AnimalSize),
+			zap.Int64("service", specialist.Service),
+			zap.Int64("area", specialist.Area),
+			zap.Int("limit", limit),
+			zap.Int("offset", offset),
+			zap.Error(err))
+		return nil, domain.ErrInternalServer
+	}
+
+	if len(specialistModels) == 0 {
+		return []domain.SpecialistProfDTO{}, nil
+	}
+
+	profiles := make([]domain.SpecialistProfDTO, 0, len(specialistModels))
+
+	for _, specialistModel := range specialistModels {
+		profiles = append(specialistDTO, utils.ToSpecialistProfileDTO(specialistModel))
+	}
+
+	return profiles, nil
+}

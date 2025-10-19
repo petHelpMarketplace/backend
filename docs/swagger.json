@@ -31,481 +31,6 @@
             "schema": {
               "$ref": "#/definitions/app.HealthCheckResponse"
             }
-<<<<<<< HEAD
-        },
-        "/oauth/{provider}": {
-            "get": {
-                "description": "Handles the callback from an OAuth2.0 provider after user authentication.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "OAuth"
-                ],
-                "summary": "OAuth2.0 Provider Callback",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "OAuth2.0 provider name (e.g., google, github)",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Successfully authenticated and generated tokens",
-                        "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
-                        }
-                    },
-                    "404": {
-                        "description": "Account with this email not found",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error or failed to complete OAuth2.0 authentication",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/avatar": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Uploads a new avatar for the authenticated specialist. The file should be sent as multipart/form-data with the key 'file'. The server validates file size (max 10MB) and type (jpeg, png, webp, heic).",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Upload specialist avatar",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "Avatar file to upload",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Avatar uploaded successfully",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.SuccessPayload"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request: file is required, extension mismatch, or other validation errors",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized: User is not authenticated",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "413": {
-                        "description": "Payload Too Large: File size exceeds the 10MB limit",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "415": {
-                        "description": "Unsupported Media Type: File type is not allowed",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/change-password": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an authenticated specialist to change their password. All active sessions will be terminated upon successful password change.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Change specialist password",
-                "parameters": [
-                    {
-                        "description": "Change password request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.ChangePassReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Password updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or validation failed",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized or invalid old password",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Specialist account not found",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict: New password is the same as the old one",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/login": {
-            "post": {
-                "description": "Login specialist",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Login",
-                "parameters": [
-                    {
-                        "description": "Login request body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.LoginReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login succeeded",
-                        "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/logout": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Logs out the specialist by blacklisting the current access token, revoking the refresh token and clearing the session cookie.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Logout specialist",
-                "responses": {
-                    "200": {
-                        "description": "Logout successful",
-                        "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error during logout process",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/me": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get information about the currently authenticated specialist. Requires a valid Bearer token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Get current specialist",
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved specialist data",
-                        "schema": {
-                            "$ref": "#/definitions/domain.SpecialistProfDTO"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized. The user is not authenticated.",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Specialist account associated with the token not found.",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error.",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/profile": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an authenticated specialist to update their profile information (name, family_name, phone, experience_years, bio).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Update specialist profile",
-                "parameters": [
-                    {
-                        "description": "Specialist profile update request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.SpecialistProfUpdateReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Profile updated successfully",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.updateProfileSuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or validation failed",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Specialist account not found",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/register": {
-            "post": {
-                "description": "New specialist registration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Registration",
-                "parameters": [
-                    {
-                        "description": "Registration request body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/domain.RegistrationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Sign-up succeeded",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.successRegistration"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/token/refresh": {
-            "post": {
-                "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Token"
-                ],
-                "summary": "Update access and refresh tokens",
-                "responses": {
-                    "200": {
-                        "description": "Successfully generated new token pair",
-                        "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or malformed refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized: Invalid, expired, or malformed refresh token",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
-                        }
-                    }
-                }
-=======
           },
           "503": {
             "description": "Application is unhealthy or service unavailable",
@@ -514,7 +39,6 @@
               "additionalProperties": {
                 "type": "string"
               }
->>>>>>> dev2
             }
           }
         }
@@ -548,257 +72,6 @@
             "schema": {
               "$ref": "#/definitions/domain.ErrorResponse"
             }
-<<<<<<< HEAD
-        },
-        "domain.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 400
-                },
-                "details": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/domain.FieldError"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Validation failed"
-                }
-            }
-        },
-        "domain.FieldError": {
-            "type": "object",
-            "properties": {
-                "field": {
-                    "type": "string",
-                    "example": "email"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "This field is required."
-                }
-            }
-        },
-        "domain.LoginReq": {
-            "description": "User login request payload",
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "description": "Email address of the user.\nrequired: true\nformat: email\nexample: user@example.com",
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "password": {
-                    "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
-                    "type": "string",
-                    "example": "MySecretPassword123!"
-                }
-            }
-        },
-        "domain.RegistrationRequest": {
-            "description": "User registration request payload",
-            "type": "object",
-            "required": [
-                "email",
-                "name",
-                "password",
-                "password_confirmation",
-                "phone"
-            ],
-            "properties": {
-                "email": {
-                    "description": "Email address of the user.\nrequired: true\nformat: email\nmaxLength: 255\nexample: john.doe@example.com",
-                    "type": "string",
-                    "maxLength": 255,
-                    "example": "john.doe@example.com"
-                },
-                "name": {
-                    "description": "Name of the user.\nAllows Unicode letters, spaces, hyphens, and apostrophes.\nrequired: true\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: John Doe",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 2,
-                    "example": "John"
-                },
-                "password": {
-                    "description": "Password for the user account.\nMust be at least 12 characters long.\nMust contain at least one uppercase letter, one lowercase letter, one number, and one special character from @$!%*?\u0026.\nrequired: true\nminLength: 12\nmaxLength: 255 // Arbitrary max length, adjust as needed\npattern: \"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\\\d)(?=.*[@$!%*?\u0026])[A-Za-z\\\\d@$!%*?\u0026]{12,255}$\"\nexample: Str0ngP@ssw0rd!",
-                    "type": "string",
-                    "minLength": 12,
-                    "example": "Str0ngP@ssw0rd!"
-                },
-                "password_confirmation": {
-                    "description": "Password confirmation. Must match the Password field.\nrequired: true\nexample: Str0ngP@ssw0rd!",
-                    "type": "string",
-                    "example": "Str0ngP@ssw0rd!"
-                },
-                "phone": {
-                    "description": "Phone number of the user in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nrequired: true\nminLength: 13 // Minimum length for +38 (093) 987-65-32\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
-                    "type": "string",
-                    "minLength": 13,
-                    "example": "+38 (093) 987-65-32"
-                }
-            }
-        },
-        "domain.SpecialistProfDTO": {
-            "description": "Specialist profile data returned to clients.",
-            "type": "object",
-            "properties": {
-                "avatar_url": {
-                    "description": "URL to the specialist's avatar image.\nformat: uri\nexample: https://your-cdn.com/avatars/kateryna_avatar.jpg",
-                    "type": "string"
-                },
-                "bio": {
-                    "description": "Short biography or summary of the specialist.\nexample: Experienced veterinarian specializing in small animal care.",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
-                    "type": "string"
-                },
-                "email": {
-                    "description": "Email address of the specialist.\nformat: email\nexample: kateryna.walls@example.com",
-                    "type": "string"
-                },
-                "experience": {
-                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
-                    "type": "integer"
-                },
-                "family_name": {
-                    "description": "Family name (surname) of the specialist.\nexample: Walls",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Unique identifier of the specialist.\nexample: 123",
-                    "type": "integer"
-                },
-                "is_active": {
-                    "description": "Indicates if the specialist's profile is currently active.\nexample: true",
-                    "type": "boolean"
-                },
-                "is_verified": {
-                    "description": "Indicates if the specialist's credentials have been verified.\nexample: true",
-                    "type": "boolean"
-                },
-                "name": {
-                    "description": "Given name of the specialist.\nexample: Kateryna",
-                    "type": "string"
-                },
-                "phone": {
-                    "description": "Phone number of the specialist in E.164 format.\nexample: +380961234567",
-                    "type": "string"
-                },
-                "position": {
-                    "description": "Professional position or title (e.g., \"Veterinarian\", \"Dog Groomer\").\nexample: Veterinarian",
-                    "type": "string"
-                }
-            }
-        },
-        "domain.SpecialistProfUpdateReq": {
-            "description": "Specialist profile update request payload",
-            "type": "object",
-            "properties": {
-                "bio": {
-                    "description": "Short biography or summary of the specialist.\nmaxLength: 1000\nexample: Experienced veterinarian specializing in small animal care.",
-                    "type": "string",
-                    "maxLength": 1000
-                },
-                "experience_years": {
-                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
-                    "type": "integer",
-                    "minimum": 0
-                },
-                "family_name": {
-                    "description": "Family name (surname) of the specialist.\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: Walls",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 2
-                },
-                "name": {
-                    "description": "Name of the specialist.\nAllows Unicode letters, spaces, hyphens, and apostrophes.\nminLength: 2\nmaxLength: 100\npattern: \"^[\\\\p{L}\\\\s\\\\-'\\\\u2019]+$\"\nexample: Kateryna",
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 2
-                },
-                "phone": {
-                    "description": "Phone number of the specialist in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nminLength: 13\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
-                    "type": "string",
-                    "minLength": 13
-                }
-            }
-        },
-        "domain.SuccessResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {},
-                "message": {
-                    "type": "string",
-                    "example": "Operation was successful"
-                }
-            }
-        },
-        "domain.TokensPair": {
-            "type": "object",
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.SuccessPayload": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Avatar file uploaded successfully"
-                },
-                "url": {
-                    "type": "string",
-                    "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
-                }
-            }
-        },
-        "handlers.successRegistration": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string",
-                    "example": "1"
-                },
-                "message": {
-                    "type": "string",
-                    "default": "Registration successful"
-                }
-            }
-        },
-        "handlers.updateProfileSuccessResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/domain.SpecialistProfDTO"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Profile updated successfully."
-                }
-            }
-=======
           },
           "500": {
             "description": "Internal server error or failed to complete OAuth2.0 authentication",
@@ -806,7 +79,6 @@
               "$ref": "#/definitions/domain.ErrorResponse"
             }
           }
->>>>>>> dev2
         }
       }
     },
@@ -1086,6 +358,52 @@
           },
           "409": {
             "description": "Conflict",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/specialist/specialists": {
+      "get": {
+        "description": "Specialists search by filters",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["Specialists"],
+        "summary": "Search",
+        "parameters": [
+          {
+            "description": "Search specialist request body",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/domain.SearchSpecialistParams"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "408": {
+            "description": "Request timeout",
             "schema": {
               "$ref": "#/definitions/domain.ErrorResponse"
             }
