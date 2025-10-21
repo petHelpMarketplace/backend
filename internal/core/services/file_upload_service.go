@@ -29,7 +29,7 @@ func NewFileUploadService(repo ports.FileRepository, logger *zap.Logger) *FileUp
 }
 
 func (fs *FileUploadServiceImpl) UploadAvatar(ctx context.Context, user_id string, file *domain.FileUpload) (*domain.FileUpload, error) {
-
+	fs.logger.Info("Saving object to S3", zap.String("name", file.Name))
 	// Generate a unique ID for the file
 	var idBuilder strings.Builder
 	idBuilder.WriteString("avatars/")
@@ -85,5 +85,69 @@ func (fs *FileUploadServiceImpl) DeleteAvatar(ctx context.Context, avatarURL str
 	}
 
 	fs.logger.Info("Successfully deleted avatar image from S3", zap.String("key", key))
+	return nil
+}
+
+// UploadPortfolio prepares and saves multiple portfolio files.
+func (fs *FileUploadServiceImpl) UploadPortfolio(ctx context.Context, user_id string, files []*domain.FileUpload) ([]domain.FileUpload, error) {
+	if len(files) == 0 {
+		return []domain.FileUpload{}, nil
+	}
+
+	var idBuilder strings.Builder
+	// Assign a unique ID to each file before saving.
+	for _, file := range files {
+		idBuilder.WriteString("portfolios/")
+		hash := ulid.Make().String()
+		fmt.Fprintf(&idBuilder, "%s/%s%s", user_id, hash, filepath.Ext(file.Name))
+		file.ID = idBuilder.String()
+		idBuilder.Reset()
+	}
+
+	urls, err := fs.fileRepo.SaveBatch(ctx, files)
+	if err != nil {
+		fs.logger.Error("failed to save portfolio batch", zap.Error(err))
+		return nil, err
+	}
+
+	uploadedFiles := make([]domain.FileUpload, len(urls))
+	for i, url := range urls {
+		uploadedFiles[i] = domain.FileUpload{
+			ID:   files[i].ID,
+			Name: files[i].Name,
+			Size: files[i].Size,
+			URL:  url,
+		}
+	}
+
+	fs.logger.Info("Successfully uploaded portfolio files", zap.Int("count", len(urls)))
+	return uploadedFiles, nil
+}
+
+// DeletePortfolioImage removes an object from the S3 bucket.
+func (fs *FileUploadServiceImpl) DeletePortfolioImage(ctx context.Context, imageURL string) error {
+	fs.logger.Info("Deleting portfolio image from S3", zap.String("url", imageURL))
+
+	// Parse the URL to safely access its components.
+	parsedURL, err := url.Parse(imageURL)
+	if err != nil {
+		fs.logger.Error("Failed to parse portfolio image URL", zap.String("url", imageURL), zap.Error(err))
+		return fmt.Errorf("invalid image URL: %w", err)
+	}
+
+	cutPrefix := fmt.Sprintf("%s/", fs.fileRepo.Bucket())
+	// Extract the key from the URL path.
+	pathWithoutSlash := strings.TrimPrefix(parsedURL.Path, "/")
+	key := strings.TrimPrefix(pathWithoutSlash, cutPrefix)
+
+	if key == "" {
+		fs.logger.Error("Extracted an empty key from portfolio image URL", zap.String("url", imageURL))
+		return fmt.Errorf("could not determine object key from URL: %s", imageURL)
+	}
+
+	if err := fs.fileRepo.Delete(ctx, key); err != nil {
+		return fmt.Errorf("failed to delete portfolio image from storage: %w", err)
+	}
+
 	return nil
 }
