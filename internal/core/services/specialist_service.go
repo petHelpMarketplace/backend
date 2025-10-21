@@ -271,41 +271,6 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 	return utils.ToSpecialistProfileDTO(updatedModel), nil
 }
 
-func (ss *SpecialistServiceImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
-	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
-	defer cancel()
-
-	if err := ss.specialistRepo.AddImages(timeoutCtx, specialistID, imageURLs); err != nil {
-		ss.logger.Error("failed to add images to specialist profile in DB",
-			zap.Int64("id", specialistID),
-			zap.Strings("urls", imageURLs),
-			zap.Error(err))
-		if errors.Is(err, sql.ErrNoRows) {
-			return domain.ErrAccountNotFound
-		}
-		return domain.ErrInternalServer
-	}
-
-	return nil
-}
-
-func (ss *SpecialistServiceImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
-	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
-	defer cancel()
-
-	if err := ss.specialistRepo.DeleteImage(timeoutCtx, specialistID, imageURL); err != nil {
-		ss.logger.Error("failed to delete images from specialist profile in DB",
-			zap.Int64("id", specialistID),
-			zap.String("url", imageURL),
-			zap.Error(err))
-		if errors.Is(err, sql.ErrNoRows) {
-			return domain.ErrAccountNotFound
-		}
-		return domain.ErrInternalServer
-	}
-
-	return nil
-}
 
 func (ss *SpecialistServiceImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
@@ -352,7 +317,7 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	limit := 0
 	offset := 0
 
-	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist.Animal, specialist.AnimalSize, specialist.Service, specialist.Area, limit, offset) 
+	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset) 
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 			return nil, err
 	}
