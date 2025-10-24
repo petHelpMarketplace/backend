@@ -174,7 +174,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Specialist{}, sql.ErrNoRows
+			return domain.Specialist{}, domain.ErrAccountNotFound
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}

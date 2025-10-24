@@ -36,7 +36,7 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 	}
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
+	if err != nil || userID < 0 {
 		logger.Error("failed to parse userID from context", zap.String("userID", userIDStr), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
 			Code:    http.StatusInternalServerError,

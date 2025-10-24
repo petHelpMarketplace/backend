@@ -277,18 +277,6 @@ func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	//check if the specialist exists.
-	if _, err := ss.specialistRepo.GetByID(timeoutCtx, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ss.logger.Warn("attempt to change active status for non-existent specialist", zap.Int64("id", id))
-			return domain.ErrAccountNotFound
-		}
-		ss.logger.Error("failed to get specialist by ID during profile deactivation/activation check",
-			zap.Int64("id", id),
-			zap.Error(err))
-		return domain.ErrInternalServer
-	}
-
 	err := ss.specialistRepo.UpdateIsActive(timeoutCtx, id, isActive)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

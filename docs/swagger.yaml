@@ -566,11 +566,15 @@ paths:
       description: Allows an authenticated specialist to deactivate or activate their
         profile.
       parameters:
-      - description: Set to true to activate, false to deactivate the profile.
-        in: query
-        name: status
+      - description: Profile activation/deactivation request
+        in: body
+        name: request
         required: true
-        type: boolean
+        schema:
+          properties:
+            is_active:
+              type: boolean
+          type: object
       produces:
       - application/json
       responses:

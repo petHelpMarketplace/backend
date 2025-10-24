@@ -388,11 +388,18 @@ const docTemplate = `{
                 "summary": "Deactivate or activate specialist profile",
                 "parameters": [
                     {
-                        "type": "boolean",
-                        "description": "Set to true to activate, false to deactivate the profile.",
-                        "name": "status",
-                        "in": "query",
-                        "required": true
+                        "description": "Profile activation/deactivation request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "is_active": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
                     }
                 ],
                 "responses": {

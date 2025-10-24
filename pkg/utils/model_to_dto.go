@@ -27,9 +27,10 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 		dto.AvatarURL = &specialistModel.Avatar.String
 	}
 	if len(specialistModel.ImageID) > 0 {
-		for _, id := range specialistModel.ImageID {
-			if id.Valid {
-				dto.PortfolioURLs = append(dto.PortfolioURLs, &id.String)
+		for _, imgId := range specialistModel.ImageID {
+			if imgId.Valid {
+				url := imgId.String
+				dto.PortfolioURLs = append(dto.PortfolioURLs, &url)
 			}
 		}
 	}

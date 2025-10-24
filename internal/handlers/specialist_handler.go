@@ -527,7 +527,7 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 // @Tags         Specialist
 // @Accept       json
 // @Produce      json
-// @Param        status query boolean true "Set to true to activate, false to deactivate the profile."
+// @Param        request body object{is_active=bool} true "Profile activation/deactivation request"
 // @Success      200  {object}  domain.SuccessResponse "Profile status updated successfully"
 // @Failure      400  {object}  domain.ErrorResponse "Invalid status parameter"
 // @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
@@ -536,32 +536,26 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 // @Router       /specialist/me/status [patch]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
+
 	userID, ok := getUserIDFromContext(c, sh.logger)
 	if !ok {
 		return // getUserIDFromContext already handled the error response
 	}
 
-	statusStr := c.Query("status")
-	if statusStr == "" {
-		sh.logger.Warn("missing 'status' query parameter for profile deactivation")
+	var req struct {
+		IsActive *bool `json:"is_active" binding:"required" example:"true"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
+		sh.logger.Error("Request body must include boolean field 'is_active'")
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Query parameter 'status' is required (true/false)",
+			Message: "Request body must include boolean field 'is_active'",
 		})
 		return
 	}
+	isActive := *req.IsActive
 
-	isActive, err := strconv.ParseBool(statusStr)
-	if err != nil {
-		sh.logger.Warn("invalid 'status' query parameter", zap.String("status", statusStr), zap.Error(err))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid value for 'status' parameter, must be 'true' or 'false'",
-		})
-		return
-	}
-
-	err = sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
+	err := sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
 	if err != nil {
 		sh.logger.Error("failed to update specialist profile active status", zap.Int64("userID", userID), zap.Bool("status", isActive), zap.Error(err))
 		if errors.Is(err, domain.ErrAccountNotFound) {
