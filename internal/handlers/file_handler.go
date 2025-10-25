@@ -105,8 +105,8 @@ func (fh *FileHandler) UploadAvatar(c *gin.Context) {
 		fh.logger.Error("failed to get specialist by ID", zap.Int64("userID", userID), zap.Error(err))
 	}
 
-	if specDTO.AvatarURL != "" {
-		err = fh.uploadService.DeleteAvatar(c.Request.Context(), specDTO.AvatarURL)
+	if specDTO.AvatarURL != nil && *specDTO.AvatarURL != "" {
+		err = fh.uploadService.DeleteAvatar(c.Request.Context(), *specDTO.AvatarURL)
 		if err != nil {
 			fh.logger.Error("failed to delete old avatar file from S3", zap.Error(err))
 		}

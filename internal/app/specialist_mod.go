@@ -81,6 +81,7 @@ var SpecialistModule = fx.Module("specialist",
 			protected.POST("/logout", handler.Logout)
 			protected.PATCH("/profile", handler.UpdateProfile)
 			protected.POST("/avatar", mp.FileHandler.UploadAvatar)
+			protected.PATCH("/me/status", handler.DeactivateProfile)
 			protected.POST("/portfolio", mp.FileHandler.UploadPortfolio)
 			protected.DELETE("/portfolio/image", mp.FileHandler.DeletePortfolioImage)
 

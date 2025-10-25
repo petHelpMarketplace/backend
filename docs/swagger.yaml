@@ -341,6 +341,14 @@ definitions:
           Phone number of the specialist in E.164 format.
           example: +380961234567
         type: string
+      portfolio_urls:
+        description: |-
+          URLs to the specialist's portfolio images.
+          format: array
+          example: ["https://your-cdn.com/portfolio/image1.jpg", "https://your-cdn.com/portfolio/video1.mp4"]
+        items:
+          type: string
+        type: array
       position:
         description: |-
           Professional position or title (e.g., "Veterinarian", "Dog Groomer").
@@ -770,6 +778,50 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current specialist
+      tags:
+      - Specialist
+  /specialist/me/status:
+    patch:
+      consumes:
+      - application/json
+      description: Allows an authenticated specialist to deactivate or activate their
+        profile.
+      parameters:
+      - description: Profile activation/deactivation request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            is_active:
+              type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile status updated successfully
+          schema:
+            $ref: '#/definitions/domain.SuccessResponse'
+        "400":
+          description: Invalid status parameter
+          schema:
+            $ref: '#/definitions/domain.BadRequestError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.UnauthorizedError'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/domain.NotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.InternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Deactivate or activate specialist profile
       tags:
       - Specialist
   /specialist/portfolio:
