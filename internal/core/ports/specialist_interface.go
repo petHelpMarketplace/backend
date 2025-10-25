@@ -27,6 +27,8 @@ type SpecialistService interface {
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.SpecialistProfDTO, error)
 	// DeactivateProfile handles the business logic for changing a profile's active status.
 	DeactivateProfile(ctx context.Context, specialistID int64, isActive bool) error
+	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
+	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
 }
 
 type SpecialistRepository interface {
@@ -39,4 +41,6 @@ type SpecialistRepository interface {
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.Specialist, error)
 	// UpdateIsActive changes the active status of a specialist.
 	UpdateIsActive(ctx context.Context, id int64, isActive bool) error
+	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
+	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
 }

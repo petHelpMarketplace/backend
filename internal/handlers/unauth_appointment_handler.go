@@ -8,38 +8,37 @@ import (
 	"net/http"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-//prefix log messages so it’s clear which handler produced the log
+// prefix log messages so it’s clear which handler produced the log
 const (
 	operationUnauthAppHandler = "unauth_appointment_handler: "
 )
 
 type UnauthAppointmentHandlerImpl struct {
 	//checks request payload fields for correctness
-	validator         ports.UnauthAppointmentValidator
+	validator                ports.UnauthAppointmentValidator
 	unauthAppointmentService ports.UnauthAppointmentService
-	logger            *zap.Logger
+	logger                   *zap.Logger
 }
 
-//Compile-time check that this struct implements the SpecialistHandlers interface
+// Compile-time check that this struct implements the SpecialistHandlers interface
 var _ ports.UnauthAppointmentHandler = (*UnauthAppointmentHandlerImpl)(nil)
 
-//Creates a new handler and injects dependencies.
+// Creates a new handler and injects dependencies.
 func NewUnauthAppointmentHandler(unauthAppointmentSrv ports.UnauthAppointmentService, validator ports.UnauthAppointmentValidator, logger *zap.Logger) *UnauthAppointmentHandlerImpl {
 	return &UnauthAppointmentHandlerImpl{
-		validator:         validator,
+		validator:                validator,
 		unauthAppointmentService: unauthAppointmentSrv,
-		logger:            logger,
+		logger:                   logger,
 	}
 }
 
 type successSaveUnauthAppointment struct {
-	ID      string `json:"id" example:"1"`
+	ID      int64  `json:"id" example:"1"`
 	Message string `json:"message" default:"An appointment booked successfully"`
 }
 
@@ -50,11 +49,11 @@ type successSaveUnauthAppointment struct {
 // @Produce      json
 // @Param request body domain.SaveUnauthAppointmentRequest true "UnauthAppointment request body"
 // @Success 201 {object} successSaveUnauthAppointment "Booking appointment succeeded"
-// @Failure      400,409,500 {object} domain.ErrorResponse
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or malformed refresh token"
+// @Failure      409  {object}  domain.ConflictError "Conflict, choosen time already booked"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router /public-appointment-request [post]
-
-//Handles HTTP POST requests to create unauthenticated appointments
-func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
+func (ah *UnauthAppointmentHandlerImpl) Book(c *gin.Context) {
 
 	//Bind JSON request
 	req := domain.SaveUnauthAppointmentRequest{}
@@ -79,13 +78,13 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 			})
 		} else if errors.As(err, &syntaxErr) {
 			message = "The request body is not valid JSON."
-		//io.EOF --> empty body.
+			//io.EOF --> empty body.
 		} else if err == io.EOF {
 			message = "Request body cannot be empty."
 		}
 
 		ah.logger.Error("bind JSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
 			Details: fieldErrors,
@@ -96,7 +95,7 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 	//Validate request fields
 	if validationErrors := ah.validator.ValidateUnauthAppointmentRequest(req); len(validationErrors) > 0 {
 		ah.logger.Error("validation failed", zap.Any("errors", validationErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "validation failed",
 			Details: validationErrors,
@@ -107,23 +106,23 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 	id, err := ah.unauthAppointmentService.BookUnauthAppointment(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, domain.ErrTimeUnavailable) {
-			c.JSON(http.StatusConflict, domain.ErrorResponse{
-				Code:    http.StatusConflict,
+			c.JSON(http.StatusConflict, domain.ConflictError{
+				Code: http.StatusConflict,
 				Message: fmt.Sprintf("time %s %s-%s already booked",
-				req.Date.Format("2006-01-02"),
-				req.StartTime.Format("15:04"),
-				req.EndTime.Format("15:04"),),
-				})
+					req.Date.Format("2006-01-02"),
+					req.StartTime.Format("15:04"),
+					req.EndTime.Format("15:04")),
+			})
 			return
 		} else if errors.Is(err, domain.ErrInvalidTimeWindow) {
-			c.JSON(http.StatusBadRequest, domain.ErrorResponse{
-			Code:    http.StatusBadRequest,
-			Message: "invalid time window: start_time must be before end_time",
-     })
-     return
-   }
+			c.JSON(http.StatusBadRequest, domain.BadRequestError{
+				Code:    http.StatusBadRequest,
+				Message: "invalid time window: start_time must be before end_time",
+			})
+			return
+		}
 
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -132,13 +131,8 @@ func (ah *UnauthAppointmentHandlerImpl) Book (c *gin.Context) {
 
 	// — Success response
 	c.JSON(http.StatusCreated, successSaveUnauthAppointment{
-		ID:      strconv.FormatInt(id, 10),
+		ID:      id,
 		Message: "An appointment booked successfully",
 	})
 
 }
-
-
-
-
-

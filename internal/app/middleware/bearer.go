@@ -22,7 +22,7 @@ func NewAuthMiddleware(p AuthMiddlewareParams) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
 				Code:    http.StatusUnauthorized,
 				Message: "authorization header is required",
 			})
@@ -31,7 +31,7 @@ func NewAuthMiddleware(p AuthMiddlewareParams) gin.HandlerFunc {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
 				Code:    http.StatusUnauthorized,
 				Message: "Invalid token format. Expected 'Bearer <token>'",
 			})
@@ -41,25 +41,25 @@ func NewAuthMiddleware(p AuthMiddlewareParams) gin.HandlerFunc {
 		jti, userID, err := p.TokenService.ValidateToken(c.Request.Context(), tokenString, true)
 		if err != nil {
 			if errors.Is(err, domain.ErrTokenMalformed) {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{
+				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
 					Code:    http.StatusUnauthorized,
 					Message: "token malformed",
 				})
 				return
 			} else if errors.Is(err, domain.ErrTokenSignatureInvalid) {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{
+				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
 					Code:    http.StatusUnauthorized,
 					Message: "token signature invalid",
 				})
 				return
 			} else if errors.Is(err, domain.ErrTokenExpired) {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.ErrorResponse{
+				c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
 					Code:    http.StatusUnauthorized,
 					Message: "token expired",
 				})
 				return
 			} else {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
+				c.AbortWithStatusJSON(http.StatusInternalServerError, domain.InternalServerError{
 					Code:    http.StatusInternalServerError,
 					Message: "internal server error",
 				})
@@ -69,19 +69,17 @@ func NewAuthMiddleware(p AuthMiddlewareParams) gin.HandlerFunc {
 
 		isBlacklisted, err := p.TokenService.IsAccessTokenBlacklisted(c.Request.Context(), jti)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError,
-				domain.ErrorResponse{
-					Code:    http.StatusInternalServerError,
-					Message: "Failed to check token in blacklist",
-				})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to check token in blacklist",
+			})
 			return
 		}
 		if isBlacklisted {
-			c.AbortWithStatusJSON(http.StatusUnauthorized,
-				domain.ErrorResponse{
-					Code:    http.StatusUnauthorized,
-					Message: "Access token has been revoked (blacklisted)",
-				})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, domain.UnauthorizedError{
+				Code:    http.StatusUnauthorized,
+				Message: "Access token has been revoked (blacklisted)",
+			})
 			return
 		}
 

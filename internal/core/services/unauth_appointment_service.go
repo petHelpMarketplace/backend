@@ -14,28 +14,28 @@ import (
 
 type UnauthAppointmentServiceImpl struct {
 	emailSender ports.EmailService
-	//interface to interact with appointment storage 
+	//interface to interact with appointment storage
 	unauthAppointmentRepo ports.UnauthAppointmentRepository
-	logger         *zap.Logger
+	logger                *zap.Logger
 	//how long each database call or operation should wait before timing out
 	defaultTimeout time.Duration
 }
 
-//Interface Check
-//it ensures UnauthAppointmentServiceImpl implements the UnauthAppointmentService interface
+// Interface Check
+// it ensures UnauthAppointmentServiceImpl implements the UnauthAppointmentService interface
 var _ ports.UnauthAppointmentService = (*UnauthAppointmentServiceImpl)(nil)
 
-//Constructor Function
+// Constructor Function
 func NewUnauthAppointmentService(repo ports.UnauthAppointmentRepository, logger *zap.Logger, cfg config.AuthConfig, emailSender ports.EmailService) *UnauthAppointmentServiceImpl {
 	return &UnauthAppointmentServiceImpl{
 		unauthAppointmentRepo: repo,
-		logger:         logger,
-		defaultTimeout: cfg.DefaultTimeout,
-		emailSender: emailSender,
+		logger:                logger,
+		defaultTimeout:        cfg.DefaultTimeout,
+		emailSender:           emailSender,
 	}
 }
 
-//saves an unauthenticated appointment, returns appointment ID or error
+// saves an unauthenticated appointment, returns appointment ID or error
 func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Context, unauthAppointment domain.SaveUnauthAppointmentRequest) (int64, error) {
 
 	// Basic validation, ensures start time is before end time
@@ -46,7 +46,7 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		return 0, domain.ErrInvalidTimeWindow
 	}
 
-    //Create context with timeout
+	//Create context with timeout
 	timeoutCtx, cancel := context.WithTimeout(ctx, aa.defaultTimeout)
 	defer cancel()
 
@@ -69,23 +69,23 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 
 	create := domain.SaveUnauthAppointmentRequest{
 		ServiceId:    unauthAppointment.ServiceId,
-	    CityId:       unauthAppointment.CityId,
+		CityId:       unauthAppointment.CityId,
 		DistrictId:   unauthAppointment.DistrictId,
-		Street:  	  unauthAppointment.Street,
+		Street:       unauthAppointment.Street,
 		LocationType: unauthAppointment.LocationType,
 		Unit:         unauthAppointment.Unit,
 		Apt:          unauthAppointment.Apt,
 		AnimalSizeId: unauthAppointment.AnimalSizeId,
 		Description:  unauthAppointment.Description,
-		Date: 		  unauthAppointment.Date,
+		Date:         unauthAppointment.Date,
 		StartTime:    unauthAppointment.StartTime,
 		EndTime:      unauthAppointment.EndTime,
 		Amount:       unauthAppointment.Amount,
 		Email:        unauthAppointment.Email,
 		SpecialistId: unauthAppointment.SpecialistId,
-		Status:       "pending",
+		// Status:       "pending",
 	}
-	
+
 	id, err := aa.unauthAppointmentRepo.Save(
 		timeoutCtx,
 		create.ServiceId,
@@ -94,14 +94,14 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		create.AnimalSizeId,
 		create.SpecialistId,
 		create.Amount,
-		create.LocationType, 
-		create.Street,       
+		create.LocationType,
+		create.Street,
 		create.Unit,
 		create.Apt,
 		create.Description,
 		create.Email,
-		"pending",       
-		create.Date,        
+		"pending",
+		create.Date,
 		create.StartTime,
 		create.EndTime,
 	)
@@ -112,15 +112,11 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 		return 0, domain.ErrInternalServer
 	}
 
-
 	if err := aa.emailSender.SendAppointmentConfirmationEmail(timeoutCtx, int64(unauthAppointment.SpecialistId), unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
 		aa.logger.Error("failed to send email", zap.Error(err))
 		return 0, domain.ErrInternalServer
 
 	}
 
-
-
 	return id, nil
 }
-

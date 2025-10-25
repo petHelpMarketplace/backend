@@ -85,13 +85,65 @@ const docTemplate = `{
                     "404": {
                         "description": "Account with this email not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error or failed to complete OAuth2.0 authentication",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/public-appointment-request": {
+            "post": {
+                "description": "New  appointment booking by unauth user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SpecialistAppointment"
+                ],
+                "summary": "Book un appointment",
+                "parameters": [
+                    {
+                        "description": "UnauthAppointment request body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Booking appointment succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict, choosen time already booked",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ConflictError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -128,37 +180,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Avatar uploaded successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.SuccessPayload"
+                            "$ref": "#/definitions/handlers.successAvatarPayload"
                         }
                     },
                     "400": {
                         "description": "Bad Request: file is required, extension mismatch, or other validation errors",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "413": {
                         "description": "Payload Too Large: File size exceeds the 10MB limit",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.PayloadTooLargeError"
                         }
                     },
                     "415": {
                         "description": "Unsupported Media Type: File type is not allowed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnsupportedMediaTypeError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -203,31 +255,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized or invalid old password",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "409": {
                         "description": "Conflict: New password is the same as the old one",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.ConflictError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -265,21 +317,27 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request payload",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
+                        }
+                    },
+                    "404": {
+                        "description": "Account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -313,13 +371,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "500": {
                         "description": "Internal server error during logout process",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -342,27 +400,27 @@ const docTemplate = `{
                 "summary": "Get current specialist",
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved specialist data",
+                        "description": "Successfully retrieved specialist profile",
                         "schema": {
                             "$ref": "#/definitions/domain.SpecialistProfDTO"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized. The user is not authenticated.",
+                        "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "404": {
-                        "description": "Specialist account associated with the token not found.",
+                        "description": "Specialist account associated with the token not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "500": {
-                        "description": "Internal server error.",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -412,25 +470,150 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid status parameter",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "type": "objefct"
+                            "$ref": "#/definitions/domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/portfolio": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Upload specialist portfolio images",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Portfolio image files to upload",
+                        "name": "files[]",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Portfolio files uploaded successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.successPortfolioPayload"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: file is required, extension mismatch, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.UnauthorizedError"
+                        }
+                    },
+                    "413": {
+                        "description": "Payload Too Large: File size exceeds the 10MB limit",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PayloadTooLargeError"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type: File type is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/domain.UnsupportedMediaTypeError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/portfolio/image": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a specific image from the authenticated specialist's portfolio. The full URL of the image to be deleted must be provided as a query parameter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Delete specialist portfolio image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Full URL of the image to delete",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: file is required, extension mismatch, or other validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: User is not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/domain.UnauthorizedError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found: Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.NotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -475,25 +658,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -531,21 +714,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Account with this email already exists",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.ConflictError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -571,25 +754,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request payload or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: Invalid, expired, or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.UnauthorizedError"
                         }
                     },
                     "403": {
                         "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.ForbiddenError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.ErrorResponse"
+                            "$ref": "#/definitions/domain.InternalServerError"
                         }
                     }
                 }
@@ -607,6 +790,25 @@ const docTemplate = `{
                 "timestamp": {
                     "type": "string",
                     "example": "2023-10-27T10:00:00Z"
+                }
+            }
+        },
+        "domain.BadRequestError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Input validation failed"
                 }
             }
         },
@@ -631,12 +833,12 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ErrorResponse": {
+        "domain.ConflictError": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer",
-                    "example": 400
+                    "example": 409
                 },
                 "details": {
                     "type": "array",
@@ -646,7 +848,7 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "Validation failed"
+                    "example": "A resource with this identifier already exists"
                 }
             }
         },
@@ -659,7 +861,45 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string",
-                    "example": "This field is required."
+                    "example": "must be a valid email address"
+                }
+            }
+        },
+        "domain.ForbiddenError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 403
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "You do not have permission to access this resource"
+                }
+            }
+        },
+        "domain.InternalServerError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 500
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "An unexpected error occurred on the server"
                 }
             }
         },
@@ -680,6 +920,44 @@ const docTemplate = `{
                     "description": "Password for the user account.\nrequired: true\nexample: MySecretPassword123!",
                     "type": "string",
                     "example": "MySecretPassword123!"
+                }
+            }
+        },
+        "domain.NotFoundError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 404
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Specialist account not found"
+                }
+            }
+        },
+        "domain.PayloadTooLargeError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 413
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "The request payload is too large"
                 }
             }
         },
@@ -723,6 +1001,95 @@ const docTemplate = `{
                     "type": "string",
                     "minLength": 13,
                     "example": "+38 (093) 987-65-32"
+                }
+            }
+        },
+        "domain.SaveUnauthAppointmentRequest": {
+            "description": "Anauthorized user' appointment request",
+            "type": "object",
+            "required": [
+                "amount",
+                "animal_size_id",
+                "appointment_date",
+                "apt",
+                "area_id",
+                "city_id",
+                "description",
+                "email",
+                "end_time",
+                "location_type",
+                "service_id",
+                "specialist_id",
+                "start_time",
+                "status",
+                "street",
+                "unit"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 500
+                },
+                "animal_size_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "appointment_date": {
+                    "type": "string",
+                    "example": "2025-07-22"
+                },
+                "apt": {
+                    "type": "string",
+                    "example": "14"
+                },
+                "area_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "city_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Пудель, потрібен грумінг перед виставкою."
+                },
+                "email": {
+                    "description": "unauth user email",
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "john.doe@example.com"
+                },
+                "end_time": {
+                    "type": "string",
+                    "example": "10:00"
+                },
+                "location_type": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "specialist_id": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "start_time": {
+                    "type": "string",
+                    "example": "08:00"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "pending"
+                },
+                "street": {
+                    "type": "string",
+                    "example": "вул. Володимирська"
+                },
+                "unit": {
+                    "type": "string",
+                    "example": "14"
                 }
             }
         },
@@ -845,7 +1212,45 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.SuccessPayload": {
+        "domain.UnauthorizedError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 401
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Bearer token is missing or invalid"
+                }
+            }
+        },
+        "domain.UnsupportedMediaTypeError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 415
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FieldError"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "The provided media type is not supported"
+                }
+            }
+        },
+        "handlers.successAvatarPayload": {
             "type": "object",
             "properties": {
                 "message": {
@@ -858,16 +1263,48 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.successPortfolioPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Portfolio files uploaded successfully"
+                },
+                "urls_map": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"photo.jpg\"": "\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}",
+                        "{\"original_cv.webp\"": "\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\""
+                    }
+                }
+            }
+        },
         "handlers.successRegistration": {
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string",
-                    "example": "1"
+                    "type": "integer",
+                    "example": 100
                 },
                 "message": {
                     "type": "string",
                     "default": "Registration successful"
+                }
+            }
+        },
+        "handlers.successSaveUnauthAppointment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "message": {
+                    "type": "string",
+                    "default": "An appointment booked successfully"
                 }
             }
         },
