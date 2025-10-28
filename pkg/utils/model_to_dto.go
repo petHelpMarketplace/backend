@@ -35,26 +35,18 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 	return dto
 }
 
-// func ToSpecialistsProfileDTO(specialistModel domain.Specialist) []domain.SpecialistProfileSearchResponseDTO {
-// 	dto := domain.SpecialistProfileSearchResponseDTO{
-// 		ID:         specialistModel.ID,
-// 		Name:       specialistModel.Name,
-// 		IsActive:   specialistModel.IsActive,
-// 		IsVerified: specialistModel.IsVerified,
-// 	}
+func ToSpecialistsDetailsDTO(specialistDetails domain.SpecialistDetails) domain.SpecialistDetailsDTO {
+    
+	baseProfile := ToSpecialistProfileDTO(specialistDetails.Specialist)
 
-// 	if specialistModel.FamilyName.Valid {
-// 		dto.FamilyName = specialistModel.FamilyName.String
-// 	}
-// 	if specialistModel.Avatar.Valid {
-// 		dto.AvatarURL = specialistModel.Avatar.String
-// 	}
-// 	if specialistModel.Experience.Valid {
-// 		dto.Experience = specialistModel.Experience.Int32
-// 	}
-// 	if specialistModel.Description.Valid {
-// 		dto.Description = specialistModel.Description.String
-// 	}
+	dto := domain.SpecialistDetailsDTO{
+		SpecialistProfDTO: baseProfile,
+		ServicePriceDTO: domain.ServicePriceDTO{
+			Service: specialistDetails.ServicePrice.Service.String,
+			PricePerHour: specialistDetails.ServicePrice.PricePerHour,
+			PricePerDay:  specialistDetails.ServicePrice.PricePerDay,
+		},
+	}
 
-// 	return []dto
-// }
+	return dto
+}

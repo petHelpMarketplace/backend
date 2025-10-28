@@ -15,6 +15,7 @@ type SpecialistHandlers interface {
 	Logout(c *gin.Context)
 	UpdateProfile(c *gin.Context)
 	GetSpecialistsByAreaAnimalService(c *gin.Context) 
+	GetSpecialistDetailsById(c *gin.Context) 
 }
 
 type SpecialistService interface {
@@ -28,6 +29,7 @@ type SpecialistService interface {
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
 	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) 
+	GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error)	
 }
 
 type SpecialistRepository interface {
@@ -41,4 +43,5 @@ type SpecialistRepository interface {
     AddImages(ctx context.Context, specialistID int64, imageURLs []string) error 
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error 
 	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int) ([]domain.Specialist, error)
+	GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error)
 }

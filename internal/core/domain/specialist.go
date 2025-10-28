@@ -210,3 +210,28 @@ type SpecialistProfileSearchResponseDTO struct {
 	// example: true
 	IsVerified bool `json:"is_verified,omitempty"`
 }
+
+type ServicePrice struct {
+	Service      sql.NullString `json:"service" db:"services_name"`
+	PricePerHour float64        `json:"priceperhour" db:"amount_per_hour"`
+	PricePerDay  float64        `json:"priceperday" db:"amount_per_day"`
+
+}
+
+type ServicePriceDTO struct {
+	Service      string  `json:"service"`
+    PricePerHour float64 `json:"priceperhour"`
+    PricePerDay  float64 `json:"priceperday"`
+}
+
+type SpecialistDetails struct {
+	Specialist
+	ServicePrice `json:"servicePrice"` 
+}
+
+type SpecialistDetailsDTO struct {
+	SpecialistProfDTO
+	ServicePriceDTO
+}
+
+

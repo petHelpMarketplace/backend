@@ -605,3 +605,46 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	c.JSON(http.StatusOK, result)
 
 }
+
+func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
+	idParam := c.Param("id")
+
+	specialistID, err := strconv.ParseInt(idParam, 10, 64)
+
+	if err != nil {
+		sh.logger.Warn("invalid specialist ID parameter", zap.String("idParam", idParam), zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid specialist ID format. Must be a number.",
+			Details: []domain.FieldError{
+				{
+					Field:   "id",
+					Message: "must be a numeric value",
+				},
+			},
+		})
+		return
+	}
+	
+
+	specialist, err := sh.specialistService.GetSpecialistDetailsById(c.Request.Context(), specialistID)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			sh.logger.Warn("specialist not found for ID", zap.Int64("specialistID", specialistID))
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to get specialist by ID", zap.Int64("specialistID", specialistID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, specialist)
+
+}

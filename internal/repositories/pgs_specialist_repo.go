@@ -19,6 +19,7 @@ import (
 const (
 	currentTableName    = "specialists"
 	serviceSpecialistTableName    = "specialist_services"
+	pricesTableName = "prices"
 	operationSpecialist = "specialist_repo: "
 )
 
@@ -544,3 +545,45 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 	return nil
 }
 
+
+func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error) {
+	var details domain.SpecialistDetails
+
+	q := sq.Select("sp.*",
+					"sv.name AS service_name",
+					"p.amount_per_hour AS amount_per_hour", 
+       				"p.amount_per_day AS amount_per_day").From(currentTableName + " AS sp").Join(pricesTableName + " AS p ON p.specialist_id = sp.id").
+		 	        Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").Where(sq.Eq{"s.id": specialistID}).PlaceholderFormat(sq.Dollar)
+    
+    sqlQuery, args, err := q.ToSql()
+	if err != nil {
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to create select builder: %w", operationSpecialist, err)
+	}
+
+
+     conn, err := sr.DBPool.Pool().Acquire(ctx)
+    if err != nil {
+        return domain.SpecialistDetails{}, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+    }
+    defer conn.Release()
+
+	rows, err := conn.Query(ctx, sqlQuery, args...)
+    if err != nil {
+        return domain.SpecialistDetails{}, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+    }
+    defer rows.Close()
+
+   details, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.SpecialistDetails])
+
+	if err != nil {
+            if errors.Is(err, pgx.ErrNoRows) {
+            return domain.SpecialistDetails{}, nil 
+        }
+       
+        return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
+    }
+
+
+	return details, nil
+
+}

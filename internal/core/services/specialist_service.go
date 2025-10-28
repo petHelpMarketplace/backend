@@ -357,3 +357,29 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 
 	return profiles, nil
 }
+
+func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	specialistDTO := domain.SpecialistDetailsDTO{}
+
+	specialistDetails, err := ss.specialistRepo.GetSpecialistDetailsById(timeoutCtx, specialistId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist not found by ID",
+				zap.Int64("id", specialistId),
+				zap.Error(err))
+			return specialistDTO, domain.ErrSpecislistsNotFound
+		}
+		ss.logger.Error("failed to retrieve specialist by ID",
+			zap.Int64("id", specialistId),
+			zap.Error(err))
+		return specialistDTO, domain.ErrInternalServer
+	}
+
+	specialistDTO = utils.ToSpecialistsDetailsDTO(specialistDetails)
+
+	return specialistDTO, nil
+}
+
