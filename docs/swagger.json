@@ -371,22 +371,38 @@
         }
       }
     },
-    "/specialist/specialists": {
+    "/specialists/{animalCategory}/{animalSize}/{serviceID}/{districtID}": {
       "get": {
         "description": "Specialists search by filters",
-        "consumes": ["application/json"],
         "produces": ["application/json"],
         "tags": ["Specialists"],
         "summary": "Search",
         "parameters": [
           {
-            "description": "Search specialist request body",
-            "name": "request",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/domain.SearchSpecialistParams"
-            }
+            "name": "animalCategory",
+            "in": "path",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "animalSize",
+            "in": "path",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "serviceID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "districtID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "responses": {
