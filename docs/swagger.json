@@ -439,15 +439,9 @@
         }
       }
     },
-    "/specialist/portfolio": {
-      "post": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).",
-        "consumes": ["multipart/form-data"],
+    "/specialists/{animalCategory}/{animalSize}/{serviceID}/{districtID}": {
+      "get": {
+        "description": "Specialists search by filters",
         "produces": ["application/json"],
         "tags": ["Specialist"],
         "summary": "Upload specialist portfolio images",
