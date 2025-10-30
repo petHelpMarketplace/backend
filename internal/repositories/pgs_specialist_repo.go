@@ -394,7 +394,7 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	return updatedSpecialist, tx.Commit(ctx)
 }
 
-func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context.Context, areaId, serviceId, animalId, animalSizeId int64, limit, offset int) ([]domain.Specialist, error) {
+func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int) ([]domain.Specialist, error) {
 
 	if limit <= 0 || limit > 100 {
 		limit = 20
@@ -404,6 +404,9 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 		offset = 0
 	}
 
+	areaId := specialist.Area
+	serviceId := specialist.Service
+
 	var items []domain.Specialist
 	builder  := sq.Select("sp.*").
                             From(currentTableName + " AS sp").
@@ -411,7 +414,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 							Join(addressTableName + " AS adr ON adr.id = sp.addresses_id").
 							PlaceholderFormat(sq.Dollar).Limit(uint64(limit)).Offset(uint64(offset))
 
-	var conds []sq.Sqlizer
+	conds := make([]sq.Sqlizer, 0)
 	if serviceId != 0 {
 		conds = append(conds, sq.Eq{"s.service_id": serviceId})
 	}
@@ -422,7 +425,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
 	}
 
-	builder = builder.Where(sq.Or(conds))
+	builder = builder.Where(sq.And(conds))
 
 
 	query, args, err := builder.ToSql()

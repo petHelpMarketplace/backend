@@ -714,35 +714,80 @@ paths:
       - amount
       - email
       - specialist_id
-  /specialist/specialists:
-    get:
-  summary: Search specialists by filters
-  description: >
-    Returns a list of specialists filtered by optional query parameters.
-    All parameters are optional; the endpoint may return an empty list.
-  operationId: GetSpecialistsByAreaAnimalService
-  parameters:
-    - in: query
-      name: request
-      required: true
-      schema:
-        $ref: "#/definitions/domain.SearchSpecialistParams"
-      description: Search parameters encoded as query parameters (e.g. request.animalCategoryID=1)
-  responses:
-    "200":
-      description: OK
-      schema:
-        type: array
-        items:
-          $ref: "#/definitions/domain.SpecialistProfileSearchResponseDTO"
-    "400":
-      description: Invalid query parameters
-      schema:
-        $ref: "#/definitions/domain.ErrorResponse"
-    "500":
-      description: Internal server error
-      schema:
-        $ref: "#/definitions/domain.ErrorResponse"
+  /specialists:
+  get:
+    summary: Search specialists by filters
+    description: Returns a paginated list of specialists filtered by optional query parameters.
+    operationId: GetSpecialistsByAreaAnimalService
+    tags: [Specialists]
+    produces:
+      - application/json
+    parameters:
+      - in: query
+        name: animalCategoryID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by animal category ID
+      - in: query
+        name: animalSizeID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by animal size ID
+      - in: query
+        name: serviceID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by service ID
+      - in: query
+        name: districtID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by district ID
+      - in: query
+        name: page
+        type: integer
+        required: false
+        default: 1
+        minimum: 1
+      - in: query
+        name: limit
+        type: integer
+        required: false
+        default: 20
+        minimum: 1
+        maximum: 100
+    responses:
+      "200":
+        description: OK
+        schema:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+      "400":
+        description: Invalid query parameters
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
+      "408":
+        description: Request timeout
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
+      "500":
+        description: Internal server error
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
 schemes:
   - https
   - http

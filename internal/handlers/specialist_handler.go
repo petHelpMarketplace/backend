@@ -527,35 +527,13 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
  	var req domain.SearchSpecialistParams
 
 	if err := c.ShouldBindQuery(&req); err != nil {
-		var fieldErrors []domain.FieldError
-		message := "Invalid request payload"
-
-		var jsonErr *json.UnmarshalTypeError
-		var syntaxErr *json.SyntaxError
-
-		bindErr := fmt.Errorf("%s invalid search request payload: %w", operationSpHandler, err)
-
-		if errors.As(err, &jsonErr) {
-			message = "The request contains invalid data types."
-			fieldErrors = append(fieldErrors, domain.FieldError{
-				Field:   jsonErr.Field,
-				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
-			})
-		} else if errors.As(err, &syntaxErr) {
-			message = "The request body is not valid JSON."
-		} else if err == io.EOF {
-			message = "Request body cannot be empty."
-		}
-
-		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		sh.logger.Error("bind query failed", zap.Error(err))
 		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: message,
-			Details: fieldErrors,
-		})
+			Message: "Invalid query parameters",
+		})   
 		return
 	}
-
 
 	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
 	if err != nil {

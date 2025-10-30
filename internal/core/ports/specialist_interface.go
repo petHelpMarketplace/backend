@@ -36,5 +36,5 @@ type SpecialistRepository interface {
 	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
 	UpdateAvatar(ctx context.Context, id int64, avatarURL string) error
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.Specialist, error)
-	SearchSpecialistByServicePetArea(ctx context.Context, areaId, serviceId, animalId, animalSizeId int64, limit, offset int) ([]domain.Specialist, error) 
+	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int)([]domain.Specialist, error) 
 }

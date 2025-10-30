@@ -417,6 +417,70 @@
         }
       }
     },
+    "/specialists/{animalCategory}/{animalSize}/{serviceID}/{districtID}": {
+      "get": {
+        "description": "Specialists search by filters",
+        "produces": ["application/json"],
+        "tags": ["Specialists"],
+        "summary": "Search",
+        "parameters": [
+          {
+            "name": "animalCategoryID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "animalSizeID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "serviceID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "districtID",
+            "in": "path",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "408": {
+            "description": "Request timeout",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/domain.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/token/refresh": {
       "post": {
         "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
