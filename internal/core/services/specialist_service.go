@@ -100,7 +100,9 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	}
 
 	specialistDTO.ID = specialistModel.ID
-	specialistDTO.Name = specialistModel.Name
+	if specialistModel.Name.Valid {
+		specialistDTO.Name = &specialistModel.Name.String
+	}
 	specialistDTO.Email = specialistModel.Email
 	specialistDTO.IsVerified = specialistModel.IsVerified
 
@@ -269,6 +271,63 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 
 	// Convert the updated model to a DTO and return it
 	return utils.ToSpecialistProfileDTO(updatedModel), nil
+}
+
+func (ss *SpecialistServiceImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	if err := ss.specialistRepo.AddImages(timeoutCtx, specialistID, imageURLs); err != nil {
+		ss.logger.Error("failed to add images to specialist profile in DB",
+			zap.Int64("id", specialistID),
+			zap.Strings("urls", imageURLs),
+			zap.Error(err))
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrAccountNotFound
+		}
+		return domain.ErrInternalServer
+	}
+
+	return nil
+}
+
+func (ss *SpecialistServiceImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	if err := ss.specialistRepo.DeleteImage(timeoutCtx, specialistID, imageURL); err != nil {
+		ss.logger.Error("failed to delete images from specialist profile in DB",
+			zap.Int64("id", specialistID),
+			zap.String("url", imageURL),
+			zap.Error(err))
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrAccountNotFound
+		}
+		return domain.ErrInternalServer
+	}
+
+	return nil
+}
+
+func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64, isActive bool) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	err := ss.specialistRepo.UpdateIsActive(timeoutCtx, id, isActive)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist disappeared during profile active status update", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to update specialist profile active status in database",
+			zap.Int64("id", id),
+			zap.Bool("isActive", isActive),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	return nil
+
 }
 
 func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {

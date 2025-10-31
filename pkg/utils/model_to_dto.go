@@ -6,30 +6,43 @@ import "pethelp-backend/internal/core/domain"
 func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.SpecialistProfDTO {
 	dto := domain.SpecialistProfDTO{
 		ID:         specialistModel.ID,
-		Name:       specialistModel.Name,
-		Phone:      specialistModel.Phone,
 		Email:      specialistModel.Email,
 		IsActive:   specialistModel.IsActive,
 		IsVerified: specialistModel.IsVerified,
 	}
 
+	if specialistModel.Name.Valid {
+		dto.Name = &specialistModel.Name.String
+	}
 	if specialistModel.FamilyName.Valid {
-		dto.FamilyName = specialistModel.FamilyName.String
+		dto.FamilyName = &specialistModel.FamilyName.String
+	}
+	if specialistModel.Phone.Valid {
+		dto.Phone = &specialistModel.Phone.String
 	}
 	if specialistModel.Bio.Valid {
-		dto.Bio = specialistModel.Bio.String
+		dto.Bio = &specialistModel.Bio.String
 	}
 	if specialistModel.Avatar.Valid {
-		dto.AvatarURL = specialistModel.Avatar.String
+		dto.AvatarURL = &specialistModel.Avatar.String
+	}
+	if len(specialistModel.ImageID) > 0 {
+		for _, imgId := range specialistModel.ImageID {
+			if imgId.Valid {
+				url := imgId.String
+				dto.PortfolioURLs = append(dto.PortfolioURLs, &url)
+			}
+		}
 	}
 	if specialistModel.Experience.Valid {
-		dto.Experience = specialistModel.Experience.Int32
+		val := specialistModel.Experience.Int32
+		dto.Experience = &val
 	}
 	if specialistModel.Position.Valid {
-		dto.Position = specialistModel.Position.String
+		dto.Position = &specialistModel.Position.String
 	}
 	if specialistModel.Description.Valid {
-		dto.Description = specialistModel.Description.String
+		dto.Description = &specialistModel.Description.String
 	}
 
 	return dto

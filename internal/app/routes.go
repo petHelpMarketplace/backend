@@ -27,13 +27,13 @@ func NewGinServer(lc fx.Lifecycle, logger *zap.Logger, server *Server, cookieMng
 	router.Use(gin.Recovery())
 
 	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,
-		// AllowOrigins:     []string{"http://localhost:3000", "https://petbackend-a2vg.onrender.com", "https://accounts.google.com/*"},
+		// AllowAllOrigins: true,
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://petbackend-a2vg.onrender.com", "https://accounts.google.com/*", "https://pet-help.vercel.app/", "https://pet-help-git-dev-team-challenges-projects.vercel.app/"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           600 * time.Second,
+		MaxAge:           900 * time.Second,
 	}))
 
 	// Cookie middleware initialize session cookie

@@ -45,7 +45,7 @@ func NewSpecialistHandler(specialistSrv ports.SpecialistService, tokenSrv ports.
 }
 
 type successRegistration struct {
-	ID      string `json:"id" example:"1"`
+	ID      int64  `json:"id" example:"100"`
 	Message string `json:"message" default:"Registration successful"`
 }
 
@@ -56,7 +56,9 @@ type successRegistration struct {
 // @Produce      json
 // @Param request body domain.RegistrationRequest true "Registration request body"
 // @Success 201 {object} successRegistration "Sign-up succeeded"
-// @Failure      400,409,500 {object} domain.ErrorResponse
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
+// @Failure      409  {object}  domain.ConflictError "Account with this email already exists"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router /specialist/register [post]
 func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
@@ -85,7 +87,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 		}
 
 		sh.logger.Error("bind JSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
 			Details: fieldErrors,
@@ -95,7 +97,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	if validationErrors := sh.validator.ValidateRegistrationReq(req); len(validationErrors) > 0 {
 		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "validation failed",
 			Details: validationErrors,
@@ -106,14 +108,14 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 	id, err := sh.specialistService.Registration(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountAlreadyExists) {
-			c.JSON(http.StatusConflict, domain.ErrorResponse{
+			c.JSON(http.StatusConflict, domain.ConflictError{
 				Code:    http.StatusConflict,
 				Message: fmt.Sprintf("specialist email %s already used", req.Email),
 			})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -132,7 +134,7 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 
 	// — Success response
 	c.JSON(http.StatusCreated, successRegistration{
-		ID:      strconv.FormatInt(id, 10),
+		ID:      id,
 		Message: "Registration successful",
 	})
 
@@ -145,7 +147,10 @@ func (sh *SpecialistHandlerImpl) Registration(c *gin.Context) {
 // @Produce      json
 // @Param request body domain.LoginReq true "Login request body"
 // @Success 200 {object} domain.TokensPair "Login succeeded"
-// @Failure      400,401,500 {object} domain.ErrorResponse
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload"
+// @Failure      401  {object}  domain.UnauthorizedError "Invalid credentials"
+// @Failure      404  {object}  domain.NotFoundError "Account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router /specialist/login [post]
 func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	var loginData domain.LoginReq
@@ -173,7 +178,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 		}
 
 		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
 			Details: fieldErrors,
@@ -185,18 +190,18 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	spec, err := sh.specialistService.Login(c.Request.Context(), loginData.Email, loginData.Password)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
-			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+			c.JSON(http.StatusUnauthorized, domain.UnauthorizedError{
 				Code:    http.StatusUnauthorized,
 				Message: "Invalid credentials",
 			})
 		} else if errors.Is(err, domain.ErrAccountNotFound) {
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
 				Code:    http.StatusNotFound,
 				Message: "Authorization email not found",
 			})
 
 		} else {
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal server error",
 			})
@@ -206,7 +211,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 
 	tokens, jti, err := sh.tokenService.GenerateTokenPair(c.Request.Context(), &spec)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -227,7 +232,7 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 	err = sh.cookieManager.Save(c)
 	if err != nil {
 		sh.logger.Error("failed to save login cookie ", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -248,10 +253,10 @@ func (sh *SpecialistHandlerImpl) Login(c *gin.Context) {
 // @Description  Get information about the currently authenticated specialist. Requires a valid Bearer token.
 // @Tags         Specialist
 // @Produce      json
-// @Success      200  {object}  domain.SpecialistProfDTO "Successfully retrieved specialist data"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized. The user is not authenticated."
-// @Failure      404  {object}  domain.ErrorResponse "Specialist account associated with the token not found."
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error."
+// @Success      200  {object}  domain.SpecialistProfDTO "Successfully retrieved specialist profile"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized: User is not authenticated"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account associated with the token not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router       /specialist/me [get]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
@@ -265,11 +270,17 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			sh.logger.Warn("specialist not found for ID from token", zap.Int64("userID", userID))
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{Code: http.StatusNotFound, Message: "Specialist account not found"})
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
 			return
 		}
 		sh.logger.Error("failed to get specialist by ID", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
 		return
 	}
 
@@ -284,11 +295,11 @@ func (sh *SpecialistHandlerImpl) Me(c *gin.Context) {
 // @Produce      json
 // @Param        request body domain.ChangePassReq true "Change password request"
 // @Success      200  {object}  domain.SuccessResponse "Password updated successfully"
-// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or validation failed"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized or invalid old password"
-// @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
-// @Failure      409  {object}  domain.ErrorResponse "Conflict: New password is the same as the old one"
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized or invalid old password"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      409  {object}  domain.ConflictError "Conflict: New password is the same as the old one"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router       /specialist/change-password [patch]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
@@ -323,7 +334,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 		}
 
 		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
 			Details: fieldErrors,
@@ -333,7 +344,7 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 
 	if validationErrors := sh.validator.ValidateChangePasswordReq(reqData); len(validationErrors) > 0 {
 		sh.logger.Error("validation failed", zap.Any("errors", validationErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "validation failed",
 			Details: validationErrors,
@@ -344,26 +355,38 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 	err := sh.specialistService.ChangePassword(c.Request.Context(), userID, reqData.CurrentPass, reqData.NewPass)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidCredentials) {
-			c.JSON(http.StatusUnauthorized, domain.ErrorResponse{Code: http.StatusUnauthorized, Message: "Invalid old password"})
+			c.JSON(http.StatusUnauthorized, domain.UnauthorizedError{
+				Code:    http.StatusUnauthorized,
+				Message: "Invalid old password",
+			})
 			return
 		}
 		if errors.Is(err, domain.ErrAccountNotFound) {
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{Code: http.StatusNotFound, Message: "Specialist account not found"})
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
 			return
 		}
 		if errors.Is(err, domain.ErrPasswordReuse) {
-			c.JSON(http.StatusConflict, domain.ErrorResponse{Code: http.StatusConflict, Message: "New password cannot be the same as the old password."})
+			c.JSON(http.StatusConflict, domain.ConflictError{
+				Code:    http.StatusConflict,
+				Message: "New password cannot be the same as the old password.",
+			})
 			return
 		}
 
 		sh.logger.Error("failed to update password", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{Code: http.StatusInternalServerError, Message: "Internal server error"})
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
 		return
 	}
 
 	err = sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error"})
 		return
@@ -383,8 +406,8 @@ func (sh *SpecialistHandlerImpl) ChangePassword(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  domain.SuccessResponse "Logout successful"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error during logout process"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error during logout process"
 // @Router       /specialist/logout [post]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
@@ -414,7 +437,7 @@ func (sh *SpecialistHandlerImpl) Logout(c *gin.Context) {
 	//Clear the session cookie on the client side
 	if err := sh.cookieManager.Clear(c); err != nil {
 		sh.logger.Error("failed to clear session cookie during logout", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to clear session. Please clear your browser cookies.",
 		})
@@ -444,10 +467,10 @@ type updateProfileSuccessResponse struct {
 // @Produce      json
 // @Param        request body domain.SpecialistProfUpdateReq true "Specialist profile update request"
 // @Success      200  {object}  updateProfileSuccessResponse "Profile updated successfully"
-// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or validation failed"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized"
-// @Failure      404  {object}  domain.ErrorResponse "Specialist account not found"
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router       /specialist/profile [patch]
 // @Security 	 BearerAuth
 func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
@@ -480,7 +503,7 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 		}
 
 		sh.logger.Error("bind JSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
 			Details: fieldErrors,
@@ -490,7 +513,7 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 
 	if validationErrors := sh.validator.ValidateSpecialistProfileUpdateReq(reqData); len(validationErrors) > 0 {
 		sh.logger.Error("validation failed for specialist profile update", zap.Any("errors", validationErrors))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "validation failed",
 			Details: validationErrors,
@@ -501,14 +524,14 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 	specProf, err := sh.specialistService.UpdateProfile(c.Request.Context(), userID, reqData)
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
-			c.JSON(http.StatusNotFound, domain.ErrorResponse{
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
 				Code:    http.StatusNotFound,
 				Message: "Specialist account not found",
 			})
 			return
 		}
 		sh.logger.Error("failed to update specialist profile", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -519,6 +542,69 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 		Code:    http.StatusOK,
 		Message: "Profile updated successfully.",
 		Data:    specProf,
+	})
+}
+
+// DeactivateProfile
+// @Summary      Deactivate or activate specialist profile
+// @Description  Allows an authenticated specialist to deactivate or activate their profile.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body object{is_active=bool} true "Profile activation/deactivation request"
+// @Success      200  {object}  domain.SuccessResponse "Profile status updated successfully"
+// @Failure      400  {object}  domain.BadRequestError "Invalid status parameter"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/me/status [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
+
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return // getUserIDFromContext already handled the error response
+	}
+
+	var req struct {
+		IsActive *bool `json:"is_active" binding:"required" example:"true"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
+		sh.logger.Error("Request body must include boolean field 'is_active'")
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Request body must include boolean field 'is_active'",
+		})
+		return
+	}
+	isActive := *req.IsActive
+
+	err := sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
+	if err != nil {
+		sh.logger.Error("failed to update specialist profile active status", zap.Int64("userID", userID), zap.Bool("status", isActive), zap.Error(err))
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	message := "Profile deactivated successfully."
+	if isActive {
+		message = "Profile activated successfully."
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: message,
 	})
 }
 

@@ -37,10 +37,10 @@ func NewTokenHandler(specialistSrv ports.SpecialistService, tokenSrv ports.Token
 // @Tags         Token
 // @Produce      json
 // @Success      200  {object}  domain.TokensPair "Successfully generated new token pair"
-// @Failure      400  {object}  domain.ErrorResponse "Invalid request payload or malformed refresh token"
-// @Failure      401  {object}  domain.ErrorResponse "Unauthorized: Invalid, expired, or malformed refresh token"
-// @Failure      403  {object}  domain.ErrorResponse "Forbidden: Refresh token has been revoked or is otherwise not allowed"
-// @Failure      500  {object}  domain.ErrorResponse "Internal server error"
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or malformed refresh token"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized: Invalid, expired, or malformed refresh token"
+// @Failure      403  {object}  domain.ForbiddenError "Forbidden: Refresh token has been revoked or is otherwise not allowed"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router       /token/refresh [post]
 func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
@@ -54,7 +54,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			refreshToken = string(v)
 		default:
 			th.logger.Warn("refresh_token cookie has unexpected type", zap.String("type", fmt.Sprintf("%T", cookieRefreshToken)))
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 				Code:    http.StatusInternalServerError,
 				Message: "Get cookie error.",
 			})
@@ -62,7 +62,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		}
 	} else if err != nil {
 		th.logger.Debug("refresh_token cookie not present", zap.Error(err))
-		c.JSON(http.StatusUnauthorized, domain.ErrorResponse{
+		c.JSON(http.StatusUnauthorized, domain.UnauthorizedError{
 			Code:    http.StatusUnauthorized,
 			Message: "Refresh token cookie not found or invalid.",
 		})
@@ -71,38 +71,60 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 
 	_, id, err := th.tokenService.ValidateToken(c.Request.Context(), refreshToken, false)
 	if err != nil {
-		var code int
-		var message string
-		logLevel := zap.WarnLevel
 		switch {
+		// --- 401 Unauthorized Cases ---
 		case errors.Is(err, domain.ErrTokenMalformed),
 			errors.Is(err, domain.ErrTokenSignatureInvalid),
 			errors.Is(err, domain.ErrTokenExpired),
 			errors.Is(err, domain.ErrRefreshTokenNotValid),
 			errors.Is(err, domain.ErrTokenInvalid):
-			code = http.StatusUnauthorized
-			message = "refresh token is invalid or has expired."
+
+			// Create the specific error response
+			resp := domain.UnauthorizedError{
+				Code:    http.StatusUnauthorized,
+				Message: "Refresh token is invalid or has expired.",
+			}
+			if ce := th.logger.Check(zap.WarnLevel, "refresh token validation failed"); ce != nil {
+				ce.Write(zap.Error(err), zap.String("reason", resp.Message))
+			}
+			c.JSON(http.StatusUnauthorized, resp)
+			return
+
+		// --- 403 Forbidden Cases ---
 		case errors.Is(err, domain.ErrTokenRevoked),
 			errors.Is(err, domain.ErrForbidden),
 			errors.Is(err, domain.ErrUserIDMismatch):
-			code = http.StatusForbidden
-			message = "refresh token has been revoked or is not permitted."
+
+			// Create the specific error response
+			resp := domain.ForbiddenError{
+				Code:    http.StatusForbidden,
+				Message: "Refresh token has been revoked or is not permitted.",
+			}
+			if ce := th.logger.Check(zap.WarnLevel, "refresh token validation failed"); ce != nil {
+				ce.Write(zap.Error(err), zap.String("reason", resp.Message))
+			}
+			c.JSON(http.StatusForbidden, resp)
+			return
+
+		// --- 500 Internal Server Error (Default Case) ---
 		default:
-			code = http.StatusInternalServerError
-			message = "internal server error."
-			logLevel = zap.ErrorLevel
+			// Create the specific error response
+			resp := domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "An internal server error occurred.",
+			}
+			if ce := th.logger.Check(zap.ErrorLevel, "unexpected refresh token error"); ce != nil {
+				ce.Write(zap.Error(err))
+			}
+			c.JSON(http.StatusInternalServerError, resp)
+			return
 		}
-		if ce := th.logger.Check(logLevel, "refresh token validation failed"); ce != nil {
-			ce.Write(zap.Error(err), zap.String("reason", message))
-		}
-		c.JSON(code, domain.ErrorResponse{Code: code, Message: message})
-		return
 	}
 
 	userID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		th.logger.Error("failed to parse userID from token claims", zap.String("userID_claim", id), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error.",
 		})
@@ -120,7 +142,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		case string:
 			if parsed, perr := strconv.ParseInt(v, 10, 64); perr != nil {
 				th.logger.Error("failed to parse user_id cookie", zap.String("value", v), zap.Error(perr))
-				c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+				c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 					Code:    http.StatusInternalServerError,
 					Message: "Internal server error.",
 				})
@@ -131,7 +153,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 		case []byte:
 			if parsed, perr := strconv.ParseInt(string(v), 10, 64); perr != nil {
 				th.logger.Error("failed to parse user_id cookie", zap.String("value", string(v)), zap.Error(perr))
-				c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+				c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 					Code:    http.StatusInternalServerError,
 					Message: "Internal server error.",
 				})
@@ -141,14 +163,14 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			}
 		default:
 			th.logger.Error("unexpected user_id cookie type", zap.String("type", fmt.Sprintf("%T", cookieUserID)))
-			c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 				Code:    http.StatusInternalServerError,
 				Message: "Internal server error.",
 			})
 			return
 		}
 		if usrFromCookie != userID {
-			c.JSON(http.StatusForbidden, domain.ErrorResponse{
+			c.JSON(http.StatusForbidden, domain.ForbiddenError{
 				Code:    http.StatusForbidden,
 				Message: "UserID cookie mismatch.",
 			})
@@ -160,14 +182,14 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
 			th.logger.Warn("user account not found for valid refresh token", zap.Int64("userID", userID))
-			c.JSON(http.StatusForbidden, domain.ErrorResponse{
+			c.JSON(http.StatusForbidden, domain.ForbiddenError{
 				Code:    http.StatusForbidden,
 				Message: "user associated with token no longer exists.",
 			})
 			return
 		}
 		th.logger.Error("failed to retrieve specialist for token refresh", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error.",
 		})
@@ -177,7 +199,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	tokens, jti, err := th.tokenService.GenerateTokenPair(c.Request.Context(), &specialistDTO)
 	if err != nil {
 		th.logger.Error("failed to generate new token pair", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error.",
 		})
@@ -189,7 +211,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 			zap.Int64("userID", userID),
 			zap.Error(err),
 		)
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to finalize token refresh. Please log in again.",
 		})
@@ -219,7 +241,7 @@ func (th *TokenHandlerImpl) RefreshToken(c *gin.Context) {
 	th.cookieManager.BulkSet(c, sessionValues)
 	if err := th.cookieManager.Save(c); err != nil {
 		th.logger.Error("failed to save refresh token cookie ", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})

@@ -13,6 +13,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
+	"github.com/lib/pq"
 )
 
 const (
@@ -175,7 +176,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Specialist{}, sql.ErrNoRows
+			return domain.Specialist{}, domain.ErrAccountNotFound
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}
@@ -434,8 +435,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	if err != nil {
 		return items, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
 	}
-
-	conn, err := sr.DBPool.Pool().Acquire(ctx)
+conn, err := sr.DBPool.Pool().Acquire(ctx)
 	if err != nil {
 		return items, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
@@ -455,3 +455,142 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	return items, nil
 }
 
+func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
+	if len(imageURLs) == 0 {
+		return nil // Nothing to add
+	}
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return fmt.Errorf("%s failed to load time location: %w", operationSpecialist, err)
+	}
+	updateTime := time.Now().In(loc)
+
+	// Use array_cat to append the new URLs to the existing array.
+	// We use squirrel's Expr for custom SQL functions.
+	query, args, err := sq.Update(currentTableName).
+		Set("image_id", sq.Expr("array_cat(COALESCE(image_id, '{}'), ?)", pq.Array(imageURLs))).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": specialistID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build add images query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := conn.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute add images query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows // No specialist found with that ID
+	}
+
+	return nil
+}
+
+
+
+func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
+	// Return early if there's nothing to delete.
+	if imageURL == "" {
+		return nil
+	}
+
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return fmt.Errorf("%s failed to load time location: %w", operationSpecialist, err)
+	}
+	updateTime := time.Now().In(loc)
+
+	// Use the simple and efficient ARRAY_REMOVE function for a single element.
+	query, args, err := sq.Update(currentTableName).
+		Set("image_id", sq.Expr("ARRAY_REMOVE(image_id, ?)", imageURL)).
+		Set("updated_at", updateTime).
+		Where(sq.And{
+			sq.Eq{"id": specialistID},
+			sq.Expr("? = ANY(image_id)", imageURL),
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build delete image query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	result, err := conn.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute delete image query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows //No specialist or image not present
+	}
+
+	return nil
+}
+
+func (sr *SpecialistRepositoryImpl) UpdateIsActive(ctx context.Context, id int64, isActive bool) error {
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	query, args, err := sq.Update(currentTableName).
+		Set("is_active", isActive).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build update active state query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute update active state query: %w", operationSpecialist, err)
+	}
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+	return tx.Commit(ctx)
+}

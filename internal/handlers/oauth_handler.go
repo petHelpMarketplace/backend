@@ -46,8 +46,8 @@ func NewOAuthHandlers(oauth ports.OAuthService, specialist ports.SpecialistServi
 // @Produce json
 // @Param provider path string true "OAuth2.0 provider name (e.g., google, github)"
 // @Success 201 {object} domain.TokensPair "Successfully authenticated and generated tokens"
-// @Failure 404 {object} domain.ErrorResponse "Account with this email not found"
-// @Failure 500 {object} domain.ErrorResponse "Internal server error or failed to complete OAuth2.0 authentication"
+// @Failure 404 {object} domain.NotFoundError "Account with this email not found"
+// @Failure 500 {object} domain.InternalServerError "Internal server error or failed to complete OAuth2.0 authentication"
 // @Router /oauth/{provider} [get]
 // SignInWithProvider redirect to provider login page
 func (oh *OAuthHandlersImpl) SignInWithProvider(c *gin.Context) {
@@ -68,7 +68,7 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 		oauthErr := fmt.Errorf("%s failed to complete OAuth2.0 authentication: %w", operationOAuthName, err)
 		oh.logger.Error("", zap.Error(oauthErr))
 
-		oauthMessage := domain.ErrorResponse{
+		oauthMessage := domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to complete OAuth2.0 authentication",
 		}
@@ -79,14 +79,14 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 	specialist, err := oh.specialistService.ShowByEmail(c.Request.Context(), user.Email)
 	if err != nil {
 		if errors.Is(err, domain.ErrAccountNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, domain.ErrorResponse{
+			c.AbortWithStatusJSON(http.StatusNotFound, domain.NotFoundError{
 				Code:    http.StatusNotFound,
 				Message: "account with this email not found",
 			})
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "internal server error",
 		})
@@ -95,7 +95,7 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 
 	tokens, jti, err := oh.tokenService.GenerateTokenPair(c.Request.Context(), &specialist)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -116,7 +116,7 @@ func (oh *OAuthHandlersImpl) ProviderCallback(c *gin.Context) {
 	err = oh.cookieManager.Save(c)
 	if err != nil {
 		oh.logger.Error("failed to save OAuth login cookie ", zap.Error(err))
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
