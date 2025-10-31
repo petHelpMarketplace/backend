@@ -610,14 +610,14 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 
 func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
 
- 	var req domain.SearchSpecialistParams
+	var req domain.SearchSpecialistParams
 
 	if err := c.ShouldBindQuery(&req); err != nil {
 		sh.logger.Error("bind query failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, domain.ErrorResponse{
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid query parameters",
-		})   
+		})
 		return
 	}
 
@@ -626,7 +626,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		// Distinguish context cancellations/timeouts if you like
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.ErrorResponse{
+			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
@@ -634,7 +634,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		}
 
 		sh.logger.Error("SearchSpecialists: service error", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		})
@@ -642,7 +642,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	}
 
 
-	// Return 200 with possibly empty list — that’s normal for searches
+	// Return 200 with possibly empty list — that normal for searches
 	c.JSON(http.StatusOK, result)
 
 }
