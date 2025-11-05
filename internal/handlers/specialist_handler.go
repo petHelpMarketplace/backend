@@ -545,6 +545,69 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 	})
 }
 
+// DeactivateProfile
+// @Summary      Deactivate or activate specialist profile
+// @Description  Allows an authenticated specialist to deactivate or activate their profile.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body object{is_active=bool} true "Profile activation/deactivation request"
+// @Success      200  {object}  domain.SuccessResponse "Profile status updated successfully"
+// @Failure      400  {object}  domain.BadRequestError "Invalid status parameter"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/me/status [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
+
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return // getUserIDFromContext already handled the error response
+	}
+
+	var req struct {
+		IsActive *bool `json:"is_active" binding:"required" example:"true"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
+		sh.logger.Error("Request body must include boolean field 'is_active'")
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Request body must include boolean field 'is_active'",
+		})
+		return
+	}
+	isActive := *req.IsActive
+
+	err := sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
+	if err != nil {
+		sh.logger.Error("failed to update specialist profile active status", zap.Int64("userID", userID), zap.Bool("status", isActive), zap.Error(err))
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	message := "Profile deactivated successfully."
+	if isActive {
+		message = "Profile activated successfully."
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: message,
+	})
+}
+
 func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
 
 	var req domain.SearchSpecialistParams
@@ -605,6 +668,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	c.JSON(http.StatusOK, result)
 
 }
+
 
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 	idParam := c.Param("id")

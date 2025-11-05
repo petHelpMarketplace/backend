@@ -14,6 +14,7 @@ type SpecialistHandlers interface {
 	ChangePassword(c *gin.Context)
 	Logout(c *gin.Context)
 	UpdateProfile(c *gin.Context)
+	DeactivateProfile(c *gin.Context)
 	GetSpecialistsByAreaAnimalService(c *gin.Context) 
 	GetSpecialistDetailsById(c *gin.Context) 
 }
@@ -26,6 +27,8 @@ type SpecialistService interface {
 	ChangePassword(ctx context.Context, id int64, oldPass, newPass string) error
 	UpdateAvatar(ctx context.Context, specialistID int64, avatarURL string) error
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.SpecialistProfDTO, error)
+	// DeactivateProfile handles the business logic for changing a profile's active status.
+	DeactivateProfile(ctx context.Context, specialistID int64, isActive bool) error
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
 	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) 
@@ -40,7 +43,8 @@ type SpecialistRepository interface {
 	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
 	UpdateAvatar(ctx context.Context, id int64, avatarURL string) error
 	UpdateProfile(ctx context.Context, id int64, req domain.SpecialistProfUpdateReq) (domain.Specialist, error)
-    AddImages(ctx context.Context, specialistID int64, imageURLs []string) error 
+    UpdateIsActive(ctx context.Context, id int64, isActive bool) error
+	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error 
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error 
 	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int) ([]domain.Specialist, error)
 	GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error)

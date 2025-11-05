@@ -100,7 +100,9 @@ func (ss *SpecialistServiceImpl) Login(ctx context.Context, email, password stri
 	}
 
 	specialistDTO.ID = specialistModel.ID
-	specialistDTO.Name = specialistModel.Name
+	if specialistModel.Name.Valid {
+		specialistDTO.Name = &specialistModel.Name.String
+	}
 	specialistDTO.Email = specialistModel.Email
 	specialistDTO.IsVerified = specialistModel.IsVerified
 
@@ -271,7 +273,6 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 	return utils.ToSpecialistProfileDTO(updatedModel), nil
 }
 
-
 func (ss *SpecialistServiceImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
@@ -308,11 +309,30 @@ func (ss *SpecialistServiceImpl) DeleteImage(ctx context.Context, specialistID i
 	return nil
 }
 
-func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64, isActive bool) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	specialistDTO := []domain.SpecialistProfDTO{}
+	err := ss.specialistRepo.UpdateIsActive(timeoutCtx, id, isActive)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist disappeared during profile active status update", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to update specialist profile active status in database",
+			zap.Int64("id", id),
+			zap.Bool("isActive", isActive),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	return nil
+
+}
+
+func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
 
 	limit := 0
 	offset := 0
@@ -332,10 +352,10 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 				zap.Int("limit", limit),
 				zap.Int("offset", offset),
 				zap.Error(err))
-			return nil, domain.ErrSpecislistsNotFound 
+			return nil, domain.ErrSpecialistsNotFound
 		}
 		ss.logger.Error("failed to retrieve specialist by service/pet/area from database",
-		    zap.Int64("animal", specialist.Animal),
+			zap.Int64("animal", specialist.Animal),
 			zap.Int64("animal_size", specialist.AnimalSize),
 			zap.Int64("service", specialist.Service),
 			zap.Int64("area", specialist.Area),
@@ -352,7 +372,7 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	profiles := make([]domain.SpecialistProfDTO, 0, len(specialistModels))
 
 	for _, specialistModel := range specialistModels {
-		profiles = append(specialistDTO, utils.ToSpecialistProfileDTO(specialistModel))
+		profiles = append(profiles, utils.ToSpecialistProfileDTO(specialistModel))
 	}
 
 	return profiles, nil
@@ -370,7 +390,7 @@ func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, s
 			ss.logger.Warn("specialist not found by ID",
 				zap.Int64("id", specialistId),
 				zap.Error(err))
-			return specialistDTO, domain.ErrSpecislistsNotFound
+			return specialistDTO, domain.ErrSpecialistsNotFound
 		}
 		ss.logger.Error("failed to retrieve specialist by ID",
 			zap.Int64("id", specialistId),
