@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -9,13 +11,17 @@ import (
 	"pethelp-backend/internal/config"
 	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
-	// "pethelp-backend/pkg/email"
+)
+
+const (
+	appointmentsTableName    = "appointments"
 )
 
 type UnauthAppointmentServiceImpl struct {
-	emailSender ports.EmailService
+	emailSender           ports.EmailService
 	//interface to interact with appointment storage
 	unauthAppointmentRepo ports.UnauthAppointmentRepository
+	emailRepo             ports.EmailRepository      
 	logger                *zap.Logger
 	//how long each database call or operation should wait before timing out
 	defaultTimeout time.Duration
@@ -119,4 +125,48 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 	}
 
 	return id, nil
+}
+
+//this function called by background worker
+func (aa *UnauthAppointmentServiceImpl) CheckAndNotifyExpiredAppointments(ctx context.Context) {
+	
+	  aa.logger.Info("Starting expired appointment notification check...")
+
+	  //Create context with timeout
+	  timeoutCtx, cancel := context.WithTimeout(ctx, aa.defaultTimeout)
+	  defer cancel()
+
+	  appointments, err := aa.unauthAppointmentRepo.GetExpiredAndUnnotified(ctx)
+	  if err != nil {
+		if errors.Is(err, domain.ErrNoAppointmentsToExpire) {
+			aa.logger.Info("No appointments currently requiring expiration notification.")
+			return
+		}
+		aa.logger.Error("Failed to fetch expired appointments", zap.Error(err))
+		return
+	  }
+
+	  aa.logger.Info(fmt.Sprintf("Found %d appointments to notify.", len(appointments)))
+
+	  for _, appt := range appointments {       
+
+		sendErr := aa.emailSender.SendAppointmentExpirationNotification(timeoutCtx, appt.UserEmail, appt.Date, appt.StartTime, appt.EndTime)
+
+
+		if sendErr != nil {
+			// Log the error but continue to the next appointment
+			aa.logger.Error("Failed to send expiration email", zap.Int64("appointmentID", appt.ID), zap.Error(sendErr))
+			continue
+		}
+
+		_, markErr := aa.emailRepo.MarkEmailSent(timeoutCtx, appt.ID)
+		if markErr != nil {
+			aa.logger.Error("CRITICAL: Failed to mark email as sent in DB", zap.Int64("appointmentID", appt.ID), zap.Error(markErr))
+		} else {
+			aa.logger.Debug("Successfully processed and notified appointment", zap.Int64("appointmentID", appt.ID))
+		}
+
+	  }
+
+	  aa.logger.Info("Finished expired appointment notification check.")
 }

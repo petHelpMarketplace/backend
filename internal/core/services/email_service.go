@@ -81,3 +81,40 @@ func (s *Sender) SendAppointmentConfirmationEmail(ctx context.Context, id int64,
 
 	return nil
 }
+
+func (s *Sender) SendAppointmentExpirationNotification(ctx context.Context, clientEmail string, date, startTime, endTime time.Time) error {
+	htmlBody := fmt.Sprintf(
+		"<p> Has your appointment on %s from %s to %s been finished successfully?</p>",
+		date.Format("2006-01-02"), startTime.Format("15:04"), endTime.Format("15:04"),
+	)
+
+	msg := []mailjet.InfoMessagesV31{
+		{
+			From: &mailjet.RecipientV31{
+				Email: "pethelpdev@gmail.com",
+				Name:  "PetHelp",
+			},
+			To: &mailjet.RecipientsV31{
+				mailjet.RecipientV31{
+					Email: clientEmail,
+					Name:  "Client",
+				},
+			},
+			Subject:  "PetHelp: Appointment Confirmation",
+			TextPart: "Your appointment has been booked successfully!",
+			HTMLPart: htmlBody,
+		},
+	}
+
+	messages := mailjet.MessagesV31{Info: msg}
+	res, err := s.client.SendMailV31(&messages)
+
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	fmt.Printf("Data: %+v\n", res)
+
+	return nil
+}
+

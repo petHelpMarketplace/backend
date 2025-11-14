@@ -16,6 +16,8 @@ type UnauthAppointmentRepository interface {
 	locationType, street, unit, apt, description, email, status string,
 	date, startTime, endTime time.Time) (int64, error)
 	IsTimeBooked(ctx context.Context, specialistID int, date, startTime, endTime time.Time) (bool, error)
+	GetExpiredAndUnnotified(ctx context.Context) ([]domain.Appointment, error)
+
 }
 
 type UnauthAppointmentHandler interface {
@@ -24,4 +26,6 @@ type UnauthAppointmentHandler interface {
 
 type UnauthAppointmentService interface {
 	BookUnauthAppointment(ctx context.Context, req domain.SaveUnauthAppointmentRequest) (int64, error)
+	CheckAndNotifyExpiredAppointments(ctx context.Context)
+
 }

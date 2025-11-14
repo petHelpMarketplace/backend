@@ -34,6 +34,7 @@ var (
 	ErrNotFound                  = errors.New("results not found")
 	ErrSpecialistsNotFound       = errors.New("specialists not found")	
 	ErrInvalidParameter          = errors.New("invalid parameter")	
+	ErrNoAppointmentsToExpire    = errors.New("No appointments to expire")	
 )
 
 // FieldError contains validation error details for a specific field.

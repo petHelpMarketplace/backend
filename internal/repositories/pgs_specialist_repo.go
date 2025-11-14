@@ -615,7 +615,7 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 	}
 
 
-     conn, err := sr.DBPool.Pool().Acquire(ctx)
+    conn, err := sr.DBPool.Pool().Acquire(ctx)
     if err != nil {
         return domain.SpecialistDetails{}, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
     }

@@ -32,6 +32,10 @@ var UnauthAppointmentModule = fx.Module("unauth_appointment",
 			fx.As(new(ports.UnauthAppointmentRepository)),
 		),
 		fx.Annotate(
+			repositories.NewEmailRepository,
+			fx.As(new(ports.EmailRepository)),
+		),
+		fx.Annotate(
 			func(specialist ports.SpecialistService) ports.EmailService {
 			return services.NewSender("", specialist)
 		},

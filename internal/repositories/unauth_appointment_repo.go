@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"pethelp-backend/internal/core/domain"
 	"pethelp-backend/internal/core/ports"
 	"pethelp-backend/pkg/database/postgres"
 	"time"
@@ -193,6 +194,65 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	return appointmentID, nil
 
 }
+
+
+func (ar *UnauthAppointmentRepositoryImpl) GetExpiredAndUnnotified(ctx context.Context) ([]domain.Appointment, error) {
+
+	var appointments []domain.Appointment
+
+	cutoffTime := time.Now().Add(-1 * time.Hour)
+
+	q := sq.Select("id", "appointment_date", "user_id", "specialist_id", "status", "start_time", "end_time").
+		From(appointmentsTableName).
+		Where(sq.Lt{"end_time": cutoffTime}).
+		Where(sq.Eq{"is_expiration_email_sent": false}).
+		PlaceholderFormat(sq.Dollar)
+
+	sqlQuery, args, err := q.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to build SQL query: %w", operationUnauthAppointment, err)
+	}
+
+	conn, err := ar.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to take DB pool connection: %w", operationUnauthAppointment, err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(ctx, sqlQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s query failed: %w", operationUnauthAppointment, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int64
+		var appointmentDate time.Time
+		var userID int64
+		var specialistID int64
+		var status string
+		var startTime time.Time
+		var endTime time.Time
+
+		if err := rows.Scan(&id, &appointmentDate, &userID, &specialistID, &status, &startTime, &endTime); err != nil {
+			return nil, fmt.Errorf("%s scanning row: %w", operationUnauthAppointment, err)
+		}
+
+		// append a zero-value appointment for each row (populate fields as needed)
+		appointments = append(appointments, domain.Appointment{})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s rows iteration error: %w", operationUnauthAppointment, err)
+	}
+
+	if len(appointments) == 0 {
+		return nil, domain.ErrNoAppointmentsToExpire
+	}
+
+	return appointments, nil
+}
+	
 
 
 
