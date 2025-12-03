@@ -278,6 +278,95 @@ definitions:
       refresh_token:
         type: string
     type: object
+  domain.SaveUnauthAppointmentRequest:
+    description: Unauthenticated appointment booking request payload
+    type: object
+    properties:
+      service_id:
+        type: integer
+        description: ID of the service to be booked
+        example: 45
+      city_id:
+        type: integer
+        description: ID of the city for the appointment
+        example: 3
+      district_id:
+        type: integer
+        description: ID of the district for the appointment
+        example: 7
+      street:
+        type: string
+        description: Street name for the appointment location
+        example: "Main Street"
+      location_type:
+        type: string
+        description: Type of location (e.g., home, clinic)
+        example: "home"
+      unit:
+        type: string
+        description: Unit or building number
+        example: "12B"
+      apt:
+        type: string
+        description: Apartment number
+        example: "34"
+      animal_size_id:
+        type: integer
+        description: ID representing the animal size
+        example: 2
+      description:
+        type: string
+        description: Description of the appointment or animal condition
+        example: "Small dog, routine check-up"
+      specialist_id:
+        type: integer
+        description: ID of the specialist to book
+        example: 123
+      date:
+        type: string
+        format: date
+        description: Date of the appointment
+        example: "2025-09-01"
+      start_time:
+        type: string
+        format: time
+        description: Start time of the appointment
+        example: "14:30"
+      end_time:
+        type: string
+        format: time
+        description: End time of the appointment
+        example: "15:00"
+      amount:
+        type: number
+        format: float
+        description: Payment amount for the appointment
+        example: 75.50
+      email:
+        type: string
+        format: email
+        description: Email address of the user booking the appointment
+        example: "user@example.com"
+      phone:
+        type: string
+        description: Contact phone number (optional)
+        example: "+1 (555) 123-4567"
+    required:
+      - service_id
+      - city_id
+      - district_id
+      - street
+      - location_type
+      - unit
+      - apt
+      - animal_size_id
+      - description
+      - specialist_id
+      - date
+      - start_time
+      - end_time
+      - amount
+      - email
   handlers.SuccessPayload:
     properties:
       message:
@@ -538,7 +627,7 @@ paths:
         "200":
           description: Successfully retrieved specialist data
           schema:
-            $ref: "#/definitions/domain.SpecialistProfileDTO"
+            $ref: "#/definitions/domain.SpecialistProfDTO"
         "401":
           description: Unauthorized. The user is not authenticated.
           schema:
@@ -624,96 +713,6 @@ paths:
       summary: Update access and refresh tokens
       tags:
         - Token
-      domain.SaveUnauthAppointmentRequest:
-    description: Unauthenticated appointment booking request payload
-    type: object
-    properties:
-      service_id:
-        type: integer
-        description: ID of the service to be booked
-        example: 45
-      city_id:
-        type: integer
-        description: ID of the city for the appointment
-        example: 3
-      district_id:
-        type: integer
-        description: ID of the district for the appointment
-        example: 7
-      street:
-        type: string
-        description: Street name for the appointment location
-        example: "Main Street"
-      location_type:
-        type: string
-        description: Type of location (e.g., home, clinic)
-        example: "home"
-      unit:
-        type: string
-        description: Unit or building number
-        example: "12B"
-      apt:
-        type: string
-        description: Apartment number
-        example: "34"
-      animal_size_id:
-        type: integer
-        description: ID representing the animal size
-        example: 2
-      description:
-        type: string
-        description: Description of the appointment or animal condition
-        example: "Small dog, routine check-up"
-      specialist_id:
-        type: integer
-        description: ID of the specialist to book
-        example: 123
-      date:
-        type: string
-        format: date
-        description: Date of the appointment
-        example: "2025-09-01"
-      start_time:
-        type: string
-        format: time
-        description: Start time of the appointment
-        example: "14:30"
-      end_time:
-        type: string
-        format: time
-        description: End time of the appointment
-        example: "15:00"
-      amount:
-        type: number
-        format: float
-        description: Payment amount for the appointment
-        example: 75.50
-      email:
-        type: string
-        format: email
-        description: Email address of the user booking the appointment
-        example: "user@example.com"
-      phone:
-        type: string
-        description: Contact phone number (optional)
-        example: "+1 (555) 123-4567"
-    required:
-      - service_id
-      - city_id
-      - district_id
-      - street
-      - location_type
-      - unit
-      - apt
-      - animal_size_id
-      - description
-      - specialist_id
-      - date
-      - start_time
-      - end_time
-      - amount
-      - email
-      - specialist_id
   /specialist/specialists:
     get:
       summary: Search specialists by filters

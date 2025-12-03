@@ -32,7 +32,7 @@ var (
 	ErrTimeUnavailable           = errors.New("time is unavailable")
 	ErrInvalidTimeWindow         = errors.New("invalid time window")
 	ErrNotFound                  = errors.New("results not found")
-	ErrSpecislistsNotFound       = errors.New("specialists not found")	
+	ErrSpecialistsNotFound       = errors.New("specialists not found")	
 	ErrInvalidParameter          = errors.New("invalid parameter")	
 )
 

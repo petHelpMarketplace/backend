@@ -414,7 +414,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	builder  := sq.Select("sp.*").
                             From(currentTableName + " AS sp").
 							Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
-							Join(addressTableName + " AS adr ON adr.id = sp.addresses_id").
+							Join(addressTableName + " AS adr ON adr.id = sp.address_id").
 							PlaceholderFormat(sq.Dollar).Limit(uint64(limit)).Offset(uint64(offset))
 
 	var conds []sq.Sqlizer
@@ -424,11 +424,20 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	if areaId != 0 {
 		conds = append(conds, sq.Eq{"adr.area_id": areaId})
 	}
-	if len(conds) > 0 {
+	if specialist.Animal != 0 {
+		conds = append(conds, sq.Eq{"s.animal_id": specialist.Animal})
+	}
+	if specialist.AnimalSize != 0 {
+		conds = append(conds, sq.Eq{"s.animal_size_id": specialist.AnimalSize})
+	}
+	if specialist.City != 0 {
+		conds = append(conds, sq.Eq{"adr.city_id": specialist.City})
+	}
+	if len(conds) == 0 {
 		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
 	}
 
-	builder = builder.Where(sq.Or(conds))
+	builder = builder.Where(sq.And(conds))
 
 
 	query, args, err := builder.ToSql()
@@ -545,15 +554,17 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 	return nil
 }
 
-
 func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error) {
 	var details domain.SpecialistDetails
 
 	q := sq.Select("sp.*",
 					"sv.name AS service_name",
-					"p.amount_per_hour AS amount_per_hour", 
-       				"p.amount_per_day AS amount_per_day").From(currentTableName + " AS sp").Join(pricesTableName + " AS p ON p.specialist_id = sp.id").
-		 	        Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").Where(sq.Eq{"s.id": specialistID}).PlaceholderFormat(sq.Dollar)
+					"p.price_per_hour", 
+       				"p.price_per_day").From(currentTableName + " AS sp").
+		 	        Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
+					Join("services AS sv ON sv.id = s.service_id").
+					Join(pricesTableName + " AS p ON p.specialist_id = sp.id AND p.service_id = s.service_id").
+					Where(sq.Eq{"s.id": specialistID}).PlaceholderFormat(sq.Dollar)
     
     sqlQuery, args, err := q.ToSql()
 	if err != nil {
@@ -577,7 +588,7 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 
 	if err != nil {
             if errors.Is(err, pgx.ErrNoRows) {
-            return domain.SpecialistDetails{}, nil 
+            return domain.SpecialistDetails{}, sql.ErrNoRows
         }
        
         return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)

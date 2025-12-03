@@ -168,11 +168,11 @@ type SpecialistProfUpdateReq struct {
 
 
 type SearchSpecialistParams struct {
-	Animal     	    int64          `json:"animal_id" db:"animal_id"`
-	AnimalSize      int64          `json:"animal_size_id" db:"animal_size_id"`
-	Service         int64          `json:"service_id" db:"service_id"`
-	City            int64          `json:"city_id" db:"city_id"`
-	Area            int64          `json:"area_id" db:"area_id"`
+	Animal     	    int64          `form:"animal_id" json:"animal_id,omitempty" db:"animal_id"`
+	AnimalSize      int64          `form:"animal_size_id" json:"animal_size_id,omitempty" db:"animal_size_id"`
+	Service         int64          `form:"service_id" json:"service_id,omitempty" db:"service_id"`
+	City            int64          `form:"city_id" json:"city_id,omitempty" db:"city_id"`
+	Area            int64          `form:"area_id" json:"area_id,omitempty" db:"area_id"`
 }
 
 type SpecialistProfileSearchResponseDTO struct {
@@ -212,26 +212,26 @@ type SpecialistProfileSearchResponseDTO struct {
 }
 
 type ServicePrice struct {
-	Service      sql.NullString `json:"service" db:"services_name"`
-	PricePerHour float64        `json:"priceperhour" db:"amount_per_hour"`
-	PricePerDay  float64        `json:"priceperday" db:"amount_per_day"`
+	Service      sql.NullString `json:"service" db:"service_name"`
+	PricePerHour float64        `json:"price_per_hour" db:"price_per_hour"`
+	PricePerDay  float64        `json:"price_per_day" db:"pricet_per_day"`
 
 }
 
 type ServicePriceDTO struct {
-	Service      string  `json:"service"`
-    PricePerHour float64 `json:"priceperhour"`
-    PricePerDay  float64 `json:"priceperday"`
+	Service      string  `json:"service,omitempty"`
+    PricePerHour float64 `json:"price_per_hour,omitempty"`
+    PricePerDay  float64 `json:"price_per_day,omitempty"`
 }
 
 type SpecialistDetails struct {
 	Specialist
-	ServicePrice `json:"servicePrice"` 
+	ServicePrices []ServicePrice `json:"services"` 
 }
 
 type SpecialistDetailsDTO struct {
 	SpecialistProfDTO
-	ServicePriceDTO
+	ServicePrices []ServicePriceDTO `json:"services"` 
 }
 
 

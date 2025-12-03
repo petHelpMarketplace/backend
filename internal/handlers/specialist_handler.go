@@ -551,12 +551,11 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 
 	if err := c.ShouldBindQuery(&req); err != nil {
 		var fieldErrors []domain.FieldError
-		message := "Invalid request payload"
+		message := "Invalid query parameters"
 
 		var jsonErr *json.UnmarshalTypeError
-		var syntaxErr *json.SyntaxError
 
-		bindErr := fmt.Errorf("%s invalid search request payload: %w", operationSpHandler, err)
+		bindErr := fmt.Errorf("%s invalid search params: %w", operationSpHandler, err)
 
 		if errors.As(err, &jsonErr) {
 			message = "The request contains invalid data types."
@@ -564,11 +563,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 				Field:   jsonErr.Field,
 				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
 			})
-		} else if errors.As(err, &syntaxErr) {
-			message = "The request body is not valid JSON."
-		} else if err == io.EOF {
-			message = "Request body cannot be empty."
-		}
+		} 
 
 		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.BadRequestError{
@@ -585,7 +580,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		// Distinguish context cancellations/timeouts if you like
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
+			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
