@@ -3,6 +3,7 @@ package ports
 import (
 	"context"
 	"pethelp-backend/internal/core/domain"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +16,7 @@ type SpecialistHandlers interface {
 	Logout(c *gin.Context)
 	UpdateProfile(c *gin.Context)
 	DeactivateProfile(c *gin.Context)
+	DeleteAccount(c *gin.Context)
 }
 
 type SpecialistService interface {
@@ -29,6 +31,8 @@ type SpecialistService interface {
 	DeactivateProfile(ctx context.Context, specialistID int64, isActive bool) error
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
+	InitiateSoftDelete(ctx context.Context, id int64) error
+	DeleteExpiredAccounts(ctx context.Context) error
 }
 
 type SpecialistRepository interface {
@@ -43,4 +47,11 @@ type SpecialistRepository interface {
 	UpdateIsActive(ctx context.Context, id int64, isActive bool) error
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
+	MarkAsDeleted(ctx context.Context, id int64) error
+	// GetExpiredAccounts returns a list of accounts whose deletion grace period has expired.
+	GetExpiredAccounts(ctx context.Context, thresholdTime time.Time) ([]domain.Specialist, error)
+	// DeleteAllServices removes all service records for a specific specialist.
+	DeleteAllServices(ctx context.Context, specialistID int64) error
+	// HardDelete permanently deletes a specialist record by ID.
+	HardDelete(ctx context.Context, id int64) error
 }

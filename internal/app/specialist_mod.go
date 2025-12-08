@@ -64,7 +64,8 @@ var SpecialistModule = fx.Module("specialist",
 		),
 
 		fx.Annotate(services.NewCookieManager,
-			fx.As(new(ports.CookieManager))),
+			fx.As(new(ports.CookieManager)),
+		),
 
 		middleware.NewAuthMiddleware,
 	),
@@ -84,6 +85,7 @@ var SpecialistModule = fx.Module("specialist",
 			protected.PATCH("/me/status", handler.DeactivateProfile)
 			protected.POST("/portfolio", mp.FileHandler.UploadPortfolio)
 			protected.DELETE("/portfolio/image", mp.FileHandler.DeletePortfolioImage)
+			protected.DELETE("/me", handler.DeleteAccount)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),

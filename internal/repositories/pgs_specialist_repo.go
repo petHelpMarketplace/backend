@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	currentTableName    = "specialists"
-	operationSpecialist = "specialist_repo: "
+	currentTableName           = "specialists"
+	serviceSpecialistTableName = "specialist_services"
+	operationSpecialist        = "specialist_repo: "
 )
 
 type SpecialistRepositoryImpl struct {
@@ -529,5 +530,180 @@ func (sr *SpecialistRepositoryImpl) UpdateIsActive(ctx context.Context, id int64
 	if result.RowsAffected() == 0 {
 		return sql.ErrNoRows
 	}
+	return tx.Commit(ctx)
+}
+
+// MarkAsDeleted marks the specialist profile as deleted (Soft Delete) within a transaction.
+func (sr *SpecialistRepositoryImpl) MarkAsDeleted(ctx context.Context, id int64) error {
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return fmt.Errorf("%s failed to load time location: %w", operationSpecialist, err)
+	}
+	updateTime := time.Now().In(loc)
+
+	// Build the update query
+	query, args, err := sq.Update(currentTableName).
+		Set("is_deleted", true).
+		Set("is_active", false). // Deactivate profile immediately
+		Set("delete_initiated_at", updateTime).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build mark as deleted query: %w", operationSpecialist, err)
+	}
+
+	// Acquire connection from the pool
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	// Begin transaction
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Execute the query within the transaction
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute mark as deleted query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s failed to commit sql transaction: %w", operationSpecialist, err)
+	}
+
+	return nil
+}
+
+// GetExpiredAccounts retrieves specialists marked for deletion before the threshold time.
+func (sr *SpecialistRepositoryImpl) GetExpiredAccounts(ctx context.Context, thresholdTime time.Time) ([]domain.Specialist, error) {
+	var items []domain.Specialist
+
+	query, args, err := sq.Select("*").
+		From(currentTableName).
+		Where(sq.And{
+			sq.Eq{"is_deleted": true},
+			sq.Lt{"delete_initiated_at": thresholdTime},
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to build select expired query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to query expired accounts: %w", operationSpecialist, err)
+	}
+	defer rows.Close()
+
+	items, err = pgx.CollectRows(rows, pgx.RowToStructByName[domain.Specialist])
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to scan expired accounts: %w", operationSpecialist, err)
+	}
+
+	return items, nil
+}
+
+// DeleteAllServices removes all service associations for a specialist.
+func (sr *SpecialistRepositoryImpl) DeleteAllServices(ctx context.Context, specialistID int64) error {
+	query, args, err := sq.Delete(serviceSpecialistTableName).
+		Where(sq.Eq{"specialist_id": specialistID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build delete services query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute delete services: %w", operationSpecialist, err)
+	}
+
+	return tx.Commit(ctx)
+}
+
+// HardDelete permanently removes a specialist record by ID.
+func (sr *SpecialistRepositoryImpl) HardDelete(ctx context.Context, id int64) error {
+	query, args, err := sq.Delete(currentTableName).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build hard delete query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute hard delete: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
 	return tx.Commit(ctx)
 }

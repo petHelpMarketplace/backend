@@ -9,27 +9,28 @@ import (
 
 // Specialist represents the 'specialists' table in the database.
 type Specialist struct {
-	ID             int64          `json:"id" db:"id"`
-	Name           sql.NullString `json:"name" db:"name"`
-	FamilyName     sql.NullString `json:"family_name" db:"family_name"`
-	Phone          sql.NullString `json:"phone" db:"phone"`
-	Email          string         `json:"email" db:"email"`
-	PasswordHash   string         `json:"-" db:"password_hash"`
-	Bio            sql.NullString `json:"bio" db:"bio"`
-	Avatar         sql.NullString `json:"avatar" db:"avatar"`
-	AddressID      sql.NullInt32  `json:"address_id" db:"address_id"`
-	OrganisationID sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
-	BranchID       sql.NullInt32  `json:"branch_id" db:"branch_id"`
-	Position       sql.NullString `json:"position" db:"position"`
-	Experience     sql.NullInt32  `json:"experience" db:"experience"`
-	Description    sql.NullString `json:"description" db:"description"`
-	ImageID        []pgtype.Text  `json:"image_id" db:"image_id"`
-	IsBanned       bool           `json:"is_banned" db:"is_banned"`
-	IsDeleted      bool           `json:"is_deleted" db:"is_deleted"`
-	IsActive       bool           `json:"is_active" db:"is_active"`
-	IsVerified     bool           `json:"is_verified" db:"is_verified"`
-	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+	ID                int64          `json:"id" db:"id"`
+	Name              sql.NullString `json:"name" db:"name"`
+	FamilyName        sql.NullString `json:"family_name" db:"family_name"`
+	Phone             sql.NullString `json:"phone" db:"phone"`
+	Email             string         `json:"email" db:"email"`
+	PasswordHash      string         `json:"-" db:"password_hash"`
+	Bio               sql.NullString `json:"bio" db:"bio"`
+	Avatar            sql.NullString `json:"avatar" db:"avatar"`
+	AddressID         sql.NullInt32  `json:"address_id" db:"address_id"`
+	OrganisationID    sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
+	BranchID          sql.NullInt32  `json:"branch_id" db:"branch_id"`
+	Position          sql.NullString `json:"position" db:"position"`
+	Experience        sql.NullInt32  `json:"experience" db:"experience"`
+	Description       sql.NullString `json:"description" db:"description"`
+	ImageID           []pgtype.Text  `json:"image_id" db:"image_id"`
+	IsBanned          bool           `json:"is_banned" db:"is_banned"`
+	IsDeleted         bool           `json:"is_deleted" db:"is_deleted"`
+	DeleteInitiatedAt sql.NullTime   `json:"delete_initiated_at" db:"delete_initiated_at"`
+	IsActive          bool           `json:"is_active" db:"is_active"`
+	IsVerified        bool           `json:"is_verified" db:"is_verified"`
+	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 // SpecialistProfDTO represents the public profile data of a specialist.

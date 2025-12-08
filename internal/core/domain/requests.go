@@ -40,3 +40,10 @@ type SuccessResponse struct {
 	Message string `json:"message" example:"Operation was successful"`
 	Data    any    `json:"data,omitempty"`
 }
+
+// SuccessDelete is a success delete profile response structure.
+type SuccessDelete struct {
+	Code    int    `json:"code" example:"204"`
+	Message string `json:"message" example:"Operation was successful"`
+	Data    any    `json:"data,omitempty"`
+}
