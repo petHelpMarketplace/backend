@@ -390,7 +390,18 @@ func (ss *SpecialistServiceImpl) DeleteExpiredAccounts(ctx context.Context) erro
 	for _, specialist := range expiredAccounts {
 		logger := ss.logger.With(zap.Int64("specialistID", specialist.ID))
 
-		// A. Delete Avatar from S3
+		// Delete Associated Services from DB
+		if err := ss.specialistRepo.DeleteAllServices(timeoutCtx, specialist.ID); err != nil {
+			logger.Error("failed to delete associated services", zap.Error(err))
+		}
+
+		// Hard Delete the Specialist Record
+		if err := ss.specialistRepo.HardDelete(timeoutCtx, specialist.ID); err != nil {
+			logger.Error("failed to hard delete specialist record", zap.Error(err))
+			continue
+		}
+
+		// Delete Avatar from S3
 		if specialist.Avatar.Valid && specialist.Avatar.String != "" {
 			if err := ss.fileService.DeleteAvatar(timeoutCtx, specialist.Avatar.String); err != nil {
 				// Log error but continue deletion process
@@ -409,17 +420,6 @@ func (ss *SpecialistServiceImpl) DeleteExpiredAccounts(ctx context.Context) erro
 						zap.Error(err))
 				}
 			}
-		}
-
-		// Delete Associated Services from DB
-		if err := ss.specialistRepo.DeleteAllServices(timeoutCtx, specialist.ID); err != nil {
-			logger.Error("failed to delete associated services", zap.Error(err))
-		}
-
-		// Hard Delete the Specialist Record
-		if err := ss.specialistRepo.HardDelete(timeoutCtx, specialist.ID); err != nil {
-			logger.Error("failed to hard delete specialist record", zap.Error(err))
-			continue
 		}
 
 		logger.Info("successfully deleted expired specialist account and resources")

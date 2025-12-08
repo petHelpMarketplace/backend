@@ -615,7 +615,7 @@ func (sr *SpecialistRepositoryImpl) GetExpiredAccounts(ctx context.Context, thre
 
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
@@ -631,6 +631,10 @@ func (sr *SpecialistRepositoryImpl) GetExpiredAccounts(ctx context.Context, thre
 	items, err = pgx.CollectRows(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		return nil, fmt.Errorf("%s failed to scan expired accounts: %w", operationSpecialist, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("%s failed to commit tx: %w", operationSpecialist, err)
 	}
 
 	return items, nil

@@ -612,7 +612,7 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 // @Description  Initiates account deletion. The account will be deactivated immediately and permanently deleted after 7 days if not restored.
 // @Tags         Specialist
 // @Produce      json
-// @Success      204  {object}  domain.SuccessResponse "Deletion initiated successfully"
+// @Success      204  {object}  domain.SuccessDelete "Deletion initiated successfully"
 // @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
 // @Failure      404  {object}  domain.NotFoundError "Account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
@@ -641,6 +641,10 @@ func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
 		})
 		return
 	}
+
+	sh.logger.Info("account deletion initiated",
+		zap.Int64("userID", userID),
+		zap.String("event", "soft_delete_initiated"))
 
 	// Revoke all user sessions (invalidate refresh tokens) to force logout
 	if err := sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10)); err != nil {
