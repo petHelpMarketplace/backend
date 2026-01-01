@@ -36,16 +36,27 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 }
 
 func ToSpecialistsDetailsDTO(specialistDetails domain.SpecialistDetails) domain.SpecialistDetailsDTO {
-    
+	
 	baseProfile := ToSpecialistProfileDTO(specialistDetails.Specialist)
 
 	dto := domain.SpecialistDetailsDTO{
 		SpecialistProfDTO: baseProfile,
-		ServicePriceDTO: domain.ServicePriceDTO{
-			Service: specialistDetails.ServicePrice.Service.String,
-			PricePerHour: specialistDetails.ServicePrice.PricePerHour,
-			PricePerDay:  specialistDetails.ServicePrice.PricePerDay,
-		},
+	}
+
+	// If there is at least one ServicePrice, map the first one to the DTO.
+	if len(specialistDetails.ServicePrices) > 0 {
+		sp := specialistDetails.ServicePrices[0]
+		serviceStr := ""
+		if sp.Service.Valid {
+			serviceStr = sp.Service.String
+		}
+		dto.ServicePrices = []domain.ServicePriceDTO{
+			{
+				Service:      serviceStr,
+				PricePerHour: sp.PricePerHour,
+				PricePerDay:  sp.PricePerDay,
+			},
+		}
 	}
 
 	return dto
