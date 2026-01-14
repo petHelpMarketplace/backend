@@ -175,6 +175,13 @@ type SearchSpecialistParams struct {
 	Area            int64          `form:"area_id" json:"area_id,omitempty" db:"area_id"`
 }
 
+type SearchSpecialistUriParams struct {
+    AnimalCategory int64 `uri:"animalCategory" binding:"required"`
+    AnimalSize     int64 `uri:"animalSize" binding:"required"`
+    ServiceID      int64 `uri:"serviceID" binding:"required"`
+    DistrictID     int64 `uri:"districtID" binding:"required"`
+}
+
 type SpecialistProfileSearchResponseDTO struct {
 	// Unique identifier of the specialist.
 	// example: 123

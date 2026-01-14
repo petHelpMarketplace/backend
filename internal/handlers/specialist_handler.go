@@ -547,11 +547,11 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 
 func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
 
-	var req domain.SearchSpecialistParams
+	var uri domain.SearchSpecialistParams
 
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindUri(&uri); err != nil {
 		var fieldErrors []domain.FieldError
-		message := "Invalid query parameters"
+		message := "Invalid path parameters"
 
 		var jsonErr *json.UnmarshalTypeError
 
@@ -565,7 +565,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 			})
 		} 
 
-		sh.logger.Error("bindJSON failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		sh.logger.Error("bindUri failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
 			Message: message,
@@ -575,7 +575,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	}
 
 
-	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), uri)
 	if err != nil {
 		// Distinguish context cancellations/timeouts if you like
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
