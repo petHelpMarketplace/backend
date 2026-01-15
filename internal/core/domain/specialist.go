@@ -220,8 +220,8 @@ type SpecialistProfileSearchResponseDTO struct {
 
 type ServicePrice struct {
 	Service      sql.NullString `json:"service" db:"service_name"`
-	PricePerHour float64        `json:"price_per_hour" db:"price_per_hour"`
-	PricePerDay  float64        `json:"price_per_day" db:"pricet_per_day"`
+    PricePerHour float64        `json:"price_per_hour" db:"price_per_hour"`
+    PricePerDay  float64        `json:"price_per_day" db:"price_per_day"`
 
 }
 

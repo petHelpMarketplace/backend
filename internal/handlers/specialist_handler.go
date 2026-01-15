@@ -547,7 +547,7 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 
 func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
 
-	var uri domain.SearchSpecialistParams
+	var uri domain.SearchSpecialistUriParams
 
 	if err := c.ShouldBindUri(&uri); err != nil {
 		var fieldErrors []domain.FieldError
@@ -575,7 +575,29 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	}
 
 
-	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), uri)
+	// convert URI params to service params (marshal/unmarshal to copy matching fields)
+	var params domain.SearchSpecialistParams
+	{
+		b, err := json.Marshal(uri)
+		if err != nil {
+			sh.logger.Error("failed to marshal uri params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+		if err := json.Unmarshal(b, &params); err != nil {
+			sh.logger.Error("failed to convert uri params to service params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+	}
+
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), params)
 	if err != nil {
 		// Distinguish context cancellations/timeouts if you like
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {

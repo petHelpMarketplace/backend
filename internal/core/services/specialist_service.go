@@ -321,6 +321,10 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 			return nil, err
 	}
+
+	if errors.Is(err, domain.ErrInvalidParameter) {
+    return nil, err
+    }
 	
 	if err != nil { 
 		if errors.Is(err, sql.ErrNoRows)  || errors.Is(err, domain.ErrNotFound){

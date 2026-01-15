@@ -45,17 +45,17 @@ func ToSpecialistsDetailsDTO(specialistDetails domain.SpecialistDetails) domain.
 
 	// If there is at least one ServicePrice, map the first one to the DTO.
 	if len(specialistDetails.ServicePrices) > 0 {
-		sp := specialistDetails.ServicePrices[0]
-		serviceStr := ""
-		if sp.Service.Valid {
-			serviceStr = sp.Service.String
-		}
-		dto.ServicePrices = []domain.ServicePriceDTO{
-			{
+		dto.ServicePrices = make([]domain.ServicePriceDTO, 0, len(specialistDetails.ServicePrices))
+		for _, sp := range specialistDetails.ServicePrices {
+			serviceStr := ""
+			if sp.Service.Valid {
+				serviceStr = sp.Service.String
+			}
+			dto.ServicePrices = append(dto.ServicePrices, domain.ServicePriceDTO{
 				Service:      serviceStr,
 				PricePerHour: sp.PricePerHour,
 				PricePerDay:  sp.PricePerDay,
-			},
+			})
 		}
 	}
 

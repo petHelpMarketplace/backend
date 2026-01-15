@@ -434,7 +434,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 		conds = append(conds, sq.Eq{"adr.city_id": specialist.City})
 	}
 	if len(conds) == 0 {
-		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
+		return nil, domain.ErrInvalidParameter
 	}
 
 	builder = builder.Where(sq.And(conds))
@@ -555,46 +555,45 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 }
 
 func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error) {
-	var details domain.SpecialistDetails
+	type specialistWithPrice struct {
+		domain.SpecialistDetails
+		domain.ServicePrice
+	}
+	var swp specialistWithPrice
 
 	q := sq.Select("sp.*",
-					"sv.name AS service_name",
-					"p.price_per_hour", 
-       				"p.price_per_day").From(currentTableName + " AS sp").
-		 	        Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
-					Join("services AS sv ON sv.id = s.service_id").
-					Join(pricesTableName + " AS p ON p.specialist_id = sp.id AND p.service_id = s.service_id").
-					Where(sq.Eq{"s.id": specialistID}).PlaceholderFormat(sq.Dollar)
-    
-    sqlQuery, args, err := q.ToSql()
+		"sv.name AS service_name",
+		"p.price_per_hour",
+		"p.price_per_day").From(currentTableName + " AS sp").
+		Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
+		Join("services AS sv ON sv.id = s.service_id").
+		Join(pricesTableName + " AS p ON p.specialist_id = sp.id AND p.service_id = s.service_id").
+		Where(sq.Eq{"sp.id": specialistID}).PlaceholderFormat(sq.Dollar)
+
+	sqlQuery, args, err := q.ToSql()
 	if err != nil {
 		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to create select builder: %w", operationSpecialist, err)
 	}
 
-
-     conn, err := sr.DBPool.Pool().Acquire(ctx)
-    if err != nil {
-        return domain.SpecialistDetails{}, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
-    }
-    defer conn.Release()
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
 
 	rows, err := conn.Query(ctx, sqlQuery, args...)
-    if err != nil {
-        return domain.SpecialistDetails{}, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
-    }
-    defer rows.Close()
-
-   details, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.SpecialistDetails])
-
 	if err != nil {
-            if errors.Is(err, pgx.ErrNoRows) {
-            return domain.SpecialistDetails{}, sql.ErrNoRows
-        }
-       
-        return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
-    }
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+	}
+	defer rows.Close()
 
+	swp, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[specialistWithPrice])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.SpecialistDetails{}, sql.ErrNoRows
+		}
+		return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
+	}
 
-	return details, nil
-
+	return swp.SpecialistDetails, nil
 }
