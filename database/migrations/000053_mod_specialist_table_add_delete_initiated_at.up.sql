@@ -1,0 +1,2 @@
+ALTER TABLE specialists
+ADD COLUMN delete_initiated_at TIMESTAMP WITH TIME ZONE DEFAULT NULL;

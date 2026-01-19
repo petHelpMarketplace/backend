@@ -608,6 +608,65 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 	})
 }
 
+// DeleteAccount
+// @Summary      Delete specialist account (Soft Delete)
+// @Description  Initiates account deletion. The account will be deactivated immediately and permanently deleted after 7 days if not restored.
+// @Tags         Specialist
+// @Produce      json
+// @Success      204  {object}  domain.SuccessDelete "Deletion initiated successfully"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/me [delete]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return
+	}
+
+	// Initiate soft delete logic in the service layer
+	err := sh.specialistService.InitiateSoftDelete(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to initiate soft delete", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	sh.logger.Info("account deletion initiated",
+		zap.Int64("userID", userID),
+		zap.String("event", "soft_delete_initiated"))
+
+	// Revoke all user sessions (invalidate refresh tokens) to force logout
+	if err := sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10)); err != nil {
+		sh.logger.Error("failed to revoke user sessions after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	// Clear session cookies on the client side
+	if err := sh.cookieManager.Clear(c); err != nil {
+		sh.logger.Error("failed to clear cookies after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessDelete{
+		Code:    http.StatusNoContent,
+		Message: "Account scheduled for deletion. It will be permanently removed in 7 days.",
+	})
+}
+
 func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
 
 	var req domain.SearchSpecialistParams
@@ -640,7 +699,6 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		})
 		return
 	}
-
 
 	// Return 200 with possibly empty list — that normal for searches
 	c.JSON(http.StatusOK, result)
