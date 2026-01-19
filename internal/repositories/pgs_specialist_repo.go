@@ -559,7 +559,7 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 		domain.SpecialistDetails
 		domain.ServicePrice
 	}
-	var swp specialistWithPrice
+	var swpList []specialistWithPrice
 
 	q := sq.Select("sp.*",
 		"sv.name AS service_name",
@@ -587,7 +587,7 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 	}
 	defer rows.Close()
 
-	swp, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[specialistWithPrice])
+	swpList, err = pgx.CollectRows(rows, pgx.RowToStructByName[specialistWithPrice])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.SpecialistDetails{}, sql.ErrNoRows
@@ -595,5 +595,9 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 		return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
 	}
 
-	return swp.SpecialistDetails, nil
+	if len(swpList) == 0 {
+		return domain.SpecialistDetails{}, sql.ErrNoRows
+	}
+
+	return swpList[0].SpecialistDetails, nil
 }

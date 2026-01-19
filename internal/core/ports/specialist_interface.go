@@ -14,7 +14,7 @@ type SpecialistHandlers interface {
 	ChangePassword(c *gin.Context)
 	Logout(c *gin.Context)
 	UpdateProfile(c *gin.Context)
-	GetSpecialistsByAreaAnimalService(c *gin.Context) 
+	SearchSpecialistByServicePetArea(c *gin.Context) 
 	GetSpecialistDetailsById(c *gin.Context) 
 }
 

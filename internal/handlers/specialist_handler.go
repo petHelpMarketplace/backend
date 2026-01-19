@@ -545,7 +545,19 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 	})
 }
 
-func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+// SearchSpecialistByServicePetArea godoc
+// @Summary      Search specialists by Service, Pet, Area
+// @Description  Search speacialists
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body domain.SearchSpecialistUriParams true "Search request body"
+// @Success      200  {object}  result "Search succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
+// @Failure      408  {object}  domain.StatusRequestTimeout "Request timeout"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router /specialists/search/:animal_id/:animal_size_id/:service_id/:area_id [get]
+func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
 
@@ -599,7 +611,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 
 	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), params)
 	if err != nil {
-		// Distinguish context cancellations/timeouts if you like
+		// Distinguish context cancellations/timeouts 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
 			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
@@ -623,6 +635,18 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 
 }
 
+// GetSpecialistDetailsById godoc
+// @Summary      Get specialist by ID
+// @Description  Get speacialist details by ID
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body id true "Get specialist dy ID request"
+// @Success      200  {object}  result "Get specialist by ID succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format. Must be a number."
+// @Failure      404  {object}  domain.StatusNotFound "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialists/:id [get]
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 	idParam := c.Param("id")
 
