@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -664,4 +665,42 @@ func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
 		Code:    http.StatusNoContent,
 		Message: "Account scheduled for deletion. It will be permanently removed in 7 days.",
 	})
+}
+
+func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+
+	var req domain.SearchSpecialistParams
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		sh.logger.Error("bind query failed", zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid query parameters",
+		})
+		return
+	}
+
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
+	if err != nil {
+		// Distinguish context cancellations/timeouts if you like
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
+			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
+				Code:    http.StatusRequestTimeout,
+				Message: "Request timeout",
+			})
+			return
+		}
+
+		sh.logger.Error("SearchSpecialists: service error", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	// Return 200 with possibly empty list — that normal for searches
+	c.JSON(http.StatusOK, result)
+
 }

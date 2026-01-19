@@ -404,6 +404,16 @@ definitions:
         minLength: 13
         type: string
     type: object
+  domain.SuccessDelete:
+    properties:
+      code:
+        example: 204
+        type: integer
+      data: {}
+      message:
+        example: Operation was successful
+        type: string
+    type: object
   domain.SuccessResponse:
     properties:
       code:
@@ -762,7 +772,7 @@ paths:
         "204":
           description: Deletion initiated successfully
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/domain.SuccessDelete'
         "401":
           description: Unauthorized
           schema:

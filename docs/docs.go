@@ -443,7 +443,7 @@ const docTemplate = `{
                     "204": {
                         "description": "Deletion initiated successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/domain.SuccessDelete"
                         }
                     },
                     "401": {
@@ -1225,6 +1225,20 @@ const docTemplate = `{
                     "description": "Phone number of the specialist in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nminLength: 13\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
                     "type": "string",
                     "minLength": 13
+                }
+            }
+        },
+        "domain.SuccessDelete": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 204
+                },
+                "data": {},
+                "message": {
+                    "type": "string",
+                    "example": "Operation was successful"
                 }
             }
         },
