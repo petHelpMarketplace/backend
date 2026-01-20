@@ -545,6 +545,69 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 	})
 }
 
+// DeactivateProfile
+// @Summary      Deactivate or activate specialist profile
+// @Description  Allows an authenticated specialist to deactivate or activate their profile.
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        request body object{is_active=bool} true "Profile activation/deactivation request"
+// @Success      200  {object}  domain.SuccessResponse "Profile status updated successfully"
+// @Failure      400  {object}  domain.BadRequestError "Invalid status parameter"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/me/status [patch]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
+
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return // getUserIDFromContext already handled the error response
+	}
+
+	var req struct {
+		IsActive *bool `json:"is_active" binding:"required" example:"true"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
+		sh.logger.Error("Request body must include boolean field 'is_active'")
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Request body must include boolean field 'is_active'",
+		})
+		return
+	}
+	isActive := *req.IsActive
+
+	err := sh.specialistService.DeactivateProfile(c.Request.Context(), userID, isActive)
+	if err != nil {
+		sh.logger.Error("failed to update specialist profile active status", zap.Int64("userID", userID), zap.Bool("status", isActive), zap.Error(err))
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	message := "Profile deactivated successfully."
+	if isActive {
+		message = "Profile activated successfully."
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessResponse{
+		Code:    http.StatusOK,
+		Message: message,
+	})
+}
+
 // SearchSpecialistByServicePetArea godoc
 // @Summary      Search specialists by Service, Pet, Area
 // @Description  Search speacialists
@@ -560,6 +623,9 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
+func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+
+	var req domain.SearchSpecialistParams
 
 	if err := c.ShouldBindUri(&uri); err != nil {
 		var fieldErrors []domain.FieldError
@@ -580,8 +646,7 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 		sh.logger.Error("bindUri failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
-			Message: message,
-			Details: fieldErrors,
+			Message: "Invalid query parameters",
 		})
 		return
 	}
@@ -614,7 +679,7 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 		// Distinguish context cancellations/timeouts 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
+			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
@@ -630,7 +695,7 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 	}
 
 
-	// Return 200 with possibly empty list — that’s normal for searches
+	// Return 200 with possibly empty list — that normal for searches
 	c.JSON(http.StatusOK, result)
 
 }

@@ -177,7 +177,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.Specialist{}, sql.ErrNoRows
+			return domain.Specialist{}, domain.ErrAccountNotFound
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}
@@ -405,36 +405,26 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	if offset < 0 {
 		offset = 0
 	}
-    
-	serviceId := specialist.Service
-	areaId := specialist.Area
 
+	areaId := specialist.Area
+	serviceId := specialist.Service
 
 	var items []domain.Specialist
 	builder  := sq.Select("sp.*").
                             From(currentTableName + " AS sp").
 							Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
-							Join(addressTableName + " AS adr ON adr.id = sp.address_id").
+							Join(addressTableName + " AS adr ON adr.id = sp.addresses_id").
 							PlaceholderFormat(sq.Dollar).Limit(uint64(limit)).Offset(uint64(offset))
 
-	var conds []sq.Sqlizer
+	conds := make([]sq.Sqlizer, 0)
 	if serviceId != 0 {
 		conds = append(conds, sq.Eq{"s.service_id": serviceId})
 	}
 	if areaId != 0 {
 		conds = append(conds, sq.Eq{"adr.area_id": areaId})
 	}
-	if specialist.Animal != 0 {
-		conds = append(conds, sq.Eq{"s.animal_id": specialist.Animal})
-	}
-	if specialist.AnimalSize != 0 {
-		conds = append(conds, sq.Eq{"s.animal_size_id": specialist.AnimalSize})
-	}
-	if specialist.City != 0 {
-		conds = append(conds, sq.Eq{"adr.city_id": specialist.City})
-	}
-	if len(conds) == 0 {
-		return nil, domain.ErrInvalidParameter
+	if len(conds) > 0 {
+		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
 	}
 
 	builder = builder.Where(sq.And(conds))
@@ -446,8 +436,7 @@ func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context
 	if err != nil {
 		return items, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
 	}
-
-	conn, err := sr.DBPool.Pool().Acquire(ctx)
+conn, err := sr.DBPool.Pool().Acquire(ctx)
 	if err != nil {
 		return items, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
@@ -486,7 +475,6 @@ func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID 
 		Where(sq.Eq{"id": specialistID}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
-
 	if err != nil {
 		return fmt.Errorf("%s failed to build add images query: %w", operationSpecialist, err)
 	}
@@ -496,6 +484,15 @@ func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID 
 		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
 	}
 	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
 
 	result, err := conn.Exec(ctx, query, args...)
 	if err != nil {
@@ -508,6 +505,8 @@ func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID 
 
 	return nil
 }
+
+
 
 func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
 	// Return early if there's nothing to delete.
@@ -600,4 +599,47 @@ func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context
 	}
 
 	return swpList[0].SpecialistDetails, nil
+}
+
+func (sr *SpecialistRepositoryImpl) UpdateIsActive(ctx context.Context, id int64, isActive bool) error {
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		locErr := fmt.Errorf("%s failed to time load location: %w", operationSpecialist, err)
+		return locErr
+	}
+	updateTime := time.Now().In(loc)
+
+	query, args, err := sq.Update(currentTableName).
+		Set("is_active", isActive).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("%s failed to build update active state query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute update active state query: %w", operationSpecialist, err)
+	}
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+	return tx.Commit(ctx)
 }

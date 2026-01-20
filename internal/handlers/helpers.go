@@ -48,6 +48,13 @@ func getUserIDFromContext(c *gin.Context, logger *zap.Logger) (int64, bool) {
 			Message: "Internal server error"})
 		return 0, false
 	}
+	if userID < 0 {
+		logger.Error("invalid userID in context: negative value not allowed", zap.String("userID", userIDStr), zap.Int64("parsed_userID", userID))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error"})
+		return 0, false
+	}
 
 	return userID, true
 }
