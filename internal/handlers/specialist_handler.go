@@ -612,20 +612,19 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 // @Summary      Search specialists by Service, Pet, Area
 // @Description  Search speacialists
 // @Tags         Specialist
-// @Accept       json
 // @Produce      json
-// @Param        request body domain.SearchSpecialistUriParams true "Search request body"
+// @Param        animalCategory path int false "Animal category ID"
+// @Param        animalSize path int true "Animal size ID"
+// @Param        serviceID path int true "Service ID"
+// @Param        districtID path int true "District/Area ID"
 // @Success      200  {object}  result "Search succeeded"
 // @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
 // @Failure      408  {object}  domain.StatusRequestTimeout "Request timeout"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-// @Router /specialists/search/:animal_id/:animal_size_id/:service_id/:area_id [get]
+// @Router       /specialists/search/{animalCategory}/{animalSize}/{serviceID}/{districtID} [get]
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
-func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
-
-	var req domain.SearchSpecialistParams
 
 	if err := c.ShouldBindUri(&uri); err != nil {
 		var fieldErrors []domain.FieldError
@@ -646,7 +645,8 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		sh.logger.Error("bindUri failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid query parameters",
+			Message: message,
+			Details: fieldErrors,
 		})
 		return
 	}
@@ -679,7 +679,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		// Distinguish context cancellations/timeouts 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
+			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
@@ -695,10 +695,11 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	}
 
 
-	// Return 200 with possibly empty list — that normal for searches
+	// Return 200 with possibly empty list — that’s normal for searches
 	c.JSON(http.StatusOK, result)
 
 }
+
 
 // GetSpecialistDetailsById godoc
 // @Summary      Get specialist by ID

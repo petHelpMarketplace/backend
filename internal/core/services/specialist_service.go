@@ -330,7 +330,7 @@ func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64
 
 }
 
-func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfileSearchResponseDTO, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
@@ -341,11 +341,11 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 
 	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset) 
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return nil, err
+		return nil, err
 	}
 
 	if errors.Is(err, domain.ErrInvalidParameter) {
-    return nil, err
+    	return nil, err
     }
 	
 	if err != nil { 
@@ -372,16 +372,10 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	}
 
 	if len(specialistModels) == 0 {
-		return []domain.SpecialistProfDTO{}, nil
+		return []domain.SpecialistProfileSearchResponseDTO{}, nil
 	}
 
-	profiles := make([]domain.SpecialistProfDTO, 0, len(specialistModels))
-
-	for _, specialistModel := range specialistModels {
-		profiles = append(profiles, utils.ToSpecialistProfileDTO(specialistModel))
-	}
-
-	return profiles, nil
+	return specialistModels, nil
 }
 
 func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error) {

@@ -31,7 +31,7 @@ type SpecialistService interface {
 	DeactivateProfile(ctx context.Context, specialistID int64, isActive bool) error
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
-	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) 
+	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfileSearchResponseDTO, error) 
 	GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error)	
 }
 
@@ -47,5 +47,6 @@ type SpecialistRepository interface {
 	UpdateIsActive(ctx context.Context, id int64, isActive bool) error
 	AddImages(ctx context.Context, specialistID int64, imageURLs []string) error
 	DeleteImage(ctx context.Context, specialistID int64, imageURL string) error
-	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int)([]domain.Specialist, error) 
+	SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int)([]domain.SpecialistProfileSearchResponseDTO, error) 
+	GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error)
 }
