@@ -71,6 +71,7 @@ func NewApp() fx.Option {
 		TokenModule,
 		FileUploadModule,
 		UnauthAppointmentModule,
+		CronModule,
 
 		fx.StartTimeout(10*time.Second),
 	)

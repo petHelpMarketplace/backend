@@ -608,20 +608,65 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 	})
 }
 
-// SearchSpecialistByServicePetArea godoc
-// @Summary      Search specialists by Service, Pet, Area
-// @Description  Search speacialists
+// DeleteAccount
+// @Summary      Delete specialist account (Soft Delete)
+// @Description  Initiates account deletion. The account will be deactivated immediately and permanently deleted after 7 days if not restored.
 // @Tags         Specialist
 // @Produce      json
-// @Param        animalCategory path int false "Animal category ID"
-// @Param        animalSize path int true "Animal size ID"
-// @Param        serviceID path int true "Service ID"
-// @Param        districtID path int true "District/Area ID"
-// @Success      200  {object}  result "Search succeeded"
-// @Failure      400  {object}  domain.BadRequestError "Invalid request payload or validation failed"
-// @Failure      408  {object}  domain.StatusRequestTimeout "Request timeout"
+// @Success      204  {object}  domain.SuccessDelete "Deletion initiated successfully"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-// @Router       /specialists/search/{animalCategory}/{animalSize}/{serviceID}/{districtID} [get]
+// @Router       /specialist/me [delete]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return
+	}
+
+	// Initiate soft delete logic in the service layer
+	err := sh.specialistService.InitiateSoftDelete(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to initiate soft delete", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	sh.logger.Info("account deletion initiated",
+		zap.Int64("userID", userID),
+		zap.String("event", "soft_delete_initiated"))
+
+	// Revoke all user sessions (invalidate refresh tokens) to force logout
+	if err := sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10)); err != nil {
+		sh.logger.Error("failed to revoke user sessions after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	// Clear session cookies on the client side
+	if err := sh.cookieManager.Clear(c); err != nil {
+		sh.logger.Error("failed to clear cookies after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessDelete{
+		Code:    http.StatusNoContent,
+		Message: "Account scheduled for deletion. It will be permanently removed in 7 days.",
+	})
+}
+
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams

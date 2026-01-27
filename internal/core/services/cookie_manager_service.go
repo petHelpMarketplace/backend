@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"pethelp-backend/internal/config"
 	"pethelp-backend/internal/core/ports"
@@ -63,7 +64,8 @@ func (cm *cookieManager) Middleware() gin.HandlerFunc {
 }
 
 // Set saves a key-value pair to the user's session.
-// It uses the session stored in the gin.Context by the middleware.
+// Note: This only stages the change. You must call `Save()` on the manager
+// to write the changes to the response cookie.
 func (cm *cookieManager) Set(c *gin.Context, key string, value interface{}) {
 	session := sessions.Default(c)
 	session.Set(key, value)
@@ -75,7 +77,7 @@ func (cm *cookieManager) Get(c *gin.Context, key string) (interface{}, error) {
 
 	value := session.Get(key)
 	if value == nil {
-		return nil, errors.New("session value not found for key: " + key)
+		return nil, fmt.Errorf("session value not found for key: %s", key)
 	}
 
 	return value, nil
@@ -109,6 +111,8 @@ func (cm *cookieManager) ResetOptions(c *gin.Context) {
 
 // NewSession sets multiple key-value pairs and saves the session.
 // This is useful for creating a new session with multiple values at once, for example, after a login.
+// Note: This only stages the changes. You must call `Save()` on the manager
+// to write the changes to the response cookie.
 func (cm *cookieManager) BulkSet(c *gin.Context, values map[string]interface{}) {
 	session := sessions.Default(c)
 	for key, value := range values {
