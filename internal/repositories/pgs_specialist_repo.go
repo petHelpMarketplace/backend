@@ -97,15 +97,17 @@ func (sr *SpecialistRepositoryImpl) Save(ctx context.Context, name, email, phone
 }
 
 func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string) (domain.Specialist, error) {
-
 	var item domain.Specialist
-	query, args, err := sq.Select("*").
-		From(currentTableName).
-		Where(sq.Eq{"email": email}).
-		PlaceholderFormat(sq.Dollar). // conn, err := sr.database.Connection()
+
+	query, args, err := sq.Select("s.*", "ca.area_name").
+		From("specialists s").
+		LeftJoin("city_areas ca ON s.address_id = ca.id").
+		Where(sq.Eq{"s.email": email}).
+		PlaceholderFormat(sq.Dollar).
 		ToSql()
+
 	if err != nil {
-		return item, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
+		return item, fmt.Errorf("%s failed to build query: %w", operationSpecialist, err)
 	}
 
 	conn, err := sr.DBPool.Pool().Acquire(ctx)
@@ -127,9 +129,11 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 	if err != nil {
 		return item, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
 	}
+	defer rows.Close()
+
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Specialist{}, sql.ErrNoRows
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
@@ -143,11 +147,12 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 }
 
 func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (domain.Specialist, error) {
-
 	var item domain.Specialist
-	query, args, err := sq.Select("*").
-		From(currentTableName).
-		Where(sq.Eq{"id": id}).
+
+	query, args, err := sq.Select("s.*", "ca.area_name").
+		From("specialists s").
+		LeftJoin("city_areas ca ON s.address_id = ca.id").
+		Where(sq.Eq{"s.id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -173,9 +178,11 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	if err != nil {
 		return item, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
 	}
+	defer rows.Close()
+
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Specialist{}, domain.ErrAccountNotFound
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
@@ -349,6 +356,13 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	if req.Phone != nil {
 		builder = builder.Set("phone", *req.Phone)
 	}
+	if req.District != nil {
+		districtSubQuery := sq.Select("id").
+			From("city_areas").
+			Where(sq.Eq{"area_name": *req.District})
+
+		builder = builder.Set("address_id", districtSubQuery)
+	}
 	if req.Experience != nil {
 		builder = builder.Set("experience", *req.Experience)
 	}
@@ -357,7 +371,7 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	}
 
 	query, args, err := builder.
-		Suffix("RETURNING *").
+		Suffix("RETURNING *, (SELECT area_name FROM city_areas WHERE id = specialists.address_id) AS area_name").
 		PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {

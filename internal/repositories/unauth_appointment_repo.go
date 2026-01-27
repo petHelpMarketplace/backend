@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	unauthAppointmentTableName    = "appointment_services"
+	unauthAppointmentTableName = "appointment_services"
 	operationUnauthAppointment = "unauth_appointment_repo: "
-	appointmentsTableName = "appointments"
-	addressTableName = "addresses"
-	animalSizeTableName = "animal_sizes"
-	unauthUserTableName = "unauthorized_users_emails"
+	appointmentsTableName      = "appointments"
+	addressTableName           = "addresses"
+	animalSizeTableName        = "animal_sizes"
+	unauthUserTableName        = "unauthorized_users_emails"
 )
 
 type UnauthAppointmentRepositoryImpl struct {
@@ -33,7 +33,7 @@ func NewUnauthAppointmentRepository(pool *postgres.DB) *UnauthAppointmentReposit
 }
 
 // IsTimeBooked checks if the specialist has an appointment overlapping with the given time window.
-func (ar *UnauthAppointmentRepositoryImpl) IsTimeBooked(ctx context.Context, specialistID int,date, startTime, endTime time.Time) (bool, error) {
+func (ar *UnauthAppointmentRepositoryImpl) IsTimeBooked(ctx context.Context, specialistID int, date, startTime, endTime time.Time) (bool, error) {
 	if !startTime.Before(endTime) {
 		return false, fmt.Errorf("invalid time window: start must be before end")
 	}
@@ -63,11 +63,11 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	date, startTime, endTime time.Time) (int64, error) {
 
 	const (
-		profileTable  = appointmentsTableName
-		addressTable  = addressTableName
-		emailTable    = unauthUserTableName
-		sizeTable     = animalSizeTableName
-		serviceTable  = unauthAppointmentTableName
+		profileTable = appointmentsTableName
+		addressTable = addressTableName
+		emailTable   = unauthUserTableName
+		sizeTable    = animalSizeTableName
+		serviceTable = unauthAppointmentTableName
 	)
 
 	// Load timezone
@@ -85,7 +85,6 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 		Values(date, locationType, description, specialistID, amount, status, now, now, startTime, endTime).
 		Suffix("RETURNING id").
 		PlaceholderFormat(sq.Dollar)
-
 
 	sqlAppt, argsAppt, err := appInsert.ToSql()
 	if err != nil {
@@ -121,9 +120,9 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	var minWeight, maxWeight float32
 
 	sizeSelect := sq.Select("name_eng", "min_weight", "max_weight").
-    From(sizeTable).
-    Where(sq.Eq{"id": animalSizeID}).
-    PlaceholderFormat(sq.Dollar)
+		From(sizeTable).
+		Where(sq.Eq{"id": animalSizeID}).
+		PlaceholderFormat(sq.Dollar)
 
 	sqlSize, argsSize, err := sizeSelect.ToSql()
 	if err != nil {
@@ -133,7 +132,6 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	if err := ar.DBPool.Pool().QueryRow(ctx, sqlSize, argsSize...).Scan(&sizeName, &minWeight, &maxWeight); err != nil {
 		return 0, fmt.Errorf("%s querying animal size: %w", operationUnauthAppointment, err)
 	}
-
 
 	// Acquire DB connection
 	conn, err := ar.DBPool.Pool().Acquire(ctx)
@@ -170,10 +168,10 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 
 	// Link appointment with service
 	svcInsert := sq.Insert(serviceTable).
-    Columns("appointment_id", "service_id").
-    Values(appointmentID, serviceID).
-    Suffix("RETURNING appointment_id"). 
-    PlaceholderFormat(sq.Dollar)
+		Columns("appointment_id", "service_id").
+		Values(appointmentID, serviceID).
+		Suffix("RETURNING appointment_id").
+		PlaceholderFormat(sq.Dollar)
 
 	sqlSvc, argsSvc, err := svcInsert.ToSql()
 	if err != nil {
@@ -193,8 +191,3 @@ func (ar *UnauthAppointmentRepositoryImpl) Save(ctx context.Context,
 	return appointmentID, nil
 
 }
-
-
-
-
-   

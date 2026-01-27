@@ -30,7 +30,7 @@ VALUES
     '+380679998877',
     E'Мене звати Ірина, я професійна догсіттерка з 4-річним досвідом. Люблю собак з дитинства, і для мене це не просто робота — це стиль життя. Займаюсь вигулом, перетримкою та грумінгом. Працюю тільки з маленькими та середніми породами.', 
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/iryna-savchuk.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Тростянецька'),
+    5, -- Оболонський район
     NULL,
     NULL,
     'Догсіттер',
@@ -50,7 +50,7 @@ VALUES
     '+380671234567',
     E'Я Максим — універсальний спеціаліст з догляду за домашніми улюбленцями. Працюю як з котами, так і з собаками. Маю досвід у грумінгу, вигулі та догляді вдома. Гарантую турботу, безпеку та комфорт для вашого улюбленця.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/maksym-kovalchuk.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Лаврська'),
+    6, -- Печерський район
     NULL,
     NULL,
     'Спеціаліст з догляду за тваринами',
@@ -70,7 +70,7 @@ VALUES
     '+380503334455',
     E'Мене звати Тетяна. Я надаю індивідуальний догляд за котами у звичному для них середовищі — без перевезень, без стресу. Переїжджаю до вашої оселі на час вашої відсутності й піклуюся про хвостика, як про власного.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/tetiana-melnyk.png',
-    (SELECT id FROM addresses WHERE street = 'просп. Оболонський'),
+    8, -- Святошинський район
     NULL,
     NULL,
     'Котсіттер',
@@ -90,7 +90,7 @@ VALUES
     '+380683221145',
     E'Я студент КПІ, і у вільний час допомагаю вигулювати собак. Маю досвід з активними породами — люблю довгі прогулянки, і завжди приношу воду та ласощі для хвостиків. Працюю лише по вихідних.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/artem-lysenko.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Бориса Гмирі'),
+    5, -- Оболонський район
     NULL,
     NULL,
     'Догвокер',
@@ -110,7 +110,7 @@ VALUES
     '+380663876543',
     E'Я Ольга, обожнюю маленьких песиків — у мене самої йорк. Приймаю тільки маленькі породи у себе вдома.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/olha-demchuk.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Євгена Коновальця'),
+    10, -- Шевченківський район
     NULL,
     NULL,
     'Догсіттер',
@@ -130,7 +130,7 @@ VALUES
     '+380672205577',
     E'Я працюю графічною дизайнеркою й обожнюю проводити час з котами. Якщо вам потрібно, щоб хтось залишився з мурчиком вдома — я з радістю допоможу. Без стресу, без кліток, просто звичне життя вашої тваринки з новою подругою.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/valeriia-chernysh.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Бастіонна'),
+    3, -- Деснянський район
     NULL,
     NULL,
     'Котсіттер',
@@ -150,7 +150,7 @@ VALUES
     '+380662221100',
     E'Я Юлія, маю понад 6 років досвіду у грумінгу саме котів. Працюю вдома, маю професійне обладнання та спеціальні шампуні для різних типів шерсті.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/yuliia-sosnovska.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Златоустівська'),
+    7, -- Подільський район
     NULL,
     NULL,
     'Грумер',
@@ -170,7 +170,7 @@ VALUES
     '+380993344556',
     E'Я студент та великий фанат тварин. Живу сам у двокімнатній квартирі, тому можу взяти улюбленця на перетримку на кілька днів. Маю досвід з доглядом за спокійними котами та невеликими собаками.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/bohdan-solovey.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Бальзака'),
+    1, -- Голосіївський район
     NULL,
     NULL,
     'Сіттер',
@@ -190,7 +190,7 @@ VALUES
     '+380674562398',
     E'Я Наталія, маю затишну квартиру без інших тварин і дітей, що ідеально підходить для чутливих котиків. Забезпечую спокійну атмосферу, дотримуюсь режиму харчування та надаю відео-звіти щодня.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/kateryna-nechyporenko.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Березняківська'),
+    3, -- Деснянський район
     NULL,
     NULL,
     'Котсіттер',
@@ -210,7 +210,7 @@ VALUES
     '+380932222441',
     E'Привіт! Я Юрій, вигулюю собак у будні дні з 7:00 до 12:00. Працюю у районі Березняків, добре знаю всі вигульні майданчики. Пропоную як короткі, так і довгі прогулянки — за потребою.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/yurii-panasenko.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Лесі Українки'),
+    6, -- Печерський район
     NULL,
     NULL,
     'Догвокер',
@@ -230,7 +230,7 @@ VALUES
     '+380667775544',
     E'Привіт! Я Оксана. Якщо ви у відрядженні чи відпустці — я подбаю про вашого котика у його звичному середовищі. Переїжджаю до квартири на час вашої відсутності, дотримуюсь усіх інструкцій, і щодня надсилаю фото.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/oksana-melnychuk.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Йорданська'),
+    7, -- Подільський район
     NULL,
     NULL,
     'Котсіттер',
@@ -250,7 +250,7 @@ VALUES
     '+380973301122',
     E'Я Інна — мама маленької дитини і велика любителька котів. Приймаю тільки котів на перетримку у своїй світлій квартирі. У мене спокійно, чисто і без інших тварин, тому ваш мурчик почуватиметься як вдома.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/inna-shevchenko.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Серафимовича'),
+    1, -- Голосіївський район
     NULL,
     NULL,
     'Котсіттер',
@@ -270,7 +270,7 @@ VALUES
     '+380503987654',
     E'Я Андрій, мобільний грумер. Приїжджаю до вас додому зі своїм обладнанням, щоб зробити вашу собаку чистою, охайною та щасливою. Мию, стрижу, підрізаю кігті — усе швидко, якісно і без стресу для песика.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/andrii-ruban.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Княжий Затон'),
+    8, -- Святошинський район
     NULL,
     NULL,
     'Грумер',
@@ -290,7 +290,7 @@ VALUES
     '+380673332211',
     E'Привіт! Мене звати Світлана. Щодня вигулюю собак у Дарницькому районі — добре знаю, де безпечно і цікаво. Маю досвід з собаками різного характеру — від активних до обережних. Завжди на звязку з господарем.',
     'https://jjniaoujdyanpybytgnq.supabase.co/storage/v1/object/sign/avatars/svitlana-andrushchenko.png',
-    (SELECT id FROM addresses WHERE street = 'вул. Якуба Коласа'),
+    1, -- Голосіївський район
     NULL,
     NULL,
     'Догвокер',
