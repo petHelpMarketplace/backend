@@ -625,7 +625,7 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
-
+ 
 	if err := c.ShouldBindUri(&uri); err != nil {
 		var fieldErrors []domain.FieldError
 		message := "Invalid path parameters"
@@ -703,16 +703,16 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 
 // GetSpecialistDetailsById godoc
 // @Summary      Get specialist by ID
-// @Description  Get speacialist details by ID
+// @Description  Get specialist details by ID
 // @Tags         Specialist
 // @Accept       json
 // @Produce      json
-// @Param        request body id true "Get specialist dy ID request"
+// @Param        id path int true "Specialist ID"
 // @Success      200  {object}  result "Get specialist by ID succeeded"
 // @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format. Must be a number."
 // @Failure      404  {object}  domain.StatusNotFound "Specialist account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-// @Router       /specialists/:id [get]
+// @Router       /specialists/{id} [get]
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 	idParam := c.Param("id")
 
@@ -736,7 +736,7 @@ func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 
 	specialist, err := sh.specialistService.GetSpecialistDetailsById(c.Request.Context(), specialistID)
 	if err != nil {
-		if errors.Is(err, domain.ErrAccountNotFound) {
+		if errors.Is(err, domain.ErrSpecialistsNotFound) {
 			sh.logger.Warn("specialist not found for ID", zap.Int64("specialistID", specialistID))
 			c.JSON(http.StatusNotFound, domain.NotFoundError{
 				Code:    http.StatusNotFound,

@@ -20,7 +20,6 @@ const (
 	currentTableName    = "specialists"
 	serviceSpecialistTableName    = "specialist_services"
 	pricesTableName = "prices"
-	addressesTableName = "addresses"
 	operationSpecialist = "specialist_repo: "
 )
 

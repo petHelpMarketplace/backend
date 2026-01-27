@@ -183,10 +183,10 @@ type SearchSpecialistParams struct {
 }
 
 type SearchSpecialistUriParams struct {
-    AnimalCategory int64 `uri:"animalCategory" binding:"required"`
-    AnimalSize     int64 `uri:"animalSize" binding:"required"`
-    ServiceID      int64 `uri:"serviceID" binding:"required"`
-    DistrictID     int64 `uri:"districtID" binding:"required"`
+    AnimalCategory int64 `uri:"animal_id" binding:"required"`
+    AnimalSize     int64 `uri:"animal_size_id" binding:"required"`
+    ServiceID      int64 `uri:"service_id" binding:"required"`
+    DistrictID     int64 `uri:"district_id" binding:"required"`
 }
 
 type SpecialistProfileSearchResponseDTO struct {
