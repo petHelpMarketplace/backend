@@ -404,16 +404,6 @@ definitions:
         minLength: 13
         type: string
     type: object
-  domain.SuccessDelete:
-    properties:
-      code:
-        example: 204
-        type: integer
-      data: {}
-      message:
-        example: Operation was successful
-        type: string
-    type: object
   domain.SuccessResponse:
     properties:
       code:
@@ -767,34 +757,6 @@ paths:
       tags:
         - Specialist
   /specialist/me:
-    delete:
-      description:
-        Initiates account deletion. The account will be deactivated immediately
-        and permanently deleted after 7 days if not restored.
-      produces:
-        - application/json
-      responses:
-        "204":
-          description: Deletion initiated successfully
-          schema:
-            $ref: "#/definitions/domain.SuccessDelete"
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
-        "404":
-          description: Account not found
-          schema:
-            $ref: "#/definitions/domain.NotFoundError"
-        "500":
-          description: Internal server error
-          schema:
-            $ref: "#/definitions/domain.InternalServerError"
-      security:
-        - BearerAuth: []
-      summary: Delete specialist account (Soft Delete)
-      tags:
-        - Specialist
     get:
       description:
         Get information about the currently authenticated specialist. Requires
@@ -1067,6 +1029,80 @@ paths:
       summary: Update access and refresh tokens
       tags:
         - Token
+  /specialists:
+  get:
+    summary: Search specialists by filters
+    description: Returns a paginated list of specialists filtered by optional query parameters.
+    operationId: GetSpecialistsByAreaAnimalService
+    tags: [Specialists]
+    produces:
+      - application/json
+    parameters:
+      - in: query
+        name: animalCategoryID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by animal category ID
+      - in: query
+        name: animalSizeID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by animal size ID
+      - in: query
+        name: serviceID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by service ID
+      - in: query
+        name: districtID
+        type: integer
+        format: int64
+        required: false
+        description: Filter by district ID
+      - in: query
+        name: page
+        type: integer
+        required: false
+        default: 1
+        minimum: 1
+      - in: query
+        name: limit
+        type: integer
+        required: false
+        default: 20
+        minimum: 1
+        maximum: 100
+    responses:
+      "200":
+        description: OK
+        schema:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+      "400":
+        description: Invalid query parameters
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
+      "408":
+        description: Request timeout
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
+      "500":
+        description: Internal server error
+        schema:
+          $ref: "#/definitions/domain.ErrorResponse"
 schemes:
   - https
   - http

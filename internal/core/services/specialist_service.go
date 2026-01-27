@@ -499,5 +499,3 @@ func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, s
 
 	return specialistDTO, nil
 }
-
-

@@ -375,43 +375,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Initiates account deletion. The account will be deactivated immediately and permanently deleted after 7 days if not restored.",
-        "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Delete specialist account (Soft Delete)",
-        "responses": {
-          "204": {
-            "description": "Deletion initiated successfully",
-            "schema": {
-              "$ref": "#/definitions/domain.SuccessDelete"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/domain.UnauthorizedError"
-            }
-          },
-          "404": {
-            "description": "Account not found",
-            "schema": {
-              "$ref": "#/definitions/domain.NotFoundError"
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "schema": {
-              "$ref": "#/definitions/domain.InternalServerError"
-            }
-          }
-        }
       }
     },
     "/specialist/me/status": {
@@ -1134,20 +1097,6 @@
           "description": "Phone number of the specialist in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nminLength: 13\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
           "type": "string",
           "minLength": 13
-        }
-      }
-    },
-    "domain.SuccessDelete": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "example": 204
-        },
-        "data": {},
-        "message": {
-          "type": "string",
-          "example": "Operation was successful"
         }
       }
     },
