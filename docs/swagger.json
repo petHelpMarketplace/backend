@@ -439,15 +439,9 @@
         }
       }
     },
-    "/specialist/portfolio": {
-      "post": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Uploads multiple images for the authenticated specialist's portfolio. Files should be sent as multipart/form-data with the key 'files[]'. The server validates file size (max 8MB each) and type (jpeg, png, webp, heic).",
-        "consumes": ["multipart/form-data"],
+    "/specialists/{animalCategory}/{animalSize}/{serviceID}/{districtID}": {
+      "get": {
+        "description": "Specialists search by filters",
         "produces": ["application/json"],
         "tags": ["Specialist"],
         "summary": "Upload specialist portfolio images",
@@ -605,93 +599,84 @@
           "500": {
             "description": "Internal server error",
             "schema": {
-              "$ref": "#/definitions/domain.InternalServerError"
+              "$ref": "#/definitions/domain.ErrorResponse"
             }
           }
         }
       }
     },
-    "/specialist/register": {
+    "/public-appointment-request": {
       "post": {
-        "description": "New specialist registration",
+        "description": "New unauth appointment booking",
         "consumes": ["application/json"],
         "produces": ["application/json"],
-        "tags": ["Specialist"],
-        "summary": "Registration",
+        "tags": ["UnauthAppointment"],
+        "summary": "Booking",
         "parameters": [
           {
-            "description": "Registration request body",
+            "description": "Unauth appointment request body",
             "name": "request",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/domain.RegistrationRequest"
+              "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
             }
           }
         ],
         "responses": {
-          "201": {
-            "description": "Sign-up succeeded",
+          "200": {
+            "description": "Unauth appointment booking succeeded",
             "schema": {
-              "$ref": "#/definitions/handlers.successRegistration"
+              "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
             }
           },
           "400": {
-            "description": "Invalid request payload or validation failed",
+            "description": "Bad Request",
             "schema": {
-              "$ref": "#/definitions/domain.BadRequestError"
-            }
-          },
-          "409": {
-            "description": "Account with this email already exists",
-            "schema": {
-              "$ref": "#/definitions/domain.ConflictError"
+              "$ref": "#/definitions/domain.ErrorResponse"
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal Server Error",
             "schema": {
-              "$ref": "#/definitions/domain.InternalServerError"
+              "$ref": "#/definitions/domain.ErrorResponse"
             }
           }
         }
       }
     },
-    "/token/refresh": {
-      "post": {
-        "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
+    "/specialists/{id}": {
+      "get": {
+        "description": "Get information about chosen specialist by id.",
         "produces": ["application/json"],
-        "tags": ["Token"],
-        "summary": "Update access and refresh tokens",
+        "tags": ["Specialist"],
+        "summary": "Get chosen specialist",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successfully generated new token pair",
+            "description": "Successfully retrieved specialist data",
             "schema": {
-              "$ref": "#/definitions/domain.TokensPair"
+              "$ref": "#/definitions/domain.SpecialistDetailsDTO"
             }
           },
-          "400": {
-            "description": "Invalid request payload or malformed refresh token",
+          "404": {
+            "description": "Specialist account associated with the ID not found.",
             "schema": {
-              "$ref": "#/definitions/domain.BadRequestError"
-            }
-          },
-          "401": {
-            "description": "Unauthorized: Invalid, expired, or malformed refresh token",
-            "schema": {
-              "$ref": "#/definitions/domain.UnauthorizedError"
-            }
-          },
-          "403": {
-            "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
-            "schema": {
-              "$ref": "#/definitions/domain.ForbiddenError"
+              "$ref": "#/definitions/domain.ErrorResponse"
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal server error.",
             "schema": {
-              "$ref": "#/definitions/domain.InternalServerError"
+              "$ref": "#/definitions/domain.ErrorResponse"
             }
           }
         }

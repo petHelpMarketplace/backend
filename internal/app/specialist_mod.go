@@ -64,7 +64,8 @@ var SpecialistModule = fx.Module("specialist",
 		),
 
 		fx.Annotate(services.NewCookieManager,
-			fx.As(new(ports.CookieManager))),
+			fx.As(new(ports.CookieManager)),
+		),
 
 		middleware.NewAuthMiddleware,
 	),
@@ -74,7 +75,8 @@ var SpecialistModule = fx.Module("specialist",
 
 			specRouterGroup.POST("/register", handler.Registration)
 			specRouterGroup.POST("/login", handler.Login)
-			specRouterGroup.GET("/specialists", handler.GetSpecialistsByAreaAnimalService)
+			specRouterGroup.GET("/specialists/search/:animal_id/:animal_size_id/:service_id/:area_id", handler.SearchSpecialistByServicePetArea)
+			specRouterGroup.GET("/specialists/:id", handler.GetSpecialistDetailsById)
 
 			protected := specRouterGroup.Use(mp.AuthMiddleware)
 			protected.GET("/me", handler.Me)
@@ -85,6 +87,7 @@ var SpecialistModule = fx.Module("specialist",
 			protected.PATCH("/me/status", handler.DeactivateProfile)
 			protected.POST("/portfolio", mp.FileHandler.UploadPortfolio)
 			protected.DELETE("/portfolio/image", mp.FileHandler.DeletePortfolioImage)
+			protected.DELETE("/me", handler.DeleteAccount)
 
 			mp.Logger.Info("Registered specialist routes",
 				zap.String("base_path", SpecialistRoutePath),

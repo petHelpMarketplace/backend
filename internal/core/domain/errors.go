@@ -33,6 +33,7 @@ var (
 	ErrInvalidTimeWindow         = errors.New("invalid time window")
 	ErrNotFound                  = errors.New("results not found")
 	ErrSpecialistsNotFound       = errors.New("specialists not found")	
+	ErrInvalidParameter          = errors.New("invalid parameter")	
 )
 
 // FieldError contains validation error details for a specific field.

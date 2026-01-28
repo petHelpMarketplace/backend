@@ -608,25 +608,123 @@ func (sh *SpecialistHandlerImpl) DeactivateProfile(c *gin.Context) {
 	})
 }
 
-func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+// DeleteAccount
+// @Summary      Delete specialist account (Soft Delete)
+// @Description  Initiates account deletion. The account will be deactivated immediately and permanently deleted after 7 days if not restored.
+// @Tags         Specialist
+// @Produce      json
+// @Success      204  {object}  domain.SuccessDelete "Deletion initiated successfully"
+// @Failure      401  {object}  domain.UnauthorizedError "Unauthorized"
+// @Failure      404  {object}  domain.NotFoundError "Account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/me [delete]
+// @Security 	 BearerAuth
+func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
+	userID, ok := getUserIDFromContext(c, sh.logger)
+	if !ok {
+		return
+	}
 
-	var req domain.SearchSpecialistParams
-
-	if err := c.ShouldBindQuery(&req); err != nil {
-		sh.logger.Error("bind query failed", zap.Error(err))
-		c.JSON(http.StatusBadRequest, domain.BadRequestError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid query parameters",
+	// Initiate soft delete logic in the service layer
+	err := sh.specialistService.InitiateSoftDelete(c.Request.Context(), userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrAccountNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to initiate soft delete", zap.Int64("userID", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
 		})
 		return
 	}
 
-	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
+	sh.logger.Info("account deletion initiated",
+		zap.Int64("userID", userID),
+		zap.String("event", "soft_delete_initiated"))
+
+	// Revoke all user sessions (invalidate refresh tokens) to force logout
+	if err := sh.tokenService.RevokeAllUserSessions(c.Request.Context(), strconv.FormatInt(userID, 10)); err != nil {
+		sh.logger.Error("failed to revoke user sessions after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	// Clear session cookies on the client side
+	if err := sh.cookieManager.Clear(c); err != nil {
+		sh.logger.Error("failed to clear cookies after soft delete",
+			zap.Int64("userID", userID),
+			zap.Error(err))
+	}
+
+	c.JSON(http.StatusOK, domain.SuccessDelete{
+		Code:    http.StatusNoContent,
+		Message: "Account scheduled for deletion. It will be permanently removed in 7 days.",
+	})
+}
+
+func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
+
+	var uri domain.SearchSpecialistUriParams
+ 
+	if err := c.ShouldBindUri(&uri); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid path parameters"
+
+		var jsonErr *json.UnmarshalTypeError
+
+		bindErr := fmt.Errorf("%s invalid search params: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} 
+
+		sh.logger.Error("bindUri failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: message,
+			Details: fieldErrors,
+		})
+		return
+	}
+
+
+	// convert URI params to service params (marshal/unmarshal to copy matching fields)
+	var params domain.SearchSpecialistParams
+	{
+		b, err := json.Marshal(uri)
+		if err != nil {
+			sh.logger.Error("failed to marshal uri params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+		if err := json.Unmarshal(b, &params); err != nil {
+			sh.logger.Error("failed to convert uri params to service params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+	}
+
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), params)
 	if err != nil {
-		// Distinguish context cancellations/timeouts if you like
+		// Distinguish context cancellations/timeouts 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
+			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
@@ -642,7 +740,63 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 	}
 
 
-	// Return 200 with possibly empty list — that normal for searches
+	// Return 200 with possibly empty list — that’s normal for searches
 	c.JSON(http.StatusOK, result)
+
+}
+
+
+// GetSpecialistDetailsById godoc
+// @Summary      Get specialist by ID
+// @Description  Get specialist details by ID
+// @Tags         Specialist
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Specialist ID"
+// @Success      200  {object}  result "Get specialist by ID succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format. Must be a number."
+// @Failure      404  {object}  domain.StatusNotFound "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialists/{id} [get]
+func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
+	idParam := c.Param("id")
+
+	specialistID, err := strconv.ParseInt(idParam, 10, 64)
+
+	if err != nil {
+		sh.logger.Warn("invalid specialist ID parameter", zap.String("idParam", idParam), zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid specialist ID format. Must be a number.",
+			Details: []domain.FieldError{
+				{
+					Field:   "id",
+					Message: "must be a numeric value",
+				},
+			},
+		})
+		return
+	}
+	
+
+	specialist, err := sh.specialistService.GetSpecialistDetailsById(c.Request.Context(), specialistID)
+	if err != nil {
+		if errors.Is(err, domain.ErrSpecialistsNotFound) {
+			sh.logger.Warn("specialist not found for ID", zap.Int64("specialistID", specialistID))
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to get specialist by ID", zap.Int64("specialistID", specialistID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, specialist)
 
 }

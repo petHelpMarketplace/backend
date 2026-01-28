@@ -48,26 +48,29 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 	return dto
 }
 
-// func ToSpecialistsProfileDTO(specialistModel domain.Specialist) []domain.SpecialistProfileSearchResponseDTO {
-// 	dto := domain.SpecialistProfileSearchResponseDTO{
-// 		ID:         specialistModel.ID,
-// 		Name:       specialistModel.Name,
-// 		IsActive:   specialistModel.IsActive,
-// 		IsVerified: specialistModel.IsVerified,
-// 	}
+func ToSpecialistsDetailsDTO(specialistDetails domain.SpecialistDetails) domain.SpecialistDetailsDTO {
+	
+	baseProfile := ToSpecialistProfileDTO(specialistDetails.Specialist)
 
-// 	if specialistModel.FamilyName.Valid {
-// 		dto.FamilyName = specialistModel.FamilyName.String
-// 	}
-// 	if specialistModel.Avatar.Valid {
-// 		dto.AvatarURL = specialistModel.Avatar.String
-// 	}
-// 	if specialistModel.Experience.Valid {
-// 		dto.Experience = specialistModel.Experience.Int32
-// 	}
-// 	if specialistModel.Description.Valid {
-// 		dto.Description = specialistModel.Description.String
-// 	}
+	dto := domain.SpecialistDetailsDTO{
+		SpecialistProfDTO: baseProfile,
+	}
 
-// 	return []dto
-// }
+	// If there is at least one ServicePrice, map the first one to the DTO.
+	if len(specialistDetails.ServicePrices) > 0 {
+		dto.ServicePrices = make([]domain.ServicePriceDTO, 0, len(specialistDetails.ServicePrices))
+		for _, sp := range specialistDetails.ServicePrices {
+			serviceStr := ""
+			if sp.Service.Valid {
+				serviceStr = sp.Service.String
+			}
+			dto.ServicePrices = append(dto.ServicePrices, domain.ServicePriceDTO{
+				Service:      serviceStr,
+				PricePerHour: sp.PricePerHour,
+				PricePerDay:  sp.PricePerDay,
+			})
+		}
+	}
+
+	return dto
+}

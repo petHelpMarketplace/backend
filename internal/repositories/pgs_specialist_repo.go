@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	currentTableName    = "specialists"
-	serviceSpecialistTableName    = "specialist_services"
-	operationSpecialist = "specialist_repo: "
+	currentTableName           = "specialists"
+	serviceSpecialistTableName = "specialist_services"
+	pricesTableName = "prices"
+	operationSpecialist        = "specialist_repo: "
 )
 
 type SpecialistRepositoryImpl struct {
@@ -395,66 +396,6 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	return updatedSpecialist, tx.Commit(ctx)
 }
 
-func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int) ([]domain.Specialist, error) {
-
-	if limit <= 0 || limit > 100 {
-		limit = 20
-	}
-
-	if offset < 0 {
-		offset = 0
-	}
-
-	areaId := specialist.Area
-	serviceId := specialist.Service
-
-	var items []domain.Specialist
-	builder  := sq.Select("sp.*").
-                            From(currentTableName + " AS sp").
-							Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
-							Join(addressTableName + " AS adr ON adr.id = sp.addresses_id").
-							PlaceholderFormat(sq.Dollar).Limit(uint64(limit)).Offset(uint64(offset))
-
-	conds := make([]sq.Sqlizer, 0)
-	if serviceId != 0 {
-		conds = append(conds, sq.Eq{"s.service_id": serviceId})
-	}
-	if areaId != 0 {
-		conds = append(conds, sq.Eq{"adr.area_id": areaId})
-	}
-	if len(conds) > 0 {
-		return nil, fmt.Errorf("%s: no filters provided", operationSpecialist)
-	}
-
-	builder = builder.Where(sq.And(conds))
-
-
-	query, args, err := builder.ToSql()
-
-
-	if err != nil {
-		return items, fmt.Errorf("%s failed to create new select builder: %w", operationSpecialist, err)
-	}
-conn, err := sr.DBPool.Pool().Acquire(ctx)
-	if err != nil {
-		return items, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
-	}
-	defer conn.Release()
-
-	rows, err := conn.Query(ctx, query, args...)
-	if err != nil {
-		return items, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
-	}
-	defer rows.Close()
-
-	items, err = pgx.CollectRows(rows, pgx.RowToStructByName[domain.Specialist])
-	if err != nil {
-		return nil, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
-	}
-
-	return items, nil
-}
-
 func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID int64, imageURLs []string) error {
 	if len(imageURLs) == 0 {
 		return nil // Nothing to add
@@ -506,7 +447,6 @@ func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID 
 }
 
 
-
 func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
 	// Return early if there's nothing to delete.
 	if imageURL == "" {
@@ -552,6 +492,116 @@ func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistI
 	return nil
 }
 
+func (sr *SpecialistRepositoryImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams, limit, offset int) ([]domain.SpecialistProfileSearchResponseDTO, error) {
+    // 1. Sanitize Pagination
+    if limit <= 0 || limit > 100 {
+        limit = 20
+    }
+    if offset < 0 {
+        offset = 0
+    }
+
+    areaId := specialist.Area
+    serviceId := specialist.Service
+
+    // 2. Initialize Builder
+    builder := sq.Select("sp.*").
+        From(currentTableName + " AS sp").
+        Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
+        Join(addressTableName + " AS adr ON adr.id = sp.address_id").
+        PlaceholderFormat(sq.Dollar).
+        Limit(uint64(limit)).
+        Offset(uint64(offset))
+
+    // 3. Build Dynamic Conditions
+    conds := make([]sq.Sqlizer, 0)
+    if serviceId != 0 {
+        conds = append(conds, sq.Eq{"s.service_id": serviceId})
+    }
+    if areaId != 0 {
+        conds = append(conds, sq.Eq{"adr.area_id": areaId})
+    }
+
+    if len(conds) > 0 {
+        builder = builder.Where(sq.And(conds))
+    }
+
+    // 4. Generate SQL
+    query, args, err := builder.ToSql()
+    if err != nil {
+        return nil, fmt.Errorf("%s failed to create select builder: %w", operationSpecialist, err)
+    }
+
+    // 5. Database Execution
+    conn, err := sr.DBPool.Pool().Acquire(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+    }
+    defer conn.Release()
+
+    rows, err := conn.Query(ctx, query, args...)
+    if err != nil {
+        return nil, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+    }
+    defer rows.Close()
+
+    // 6. Scan Results directly into the DTO slice
+    items, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.SpecialistProfileSearchResponseDTO])
+    if err != nil {
+        return nil, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
+    }
+
+    return items, nil
+}
+
+func (sr *SpecialistRepositoryImpl) GetSpecialistDetailsById(ctx context.Context, specialistID int64) (domain.SpecialistDetails, error) {
+	type specialistWithPrice struct {
+		domain.SpecialistDetails
+		domain.ServicePrice
+	}
+	var swpList []specialistWithPrice
+
+	q := sq.Select("sp.*",
+		"sv.name AS service_name",
+		"p.price_per_hour",
+		"p.price_per_day").From(currentTableName + " AS sp").
+		Join(serviceSpecialistTableName + " AS s ON s.specialist_id = sp.id").
+		Join("services AS sv ON sv.id = s.service_id").
+		Join(pricesTableName + " AS p ON p.specialist_id = sp.id AND p.service_id = s.service_id").
+		Where(sq.Eq{"sp.id": specialistID}).PlaceholderFormat(sq.Dollar)
+
+	sqlQuery, args, err := q.ToSql()
+	if err != nil {
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to create select builder: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	rows, err := conn.Query(ctx, sqlQuery, args...)
+	if err != nil {
+		return domain.SpecialistDetails{}, fmt.Errorf("%s failed to query data from DB: %w", operationSpecialist, err)
+	}
+	defer rows.Close()
+
+	swpList, err = pgx.CollectRows(rows, pgx.RowToStructByName[specialistWithPrice])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.SpecialistDetails{}, sql.ErrNoRows
+		}
+		return domain.SpecialistDetails{}, fmt.Errorf("%s: scan: %w", operationSpecialist, err)
+	}
+
+	if len(swpList) == 0 {
+		return domain.SpecialistDetails{}, sql.ErrNoRows
+	}
+
+	return swpList[0].SpecialistDetails, nil
+}
+
 func (sr *SpecialistRepositoryImpl) UpdateIsActive(ctx context.Context, id int64, isActive bool) error {
 	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
@@ -592,5 +642,184 @@ func (sr *SpecialistRepositoryImpl) UpdateIsActive(ctx context.Context, id int64
 	if result.RowsAffected() == 0 {
 		return sql.ErrNoRows
 	}
+	return tx.Commit(ctx)
+}
+
+// MarkAsDeleted marks the specialist profile as deleted (Soft Delete) within a transaction.
+func (sr *SpecialistRepositoryImpl) MarkAsDeleted(ctx context.Context, id int64) error {
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		return fmt.Errorf("%s failed to load time location: %w", operationSpecialist, err)
+	}
+	updateTime := time.Now().In(loc)
+
+	// Build the update query
+	query, args, err := sq.Update(currentTableName).
+		Set("is_deleted", true).
+		Set("is_active", false). // Deactivate profile immediately
+		Set("delete_initiated_at", updateTime).
+		Set("updated_at", updateTime).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build mark as deleted query: %w", operationSpecialist, err)
+	}
+
+	// Acquire connection from the pool
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	// Begin transaction
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin sql transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Execute the query within the transaction
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute mark as deleted query: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
+	// Commit transaction
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s failed to commit sql transaction: %w", operationSpecialist, err)
+	}
+
+	return nil
+}
+
+// GetExpiredAccounts retrieves specialists marked for deletion before the threshold time.
+func (sr *SpecialistRepositoryImpl) GetExpiredAccounts(ctx context.Context, thresholdTime time.Time) ([]domain.Specialist, error) {
+	var items []domain.Specialist
+
+	query, args, err := sq.Select("*").
+		From(currentTableName).
+		Where(sq.And{
+			sq.Eq{"is_deleted": true},
+			sq.Lt{"delete_initiated_at": thresholdTime},
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to build select expired query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadOnly,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to query expired accounts: %w", operationSpecialist, err)
+	}
+	defer rows.Close()
+
+	items, err = pgx.CollectRows(rows, pgx.RowToStructByName[domain.Specialist])
+	if err != nil {
+		return nil, fmt.Errorf("%s failed to scan expired accounts: %w", operationSpecialist, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("%s failed to commit tx: %w", operationSpecialist, err)
+	}
+
+	return items, nil
+}
+
+// DeleteAllServices removes all service associations for a specialist.
+func (sr *SpecialistRepositoryImpl) DeleteAllServices(ctx context.Context, specialistID int64) error {
+	query, args, err := sq.Delete(serviceSpecialistTableName).
+		Where(sq.Eq{"specialist_id": specialistID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build delete services query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute delete services: %w", operationSpecialist, err)
+	}
+
+	return tx.Commit(ctx)
+}
+
+// HardDelete permanently removes a specialist record by ID.
+func (sr *SpecialistRepositoryImpl) HardDelete(ctx context.Context, id int64) error {
+	query, args, err := sq.Delete(currentTableName).
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return fmt.Errorf("%s failed to build hard delete query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	})
+	if err != nil {
+		return fmt.Errorf("%s failed to begin tx: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := tx.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s failed to execute hard delete: %w", operationSpecialist, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return sql.ErrNoRows
+	}
+
 	return tx.Commit(ctx)
 }

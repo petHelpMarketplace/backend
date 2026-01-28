@@ -9,27 +9,28 @@ import (
 
 // Specialist represents the 'specialists' table in the database.
 type Specialist struct {
-	ID             int64          `json:"id" db:"id"`
-	Name           sql.NullString `json:"name" db:"name"`
-	FamilyName     sql.NullString `json:"family_name" db:"family_name"`
-	Phone          sql.NullString `json:"phone" db:"phone"`
-	Email          string         `json:"email" db:"email"`
-	PasswordHash   string         `json:"-" db:"password_hash"`
-	Bio            sql.NullString `json:"bio" db:"bio"`
-	Avatar         sql.NullString `json:"avatar" db:"avatar"`
-	AddressID      sql.NullInt32  `json:"address_id" db:"address_id"`
-	OrganisationID sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
-	BranchID       sql.NullInt32  `json:"branch_id" db:"branch_id"`
-	Position       sql.NullString `json:"position" db:"position"`
-	Experience     sql.NullInt32  `json:"experience" db:"experience"`
-	Description    sql.NullString `json:"description" db:"description"`
-	ImageID        []pgtype.Text  `json:"image_id" db:"image_id"`
-	IsBanned       bool           `json:"is_banned" db:"is_banned"`
-	IsDeleted      bool           `json:"is_deleted" db:"is_deleted"`
-	IsActive       bool           `json:"is_active" db:"is_active"`
-	IsVerified     bool           `json:"is_verified" db:"is_verified"`
-	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
+	ID                int64          `json:"id" db:"id"`
+	Name              sql.NullString `json:"name" db:"name"`
+	FamilyName        sql.NullString `json:"family_name" db:"family_name"`
+	Phone             sql.NullString `json:"phone" db:"phone"`
+	Email             string         `json:"email" db:"email"`
+	PasswordHash      string         `json:"-" db:"password_hash"`
+	Bio               sql.NullString `json:"bio" db:"bio"`
+	Avatar            sql.NullString `json:"avatar" db:"avatar"`
+	AddressID         sql.NullInt32  `json:"address_id" db:"address_id"`
+	OrganisationID    sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
+	BranchID          sql.NullInt32  `json:"branch_id" db:"branch_id"`
+	Position          sql.NullString `json:"position" db:"position"`
+	Experience        sql.NullInt32  `json:"experience" db:"experience"`
+	Description       sql.NullString `json:"description" db:"description"`
+	ImageID           []pgtype.Text  `json:"image_id" db:"image_id"`
+	IsBanned          bool           `json:"is_banned" db:"is_banned"`
+	IsDeleted         bool           `json:"is_deleted" db:"is_deleted"`
+	DeleteInitiatedAt sql.NullTime   `json:"delete_initiated_at" db:"delete_initiated_at"`
+	IsActive          bool           `json:"is_active" db:"is_active"`
+	IsVerified        bool           `json:"is_verified" db:"is_verified"`
+	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
 }
 
 // SpecialistProfDTO represents the public profile data of a specialist.
@@ -175,11 +176,18 @@ type SpecialistProfUpdateReq struct {
 
 
 type SearchSpecialistParams struct {
-	Animal     	    int64          `json:"animal_id" db:"animal_id"`
-	AnimalSize      int64          `json:"animal_size_id" db:"animal_size_id"`
-	Service         int64          `json:"service_id" db:"service_id"`
-	City            int64          `json:"city_id" db:"city_id"`
-	Area            int64          `json:"area_id" db:"area_id"`
+	Animal     	    int64          `form:"animal_id" json:"animal_id,omitempty" db:"animal_id"`
+	AnimalSize      int64          `form:"animal_size_id" json:"animal_size_id,omitempty" db:"animal_size_id"`
+	Service         int64          `form:"service_id" json:"service_id,omitempty" db:"service_id"`
+	City            int64          `form:"city_id" json:"city_id,omitempty" db:"city_id"`
+	Area            int64          `form:"area_id" json:"area_id,omitempty" db:"area_id"`
+}
+
+type SearchSpecialistUriParams struct {
+    AnimalCategory int64 `uri:"animal_id" binding:"required"`
+    AnimalSize     int64 `uri:"animal_size_id" binding:"required"`
+    ServiceID      int64 `uri:"service_id" binding:"required"`
+    DistrictID     int64 `uri:"district_id" binding:"required"`
 }
 
 type SpecialistProfileSearchResponseDTO struct {
@@ -217,3 +225,28 @@ type SpecialistProfileSearchResponseDTO struct {
 	// example: true
 	IsVerified bool `json:"is_verified,omitempty"`
 }
+
+type ServicePrice struct {
+	Service      sql.NullString `json:"service" db:"service_name"`
+    PricePerHour float64        `json:"price_per_hour" db:"price_per_hour"`
+    PricePerDay  float64        `json:"price_per_day" db:"price_per_day"`
+
+}
+
+type ServicePriceDTO struct {
+	Service      string  `json:"service,omitempty"`
+    PricePerHour float64 `json:"price_per_hour,omitempty"`
+    PricePerDay  float64 `json:"price_per_day,omitempty"`
+}
+
+type SpecialistDetails struct {
+	Specialist
+	ServicePrices []ServicePrice `json:"services"` 
+}
+
+type SpecialistDetailsDTO struct {
+	SpecialistProfDTO
+	ServicePrices []ServicePriceDTO `json:"services"` 
+}
+
+

@@ -16,15 +16,17 @@ import (
 
 type SpecialistServiceImpl struct {
 	specialistRepo ports.SpecialistRepository
+	fileService    ports.FileUploadService
 	logger         *zap.Logger
 	defaultTimeout time.Duration
 }
 
 var _ ports.SpecialistService = (*SpecialistServiceImpl)(nil)
 
-func NewSpecialistService(repo ports.SpecialistRepository, logger *zap.Logger, cfg config.AuthConfig) *SpecialistServiceImpl {
+func NewSpecialistService(repo ports.SpecialistRepository, fileSrv ports.FileUploadService, logger *zap.Logger, cfg config.AuthConfig) *SpecialistServiceImpl {
 	return &SpecialistServiceImpl{
 		specialistRepo: repo,
+		fileService:    fileSrv,
 		logger:         logger,
 		defaultTimeout: cfg.DefaultTimeout,
 	}
@@ -330,17 +332,118 @@ func (ss *SpecialistServiceImpl) DeactivateProfile(ctx context.Context, id int64
 
 }
 
-func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+// InitiateSoftDelete marks the specialist's account for deletion.
+// It first checks if the user exists, then sets the 'is_deleted' flag and schedules the deletion.
+func (ss *SpecialistServiceImpl) InitiateSoftDelete(ctx context.Context, id int64) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	limit := 0
+	// Check if the user exists before attempting to delete
+	if _, err := ss.specialistRepo.GetByID(timeoutCtx, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, domain.ErrAccountNotFound) {
+			ss.logger.Warn("attempt to soft delete non-existent user", zap.Int64("id", id))
+			return domain.ErrAccountNotFound
+		}
+		ss.logger.Error("failed to check specialist existence during soft delete",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	// Proceed with marking the account as deleted
+	err := ss.specialistRepo.MarkAsDeleted(timeoutCtx, id)
+	if err != nil {
+		ss.logger.Error("failed to mark specialist as deleted in database",
+			zap.Int64("id", id),
+			zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	return nil
+}
+
+// DeleteExpiredAccounts handles the comprehensive cleanup of expired profiles.
+func (ss *SpecialistServiceImpl) DeleteExpiredAccounts(ctx context.Context) error {
+	// Define timeout and threshold
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute) // Increased timeout for S3 operations
+	defer cancel()
+
+	retentionPeriod := 7 * 24 * time.Hour
+
+	thresholdTime := time.Now().Add(-retentionPeriod)
+
+	// Fetch accounts to be deleted
+	expiredAccounts, err := ss.specialistRepo.GetExpiredAccounts(timeoutCtx, thresholdTime)
+	if err != nil {
+		ss.logger.Error("failed to fetch expired accounts", zap.Error(err))
+		return domain.ErrInternalServer
+	}
+
+	if len(expiredAccounts) == 0 {
+		ss.logger.Info("no expired accounts found for deletion")
+		return nil
+	}
+
+	ss.logger.Info("starting cleanup for expired accounts", zap.Int("count", len(expiredAccounts)))
+
+	// Iterate and clean up each account
+	for _, specialist := range expiredAccounts {
+		logger := ss.logger.With(zap.Int64("specialistID", specialist.ID))
+
+		// Delete Associated Services from DB
+		if err := ss.specialistRepo.DeleteAllServices(timeoutCtx, specialist.ID); err != nil {
+			logger.Error("failed to delete associated services", zap.Error(err))
+		}
+
+		// Hard Delete the Specialist Record
+		if err := ss.specialistRepo.HardDelete(timeoutCtx, specialist.ID); err != nil {
+			logger.Error("failed to hard delete specialist record", zap.Error(err))
+			continue
+		}
+
+		// Delete Avatar from S3
+		if specialist.Avatar.Valid && specialist.Avatar.String != "" {
+			if err := ss.fileService.DeleteAvatar(timeoutCtx, specialist.Avatar.String); err != nil {
+				// Log error but continue deletion process
+				logger.Error("failed to delete avatar from S3",
+					zap.String("url", specialist.Avatar.String),
+					zap.Error(err))
+			}
+		}
+
+		// Delete Portfolio Images from S3
+		for _, img := range specialist.ImageID {
+			if img.Valid && img.String != "" {
+				if err := ss.fileService.DeletePortfolioImage(timeoutCtx, img.String); err != nil {
+					logger.Error("failed to delete portfolio image from S3",
+						zap.String("url", img.String),
+						zap.Error(err))
+				}
+			}
+		}
+
+		logger.Info("successfully deleted expired specialist account and resources")
+	}
+
+	return nil
+}
+func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfileSearchResponseDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+    
+	const defaultLimit = 20
+	limit := defaultLimit
 	offset := 0
 
-	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset)
+	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset) 
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return nil, err
+		return nil, err
 	}
+
+	if errors.Is(err, domain.ErrInvalidParameter) {
+    	return nil, err
+    }
 	
 	if err != nil { 
 		if errors.Is(err, sql.ErrNoRows)  || errors.Is(err, domain.ErrNotFound){
@@ -352,7 +455,7 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 				zap.Int("limit", limit),
 				zap.Int("offset", offset),
 				zap.Error(err))
-			return nil, domain.ErrSpecialistsNotFound
+			return nil, domain.ErrSpecialistsNotFound 
 		}
 		ss.logger.Error("failed to retrieve specialist by service/pet/area from database",
 			zap.Int64("animal", specialist.Animal),
@@ -366,14 +469,33 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	}
 
 	if len(specialistModels) == 0 {
-		return []domain.SpecialistProfDTO{}, nil
+		return []domain.SpecialistProfileSearchResponseDTO{}, nil
 	}
 
-	profiles := make([]domain.SpecialistProfDTO, 0, len(specialistModels))
+	return specialistModels, nil
+}
 
-	for _, specialistModel := range specialistModels {
-		profiles = append(profiles, utils.ToSpecialistProfileDTO(specialistModel))
+func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	specialistDTO := domain.SpecialistDetailsDTO{}
+
+	specialistDetails, err := ss.specialistRepo.GetSpecialistDetailsById(timeoutCtx, specialistId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist not found by ID",
+				zap.Int64("id", specialistId),
+				zap.Error(err))
+			return specialistDTO, domain.ErrSpecialistsNotFound
+		}
+		ss.logger.Error("failed to retrieve specialist by ID",
+			zap.Int64("id", specialistId),
+			zap.Error(err))
+		return specialistDTO, domain.ErrInternalServer
 	}
 
-	return profiles, nil
+	specialistDTO = utils.ToSpecialistsDetailsDTO(specialistDetails)
+
+	return specialistDTO, nil
 }
