@@ -770,7 +770,7 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 // @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format"
 // @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-/// @Router      /specialist/{id} [get]
+// @Router      /specialist/{id} [get]
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 	idParam := c.Param("id")
 
