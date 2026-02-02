@@ -570,6 +570,37 @@ info:
   title: Swagger Example API
   version: "1.0"
 paths:
+  /{id}:
+    get:
+      description: Get specialist details by ID
+      parameters:
+      - description: Specialist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get specialist by ID succeeded
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
+        "400":
+          description: Invalid specialist ID format
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
+      summary: Get specialist by ID
+      tags:
+      - Specialist
   /health:
     get:
       description: Checks if the application is running and responsive.
@@ -652,6 +683,55 @@ paths:
       summary: Book un appointment
       tags:
       - SpecialistAppointment
+  /search/{animal_id}/{animal_size_id}/{service_id}/{area_id}:
+    get:
+      description: Search specialists based on animal category, size, service, and
+        location area.
+      parameters:
+      - description: Animal category ID
+        in: path
+        name: animal_id
+        required: true
+        type: integer
+      - description: Animal size ID
+        in: path
+        name: animal_size_id
+        required: true
+        type: integer
+      - description: Service ID
+        in: path
+        name: service_id
+        required: true
+        type: integer
+      - description: District/Area ID
+        in: path
+        name: area_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search succeeded
+          schema:
+            items:
+              $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
+            type: array
+        "400":
+          description: Invalid path parameters
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "408":
+          description: Request timeout
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
+      summary: Search specialists by Service, Pet, Area
+      tags:
+      - Specialist
   /specialist/avatar:
     post:
       consumes:
@@ -1064,86 +1144,6 @@ paths:
           schema:
             $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: Registration
-      tags:
-      - Specialist
-  /specialists/{id}:
-    get:
-      description: Get specialist details by ID
-      parameters:
-      - description: Specialist ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Get specialist by ID succeeded
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
-        "400":
-          description: Invalid specialist ID format
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
-        "404":
-          description: Specialist account not found
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
-      summary: Get specialist by ID
-      tags:
-      - Specialist
-  /specialists/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}:
-    get:
-      description: Search specialists based on animal category, size, service, and
-        location area.
-      parameters:
-      - description: Animal category ID
-        in: path
-        name: animal_id
-        required: true
-        type: integer
-      - description: Animal size ID
-        in: path
-        name: animal_size_id
-        required: true
-        type: integer
-      - description: Service ID
-        in: path
-        name: service_id
-        required: true
-        type: integer
-      - description: District/Area ID
-        in: path
-        name: area_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Search succeeded
-          schema:
-            items:
-              $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
-            type: array
-        "400":
-          description: Invalid path parameters
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
-        "408":
-          description: Request timeout
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
-      summary: Search specialists by Service, Pet, Area
       tags:
       - Specialist
   /token/refresh:
