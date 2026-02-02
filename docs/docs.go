@@ -149,77 +149,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
-            "get": {
-                "description": "Search specialists based on animal category, size, service, and location area.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Search specialists by Service, Pet, Area",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Animal category ID",
-                        "name": "animal_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Animal size ID",
-                        "name": "animal_size_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Service ID",
-                        "name": "service_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "District/Area ID",
-                        "name": "area_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Search succeeded",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid path parameters",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
-                        }
-                    },
-                    "408": {
-                        "description": "Request timeout",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
         "/specialist/avatar": {
             "post": {
                 "security": [
@@ -846,39 +775,66 @@ const docTemplate = `{
                 }
             }
         },
-        "/token/refresh": {
-            "post": {
-                "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
+        "/specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
+            "get": {
+                "description": "Search specialists based on animal category, size, service, and location area.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Token"
+                    "Specialist"
                 ],
-                "summary": "Update access and refresh tokens",
+                "summary": "Search specialists by Service, Pet, Area",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Animal category ID",
+                        "name": "animal_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Animal size ID",
+                        "name": "animal_size_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "service_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "District/Area ID",
+                        "name": "area_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Successfully generated new token pair",
+                        "description": "Search succeeded",
                         "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.TokensPair"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload or malformed refresh token",
+                        "description": "Invalid path parameters",
                         "schema": {
                             "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized: Invalid, expired, or malformed refresh token",
+                    "408": {
+                        "description": "Request timeout",
                         "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ForbiddenError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "500": {
@@ -890,7 +846,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/{id}": {
+        "/specialist/{id}": {
             "get": {
                 "description": "Get specialist details by ID",
                 "produces": [
@@ -926,6 +882,50 @@ const docTemplate = `{
                         "description": "Specialist account not found",
                         "schema": {
                             "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/token/refresh": {
+            "post": {
+                "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Update access and refresh tokens",
+                "responses": {
+                    "200": {
+                        "description": "Successfully generated new token pair",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.TokensPair"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Invalid, expired, or malformed refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ForbiddenError"
                         }
                     },
                     "500": {
