@@ -775,6 +775,124 @@ const docTemplate = `{
                 }
             }
         },
+        "/specialists/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
+            "get": {
+                "description": "Search specialists based on animal category, size, service, and location area.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Search specialists by Service, Pet, Area",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Animal category ID",
+                        "name": "animal_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Animal size ID",
+                        "name": "animal_size_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "service_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "District/Area ID",
+                        "name": "area_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search succeeded",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid path parameters",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "408": {
+                        "description": "Request timeout",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialists/{id}": {
+            "get": {
+                "description": "Get specialist details by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Get specialist by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Specialist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get specialist by ID succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/domain.SpecialistProfileSearchResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid specialist ID format",
+                        "schema": {
+                            "$ref": "#/definitions/domain.BadRequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/domain.NotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/token/refresh": {
             "post": {
                 "description": "Exchanges a valid refresh token (from an HTTP-only cookie) for a new access token and a new refresh token. The used refresh token is revoked. This endpoint does not accept a request body.",
@@ -1225,6 +1343,43 @@ const docTemplate = `{
                     "description": "Phone number of the specialist in a flexible E.123-like international format.\nMust start with '+' followed by country code (1-3 digits).\nAllows spaces, parentheses, and hyphens as separators.\nminLength: 13\npattern: \"^\\\\+\\\\d{1,3}(?:[()\\\\s-]*\\\\d+)*$\"\nexample: \"+38 (096) 123-45-67\"",
                     "type": "string",
                     "minLength": 13
+                }
+            }
+        },
+        "domain.SpecialistProfileSearchResponseDTO": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "description": "URL to the specialist's avatar image.\nformat: uri\nexample: https://your-cdn.com/avatars/kateryna_avatar.jpg",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
+                    "type": "string"
+                },
+                "experience": {
+                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
+                    "type": "integer"
+                },
+                "family_name": {
+                    "description": "Family name (surname) of the specialist.\nexample: Walls",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique identifier of the specialist.\nexample: 123",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "Indicates if the specialist's profile is currently active.\nexample: true",
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "description": "Indicates if the specialist's credentials have been verified.\nexample: true",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Given name of the specialist.\nexample: Kateryna",
+                    "type": "string"
                 }
             }
         },

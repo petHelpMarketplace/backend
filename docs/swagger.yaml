@@ -16,7 +16,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: Input validation failed
@@ -46,8 +46,8 @@ definitions:
         minLength: 12
         type: string
     required:
-      - current_password
-      - new_password
+    - current_password
+    - new_password
     type: object
   domain.ConflictError:
     properties:
@@ -56,7 +56,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: A resource with this identifier already exists
@@ -78,7 +78,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: You do not have permission to access this resource
@@ -91,7 +91,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: An unexpected error occurred on the server
@@ -116,8 +116,8 @@ definitions:
         example: MySecretPassword123!
         type: string
     required:
-      - email
-      - password
+    - email
+    - password
     type: object
   domain.NotFoundError:
     properties:
@@ -126,7 +126,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: Specialist account not found
@@ -139,7 +139,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: The request payload is too large
@@ -204,11 +204,11 @@ definitions:
         minLength: 13
         type: string
     required:
-      - email
-      - name
-      - password
-      - password_confirmation
-      - phone
+    - email
+    - name
+    - password
+    - password_confirmation
+    - phone
     type: object
   domain.SaveUnauthAppointmentRequest:
     description: Anauthorized user' appointment request
@@ -263,22 +263,22 @@ definitions:
         example: "14"
         type: string
     required:
-      - amount
-      - animal_size_id
-      - appointment_date
-      - apt
-      - area_id
-      - city_id
-      - description
-      - email
-      - end_time
-      - location_type
-      - service_id
-      - specialist_id
-      - start_time
-      - status
-      - street
-      - unit
+    - amount
+    - animal_size_id
+    - appointment_date
+    - apt
+    - area_id
+    - city_id
+    - description
+    - email
+    - end_time
+    - location_type
+    - service_id
+    - specialist_id
+    - start_time
+    - status
+    - street
+    - unit
     type: object
   domain.SpecialistProfDTO:
     description: Specialist profile data returned to clients.
@@ -404,6 +404,61 @@ definitions:
         minLength: 13
         type: string
     type: object
+  domain.SpecialistProfileSearchResponseDTO:
+    properties:
+      avatar_url:
+        description: |-
+          URL to the specialist's avatar image.
+          format: uri
+          example: https://your-cdn.com/avatars/kateryna_avatar.jpg
+        type: string
+      description:
+        description: |-
+          Detailed description of services offered or qualifications.
+          example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
+        type: string
+      experience:
+        description: |-
+          Years of professional experience.
+          minimum: 0
+          example: 7
+        type: integer
+      family_name:
+        description: |-
+          Family name (surname) of the specialist.
+          example: Walls
+        type: string
+      id:
+        description: |-
+          Unique identifier of the specialist.
+          example: 123
+        type: integer
+      is_active:
+        description: |-
+          Indicates if the specialist's profile is currently active.
+          example: true
+        type: boolean
+      is_verified:
+        description: |-
+          Indicates if the specialist's credentials have been verified.
+          example: true
+        type: boolean
+      name:
+        description: |-
+          Given name of the specialist.
+          example: Kateryna
+        type: string
+    type: object
+  domain.SuccessDelete:
+    properties:
+      code:
+        example: 204
+        type: integer
+      data: {}
+      message:
+        example: Operation was successful
+        type: string
+    type: object
   domain.SuccessResponse:
     properties:
       code:
@@ -428,7 +483,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: Bearer token is missing or invalid
@@ -441,7 +496,7 @@ definitions:
         type: integer
       details:
         items:
-          $ref: "#/definitions/domain.FieldError"
+          $ref: '#/definitions/domain.FieldError'
         type: array
       message:
         example: The provided media type is not supported
@@ -493,7 +548,7 @@ definitions:
         example: 200
         type: integer
       data:
-        $ref: "#/definitions/domain.SpecialistProfDTO"
+        $ref: '#/definitions/domain.SpecialistProfDTO'
       message:
         example: Profile updated successfully.
         type: string
@@ -519,12 +574,12 @@ paths:
     get:
       description: Checks if the application is running and responsive.
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Application is healthy
           schema:
-            $ref: "#/definitions/app.HealthCheckResponse"
+            $ref: '#/definitions/app.HealthCheckResponse'
         "503":
           description: Application is unhealthy or service unavailable
           schema:
@@ -533,579 +588,599 @@ paths:
             type: object
       summary: Performs a health check on the application
       tags:
-        - System
+      - System
   /oauth/{provider}:
     get:
       consumes:
-        - application/json
+      - application/json
       description: Handles the callback from an OAuth2.0 provider after user authentication.
       parameters:
-        - description: OAuth2.0 provider name (e.g., google, github)
-          in: path
-          name: provider
-          required: true
-          type: string
+      - description: OAuth2.0 provider name (e.g., google, github)
+        in: path
+        name: provider
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Successfully authenticated and generated tokens
           schema:
-            $ref: "#/definitions/domain.TokensPair"
+            $ref: '#/definitions/domain.TokensPair'
         "404":
           description: Account with this email not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal server error or failed to complete OAuth2.0 authentication
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       summary: OAuth2.0 Provider Callback
       tags:
-        - OAuth
+      - OAuth
   /public-appointment-request:
     post:
       consumes:
-        - application/json
+      - application/json
       description: New  appointment booking by unauth user
       parameters:
-        - description: UnauthAppointment request body
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/domain.SaveUnauthAppointmentRequest"
+      - description: UnauthAppointment request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SaveUnauthAppointmentRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Booking appointment succeeded
           schema:
-            $ref: "#/definitions/handlers.successSaveUnauthAppointment"
+            $ref: '#/definitions/handlers.successSaveUnauthAppointment'
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "409":
           description: Conflict, choosen time already booked
           schema:
-            $ref: "#/definitions/domain.ConflictError"
+            $ref: '#/definitions/domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       summary: Book un appointment
       tags:
-        - SpecialistAppointment
+      - SpecialistAppointment
   /specialist/avatar:
     post:
       consumes:
-        - multipart/form-data
-      description:
-        Uploads a new avatar for the authenticated specialist. The file
+      - multipart/form-data
+      description: Uploads a new avatar for the authenticated specialist. The file
         should be sent as multipart/form-data with the key 'file'. The server validates
         file size (max 10MB) and type (jpeg, png, webp, heic).
       parameters:
-        - description: Avatar file to upload
-          in: formData
-          name: file
-          required: true
-          type: file
+      - description: Avatar file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Avatar uploaded successfully
           schema:
-            $ref: "#/definitions/handlers.successAvatarPayload"
+            $ref: '#/definitions/handlers.successAvatarPayload'
         "400":
-          description:
-            "Bad Request: file is required, extension mismatch, or other
-            validation errors"
+          description: 'Bad Request: file is required, extension mismatch, or other
+            validation errors'
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
-          description: "Unauthorized: User is not authenticated"
+          description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "413":
-          description: "Payload Too Large: File size exceeds the 10MB limit"
+          description: 'Payload Too Large: File size exceeds the 10MB limit'
           schema:
-            $ref: "#/definitions/domain.PayloadTooLargeError"
+            $ref: '#/definitions/domain.PayloadTooLargeError'
         "415":
-          description: "Unsupported Media Type: File type is not allowed"
+          description: 'Unsupported Media Type: File type is not allowed'
           schema:
-            $ref: "#/definitions/domain.UnsupportedMediaTypeError"
+            $ref: '#/definitions/domain.UnsupportedMediaTypeError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Upload specialist avatar
       tags:
-        - Specialist
+      - Specialist
   /specialist/change-password:
     patch:
       consumes:
-        - application/json
-      description:
-        Allows an authenticated specialist to change their password. All
+      - application/json
+      description: Allows an authenticated specialist to change their password. All
         active sessions will be terminated upon successful password change.
       parameters:
-        - description: Change password request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/domain.ChangePassReq"
+      - description: Change password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ChangePassReq'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Password updated successfully
           schema:
-            $ref: "#/definitions/domain.SuccessResponse"
+            $ref: '#/definitions/domain.SuccessResponse'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
           description: Unauthorized or invalid old password
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "409":
-          description: "Conflict: New password is the same as the old one"
+          description: 'Conflict: New password is the same as the old one'
           schema:
-            $ref: "#/definitions/domain.ConflictError"
+            $ref: '#/definitions/domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Change specialist password
       tags:
-        - Specialist
+      - Specialist
   /specialist/login:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Login specialist
       parameters:
-        - description: Login request body
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/domain.LoginReq"
+      - description: Login request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.LoginReq'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Login succeeded
           schema:
-            $ref: "#/definitions/domain.TokensPair"
+            $ref: '#/definitions/domain.TokensPair'
         "400":
           description: Invalid request payload
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
           description: Invalid credentials
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
           description: Account not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       summary: Login
       tags:
-        - Specialist
+      - Specialist
   /specialist/logout:
     post:
       consumes:
-        - application/json
-      description:
-        Logs out the specialist by blacklisting the current access token,
+      - application/json
+      description: Logs out the specialist by blacklisting the current access token,
         revoking the refresh token and clearing the session cookie.
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Logout successful
           schema:
-            $ref: "#/definitions/domain.SuccessResponse"
+            $ref: '#/definitions/domain.SuccessResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "500":
           description: Internal server error during logout process
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Logout specialist
       tags:
-        - Specialist
+      - Specialist
   /specialist/me:
+    delete:
+      description: Initiates account deletion. The account will be deactivated immediately
+        and permanently deleted after 7 days if not restored.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Deletion initiated successfully
+          schema:
+            $ref: '#/definitions/domain.SuccessDelete'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/domain.UnauthorizedError'
+        "404":
+          description: Account not found
+          schema:
+            $ref: '#/definitions/domain.NotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.InternalServerError'
+      security:
+      - BearerAuth: []
+      summary: Delete specialist account (Soft Delete)
+      tags:
+      - Specialist
     get:
-      description:
-        Get information about the currently authenticated specialist. Requires
+      description: Get information about the currently authenticated specialist. Requires
         a valid Bearer token.
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Successfully retrieved specialist profile
           schema:
-            $ref: "#/definitions/domain.SpecialistProfDTO"
+            $ref: '#/definitions/domain.SpecialistProfDTO'
         "401":
-          description: "Unauthorized: User is not authenticated"
+          description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
           description: Specialist account associated with the token not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Get current specialist
       tags:
-        - Specialist
+      - Specialist
   /specialist/me/status:
     patch:
       consumes:
-        - application/json
-      description:
-        Allows an authenticated specialist to deactivate or activate their
+      - application/json
+      description: Allows an authenticated specialist to deactivate or activate their
         profile.
       parameters:
-        - description: Profile activation/deactivation request
-          in: body
-          name: request
-          required: true
-          schema:
-            properties:
-              is_active:
-                type: boolean
-            type: object
+      - description: Profile activation/deactivation request
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            is_active:
+              type: boolean
+          type: object
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Profile status updated successfully
           schema:
-            $ref: "#/definitions/domain.SuccessResponse"
+            $ref: '#/definitions/domain.SuccessResponse'
         "400":
           description: Invalid status parameter
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
           description: Unauthorized
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Deactivate or activate specialist profile
       tags:
-        - Specialist
+      - Specialist
   /specialist/portfolio:
     post:
       consumes:
-        - multipart/form-data
-      description:
-        Uploads multiple images for the authenticated specialist's portfolio.
+      - multipart/form-data
+      description: Uploads multiple images for the authenticated specialist's portfolio.
         Files should be sent as multipart/form-data with the key 'files[]'. The server
         validates file size (max 8MB each) and type (jpeg, png, webp, heic).
       parameters:
-        - description: Portfolio image files to upload
-          in: formData
-          name: files[]
-          required: true
-          type: file
+      - description: Portfolio image files to upload
+        in: formData
+        name: files[]
+        required: true
+        type: file
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Portfolio files uploaded successfully
           schema:
-            $ref: "#/definitions/handlers.successPortfolioPayload"
+            $ref: '#/definitions/handlers.successPortfolioPayload'
         "400":
-          description:
-            "Bad Request: file is required, extension mismatch, or other
-            validation errors"
+          description: 'Bad Request: file is required, extension mismatch, or other
+            validation errors'
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
-          description: "Unauthorized: User is not authenticated"
+          description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "413":
-          description: "Payload Too Large: File size exceeds the 10MB limit"
+          description: 'Payload Too Large: File size exceeds the 10MB limit'
           schema:
-            $ref: "#/definitions/domain.PayloadTooLargeError"
+            $ref: '#/definitions/domain.PayloadTooLargeError'
         "415":
-          description: "Unsupported Media Type: File type is not allowed"
+          description: 'Unsupported Media Type: File type is not allowed'
           schema:
-            $ref: "#/definitions/domain.UnsupportedMediaTypeError"
+            $ref: '#/definitions/domain.UnsupportedMediaTypeError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Upload specialist portfolio images
       tags:
-        - Specialist
+      - Specialist
   /specialist/portfolio/image:
     delete:
-      description:
-        Deletes a specific image from the authenticated specialist's portfolio.
+      description: Deletes a specific image from the authenticated specialist's portfolio.
         The full URL of the image to be deleted must be provided as a query parameter.
       parameters:
-        - description: Full URL of the image to delete
-          in: query
-          name: url
-          required: true
-          type: string
+      - description: Full URL of the image to delete
+        in: query
+        name: url
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Image deleted successfully
           schema:
-            $ref: "#/definitions/domain.SuccessResponse"
+            $ref: '#/definitions/domain.SuccessResponse'
         "400":
-          description:
-            "Bad Request: file is required, extension mismatch, or other
-            validation errors"
+          description: 'Bad Request: file is required, extension mismatch, or other
+            validation errors'
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
-          description: "Unauthorized: User is not authenticated"
+          description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
-          description: "Not Found: Specialist account not found"
+          description: 'Not Found: Specialist account not found'
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Delete specialist portfolio image
       tags:
-        - Specialist
+      - Specialist
   /specialist/profile:
     patch:
       consumes:
-        - application/json
-      description:
-        Allows an authenticated specialist to update their profile information
+      - application/json
+      description: Allows an authenticated specialist to update their profile information
         (name, family_name, phone, experience_years, bio).
       parameters:
-        - description: Specialist profile update request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/domain.SpecialistProfUpdateReq"
+      - description: Specialist profile update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SpecialistProfUpdateReq'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Profile updated successfully
           schema:
-            $ref: "#/definitions/handlers.updateProfileSuccessResponse"
+            $ref: '#/definitions/handlers.updateProfileSuccessResponse'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
           description: Unauthorized
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: "#/definitions/domain.NotFoundError"
+            $ref: '#/definitions/domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       summary: Update specialist profile
       tags:
-        - Specialist
+      - Specialist
   /specialist/register:
     post:
       consumes:
-        - application/json
+      - application/json
       description: New specialist registration
       parameters:
-        - description: Registration request body
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: "#/definitions/domain.RegistrationRequest"
+      - description: Registration request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RegistrationRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Sign-up succeeded
           schema:
-            $ref: "#/definitions/handlers.successRegistration"
+            $ref: '#/definitions/handlers.successRegistration'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "409":
           description: Account with this email already exists
           schema:
-            $ref: "#/definitions/domain.ConflictError"
+            $ref: '#/definitions/domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       summary: Registration
       tags:
-        - Specialist
+      - Specialist
+  /specialists/{id}:
+    get:
+      description: Get specialist details by ID
+      parameters:
+      - description: Specialist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get specialist by ID succeeded
+          schema:
+            $ref: '#/definitions/domain.SpecialistProfileSearchResponseDTO'
+        "400":
+          description: Invalid specialist ID format
+          schema:
+            $ref: '#/definitions/domain.BadRequestError'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/domain.NotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.InternalServerError'
+      summary: Get specialist by ID
+      tags:
+      - Specialist
+  /specialists/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}:
+    get:
+      description: Search specialists based on animal category, size, service, and
+        location area.
+      parameters:
+      - description: Animal category ID
+        in: path
+        name: animal_id
+        required: true
+        type: integer
+      - description: Animal size ID
+        in: path
+        name: animal_size_id
+        required: true
+        type: integer
+      - description: Service ID
+        in: path
+        name: service_id
+        required: true
+        type: integer
+      - description: District/Area ID
+        in: path
+        name: area_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search succeeded
+          schema:
+            items:
+              $ref: '#/definitions/domain.SpecialistProfileSearchResponseDTO'
+            type: array
+        "400":
+          description: Invalid path parameters
+          schema:
+            $ref: '#/definitions/domain.BadRequestError'
+        "408":
+          description: Request timeout
+          schema:
+            $ref: '#/definitions/domain.BadRequestError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/domain.InternalServerError'
+      summary: Search specialists by Service, Pet, Area
+      tags:
+      - Specialist
   /token/refresh:
     post:
-      description:
-        Exchanges a valid refresh token (from an HTTP-only cookie) for
+      description: Exchanges a valid refresh token (from an HTTP-only cookie) for
         a new access token and a new refresh token. The used refresh token is revoked.
         This endpoint does not accept a request body.
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: Successfully generated new token pair
           schema:
-            $ref: "#/definitions/domain.TokensPair"
+            $ref: '#/definitions/domain.TokensPair'
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: "#/definitions/domain.BadRequestError"
+            $ref: '#/definitions/domain.BadRequestError'
         "401":
-          description: "Unauthorized: Invalid, expired, or malformed refresh token"
+          description: 'Unauthorized: Invalid, expired, or malformed refresh token'
           schema:
-            $ref: "#/definitions/domain.UnauthorizedError"
+            $ref: '#/definitions/domain.UnauthorizedError'
         "403":
-          description:
-            "Forbidden: Refresh token has been revoked or is otherwise
-            not allowed"
+          description: 'Forbidden: Refresh token has been revoked or is otherwise
+            not allowed'
           schema:
-            $ref: "#/definitions/domain.ForbiddenError"
+            $ref: '#/definitions/domain.ForbiddenError'
         "500":
           description: Internal server error
           schema:
-            $ref: "#/definitions/domain.InternalServerError"
+            $ref: '#/definitions/domain.InternalServerError'
       summary: Update access and refresh tokens
       tags:
-        - Token
-  /specialists:
-  get:
-    summary: Search specialists by filters
-    description: Returns a paginated list of specialists filtered by optional query parameters.
-    operationId: GetSpecialistsByAreaAnimalService
-    tags: [Specialists]
-    produces:
-      - application/json
-    parameters:
-      - in: query
-        name: animalCategoryID
-        type: integer
-        format: int64
-        required: false
-        description: Filter by animal category ID
-      - in: query
-        name: animalSizeID
-        type: integer
-        format: int64
-        required: false
-        description: Filter by animal size ID
-      - in: query
-        name: serviceID
-        type: integer
-        format: int64
-        required: false
-        description: Filter by service ID
-      - in: query
-        name: districtID
-        type: integer
-        format: int64
-        required: false
-        description: Filter by district ID
-      - in: query
-        name: page
-        type: integer
-        required: false
-        default: 1
-        minimum: 1
-      - in: query
-        name: limit
-        type: integer
-        required: false
-        default: 20
-        minimum: 1
-        maximum: 100
-    responses:
-      "200":
-        description: OK
-        schema:
-          type: object
-          properties:
-            items:
-              type: array
-              items:
-                $ref: "#/definitions/domain.SpecialistProfileSearchResponseDTO"
-            page:
-              type: integer
-            limit:
-              type: integer
-            total:
-              type: integer
-      "400":
-        description: Invalid query parameters
-        schema:
-          $ref: "#/definitions/domain.ErrorResponse"
-      "408":
-        description: Request timeout
-        schema:
-          $ref: "#/definitions/domain.ErrorResponse"
-      "500":
-        description: Internal server error
-        schema:
-          $ref: "#/definitions/domain.ErrorResponse"
+      - Token
 schemes:
-  - https
-  - http
+- https
+- http
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
