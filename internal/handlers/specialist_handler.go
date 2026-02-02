@@ -680,7 +680,7 @@ func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
 // @Failure      400  {object}  domain.BadRequestError "Invalid path parameters"
 // @Failure      408  {object}  domain.BadRequestError "Request timeout"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-// @Router       /api/v1/specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id} [get]
+// @Router       /specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id} [get]
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
@@ -770,7 +770,7 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 // @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format"
 // @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
-/// @Router      /api/v1/specialist/{id} [get]
+/// @Router      /specialist/{id} [get]
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
 	idParam := c.Param("id")
 
