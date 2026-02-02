@@ -24,6 +24,124 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
+            "get": {
+                "description": "Search specialists based on animal category, size, service, and location area.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Search specialists by Service, Pet, Area",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Animal category ID",
+                        "name": "animal_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Animal size ID",
+                        "name": "animal_size_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "service_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "District/Area ID",
+                        "name": "area_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search succeeded",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid path parameters",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "408": {
+                        "description": "Request timeout",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/specialist/{id}": {
+            "get": {
+                "description": "Get specialist details by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Get specialist by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Specialist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get specialist by ID succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid specialist ID format",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Checks if the application is running and responsive.",
@@ -764,124 +882,6 @@ const docTemplate = `{
                         "description": "Account with this email already exists",
                         "schema": {
                             "$ref": "#/definitions/pethelp-backend_internal_core_domain.ConflictError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
-            "get": {
-                "description": "Search specialists based on animal category, size, service, and location area.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Search specialists by Service, Pet, Area",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Animal category ID",
-                        "name": "animal_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Animal size ID",
-                        "name": "animal_size_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Service ID",
-                        "name": "service_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "District/Area ID",
-                        "name": "area_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Search succeeded",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid path parameters",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
-                        }
-                    },
-                    "408": {
-                        "description": "Request timeout",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
-        "/specialist/{id}": {
-            "get": {
-                "description": "Get specialist details by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Specialist"
-                ],
-                "summary": "Get specialist by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Specialist ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Get specialist by ID succeeded",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid specialist ID format",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
-                        }
-                    },
-                    "404": {
-                        "description": "Specialist account not found",
-                        "schema": {
-                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
