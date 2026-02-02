@@ -667,6 +667,20 @@ func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
 	})
 }
 
+// SearchSpecialistByServicePetArea godoc
+// @Summary      Search specialists by Service, Pet, Area
+// @Description  Search specialists based on animal category, size, service, and location area.
+// @Tags         Specialist
+// @Produce      json
+// @Param        animal_id       path      int  true  "Animal category ID"
+// @Param        animal_size_id  path      int  true  "Animal size ID"
+// @Param        service_id      path      int  true  "Service ID"
+// @Param        area_id         path      int  true  "District/Area ID"
+// @Success      200  {array}   domain.SpecialistProfileSearchResponseDTO "Search succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid path parameters"
+// @Failure      408  {object}  domain.BadRequestError "Request timeout"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialists/search/{animal_id}/{animal_size_id}/{service_id}/{area_id} [get]
 func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
 	var uri domain.SearchSpecialistUriParams
@@ -750,12 +764,11 @@ func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context
 // @Summary      Get specialist by ID
 // @Description  Get specialist details by ID
 // @Tags         Specialist
-// @Accept       json
 // @Produce      json
-// @Param        id path int true "Specialist ID"
-// @Success      200  {object}  result "Get specialist by ID succeeded"
-// @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format. Must be a number."
-// @Failure      404  {object}  domain.StatusNotFound "Specialist account not found"
+// @Param        id   path      int  true  "Specialist ID"
+// @Success      200  {object}  domain.SpecialistProfileSearchResponseDTO "Get specialist by ID succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
 // @Failure      500  {object}  domain.InternalServerError "Internal server error"
 // @Router       /specialists/{id} [get]
 func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
