@@ -10,7 +10,6 @@ import (
 	"go.uber.org/fx"
 )
 
-
 const (
 	docsRoutePath = "api/v1"
 )
