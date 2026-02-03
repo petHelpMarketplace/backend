@@ -10,8 +10,6 @@ import (
 	"go.uber.org/fx"
 )
 
-//go:generate swag init -g cmd/api/main.go --parseDependency --parseInternal
-
 
 const (
 	docsRoutePath = "api/v1"
