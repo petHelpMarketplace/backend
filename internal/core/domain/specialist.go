@@ -18,6 +18,7 @@ type Specialist struct {
 	Bio               sql.NullString `json:"bio" db:"bio"`
 	Avatar            sql.NullString `json:"avatar" db:"avatar"`
 	AddressID         sql.NullInt32  `json:"address_id" db:"address_id"`
+	CityAreaID        sql.NullInt32  `json:"city_area_id" db:"city_area_id"`
 	AreaName          sql.NullString `json:"area_name" db:"area_name"`
 	OrganisationID    sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
 	BranchID          sql.NullInt32  `json:"branch_id" db:"branch_id"`

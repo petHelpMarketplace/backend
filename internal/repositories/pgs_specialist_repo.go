@@ -101,7 +101,7 @@ func (sr *SpecialistRepositoryImpl) GetByEmail(ctx context.Context, email string
 
 	query, args, err := sq.Select("s.*", "ca.area_name").
 		From("specialists s").
-		LeftJoin("city_areas ca ON s.address_id = ca.id").
+		LeftJoin("city_areas ca ON s.city_area_id = ca.id").
 		Where(sq.Eq{"s.email": email}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -151,7 +151,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 
 	query, args, err := sq.Select("s.*", "ca.area_name").
 		From("specialists s").
-		LeftJoin("city_areas ca ON s.address_id = ca.id").
+		LeftJoin("city_areas ca ON s.city_area_id = ca.id").
 		Where(sq.Eq{"s.id": id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -183,7 +183,7 @@ func (sr *SpecialistRepositoryImpl) GetByID(ctx context.Context, id int64) (doma
 	item, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.Specialist])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Specialist{}, domain.ErrAccountNotFound
+			return domain.Specialist{}, sql.ErrNoRows
 		}
 		return item, fmt.Errorf("%s failed to scan data from query row: %w", operationSpecialist, err)
 	}
@@ -361,7 +361,7 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 			From("city_areas").
 			Where(sq.Eq{"area_name": *req.District})
 
-		builder = builder.Set("address_id", districtSubQuery)
+		builder = builder.Set("city_area_id", districtSubQuery)
 	}
 	if req.Experience != nil {
 		builder = builder.Set("experience", *req.Experience)
@@ -371,7 +371,7 @@ func (sr *SpecialistRepositoryImpl) UpdateProfile(ctx context.Context, id int64,
 	}
 
 	query, args, err := builder.
-		Suffix("RETURNING *, (SELECT area_name FROM city_areas WHERE id = specialists.address_id) AS area_name").
+		Suffix("RETURNING *, (SELECT area_name FROM city_areas WHERE id = specialists.city_area_id) AS area_name").
 		PlaceholderFormat(sq.Dollar).ToSql()
 
 	if err != nil {
