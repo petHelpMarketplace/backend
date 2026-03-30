@@ -1150,6 +1150,10 @@ const docTemplate = `{
                     "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
                     "type": "string"
                 },
+                "district": {
+                    "description": "District where the specialist is located.\nexample: Печерський",
+                    "type": "string"
+                },
                 "email": {
                     "description": "Email address of the specialist.\nformat: email\nexample: kateryna.walls@example.com",
                     "type": "string"
@@ -1204,7 +1208,11 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 1000
                 },
-                "experience_years": {
+                "district": {
+                    "description": "District where the specialist is located.\nexample: Печерський район",
+                    "type": "string"
+                },
+                "experience": {
                     "description": "Years of professional experience.\nminimum: 0\nexample: 7",
                     "type": "integer",
                     "minimum": 0

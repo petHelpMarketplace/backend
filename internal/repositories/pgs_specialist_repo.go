@@ -666,11 +666,12 @@ func (sr *SpecialistRepositoryImpl) MarkAsDeleted(ctx context.Context, id int64)
 func (sr *SpecialistRepositoryImpl) GetExpiredAccounts(ctx context.Context, thresholdTime time.Time) ([]domain.Specialist, error) {
 	var items []domain.Specialist
 
-	query, args, err := sq.Select("*").
-		From(currentTableName).
+	query, args, err := sq.Select("s.*", "ca.area_name").
+		From(currentTableName + " s").
+		LeftJoin("city_areas ca ON s.city_area_id = ca.id").
 		Where(sq.And{
-			sq.Eq{"is_deleted": true},
-			sq.Lt{"delete_initiated_at": thresholdTime},
+			sq.Eq{"s.is_deleted": true},
+			sq.Lt{"s.delete_initiated_at": thresholdTime},
 		}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -782,4 +783,46 @@ func (sr *SpecialistRepositoryImpl) HardDelete(ctx context.Context, id int64) er
 	}
 
 	return tx.Commit(ctx)
+}
+
+// CheckDistrict function verify does the district name exist
+func (sr *SpecialistRepositoryImpl) CheckDistrict(ctx context.Context, name string) (bool, error) {
+
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	query, args, err := psql.
+		Select("1").
+		From("city_areas").
+		Where(sq.Eq{"area_name": name}).
+		Prefix("SELECT EXISTS (").
+		Suffix(")").
+		ToSql()
+
+	if err != nil {
+		return false, fmt.Errorf("%s failed to build select district query: %w", operationSpecialist, err)
+	}
+
+	conn, err := sr.DBPool.Pool().Acquire(ctx)
+	if err != nil {
+		return false, fmt.Errorf("%s failed to take DB pool connection: %w", operationSpecialist, err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadOnly,
+	})
+	if err != nil {
+		return false, fmt.Errorf("%s failed to begin transaction: %w", operationSpecialist, err)
+	}
+	defer tx.Rollback(ctx)
+
+	var exists bool
+	err = tx.QueryRow(ctx, query, args...).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to query district existence: %w", err)
+	}
+
+	return exists, tx.Commit(ctx)
+
 }

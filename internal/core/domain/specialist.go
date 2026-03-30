@@ -170,7 +170,7 @@ type SpecialistProfUpdateReq struct {
 	Phone *string `json:"phone" validate:"omitempty,e123,min=13"`
 
 	// District where the specialist is located.
-	// example: Печерський
+	// example: Печерський район
 	District *string `json:"district" validate:"omitempty"`
 
 	// Years of professional experience.

@@ -245,6 +245,24 @@ func (ss *SpecialistServiceImpl) UpdateProfile(ctx context.Context, id int64, re
 		return updatedSpec, domain.ErrInternalServer
 	}
 
+	// check district exist if it update
+	district := req.District
+	if district != nil {
+		var exists bool
+		var err error
+		if exists, err = ss.specialistRepo.CheckDistrict(timeoutCtx, *district); err != nil {
+			ss.logger.Error("failed to update profile with district",
+				zap.String("district_name", *district),
+				zap.Error(err))
+			return updatedSpec, domain.ErrInternalServer
+		}
+
+		if !exists {
+			ss.logger.Error("attempt to update profile with non-existent district", zap.String("district_name", *district))
+			return updatedSpec, domain.ErrDistrictNotFound
+		}
+	}
+
 	// Normalize the phone number only if it's provided in the request.
 	if req.Phone != nil {
 		phone, err := utils.NormalizePhoneNumber(*req.Phone)
