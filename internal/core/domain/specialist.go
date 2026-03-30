@@ -31,6 +31,7 @@ type Specialist struct {
 	IsVerified        bool           `json:"is_verified" db:"is_verified"`
 	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
+	CityAreaID        sql.NullInt32  `json:"city_area_id" db:"city_area_id"`
 }
 
 // SpecialistProfDTO represents the public profile data of a specialist.

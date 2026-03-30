@@ -114,7 +114,7 @@ func (aa *UnauthAppointmentServiceImpl) BookUnauthAppointment(ctx context.Contex
 
 	if err := aa.emailSender.SendAppointmentConfirmationEmail(timeoutCtx, int64(unauthAppointment.SpecialistId), unauthAppointment.Email, unauthAppointment.Date, unauthAppointment.StartTime, unauthAppointment.EndTime); err != nil {
 		aa.logger.Error("failed to send email", zap.Error(err))
-		return 0, domain.ErrInternalServer
+		// return 0, domain.ErrInternalServer
 
 	}
 
