@@ -460,7 +460,6 @@ func (sr *SpecialistRepositoryImpl) AddImages(ctx context.Context, specialistID 
 	return nil
 }
 
-
 func (sr *SpecialistRepositoryImpl) DeleteImage(ctx context.Context, specialistID int64, imageURL string) error {
 	// Return early if there's nothing to delete.
 	if imageURL == "" {
