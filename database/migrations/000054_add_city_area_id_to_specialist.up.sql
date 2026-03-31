@@ -1,0 +1,2 @@
+ALTER TABLE specialists
+ADD COLUMN city_area_id INTEGER DEFAULT NULL;

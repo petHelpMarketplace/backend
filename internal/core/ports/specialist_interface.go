@@ -43,6 +43,7 @@ type SpecialistRepository interface {
 	Save(ctx context.Context, name, email, phone, hash string) (int64, error)
 	GetByEmail(ctx context.Context, email string) (domain.Specialist, error)
 	GetByID(ctx context.Context, id int64) (domain.Specialist, error)
+	CheckDistrict(ctx context.Context, name string) (bool, error)
 	CheckFieldValueExists(ctx context.Context, fieldName string, fieldValue string) (bool, error)
 	UpdatePasswordHash(ctx context.Context, id int64, newHash string) error
 	UpdateAvatar(ctx context.Context, id int64, avatarURL string) error

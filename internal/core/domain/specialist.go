@@ -18,6 +18,8 @@ type Specialist struct {
 	Bio               sql.NullString `json:"bio" db:"bio"`
 	Avatar            sql.NullString `json:"avatar" db:"avatar"`
 	AddressID         sql.NullInt32  `json:"address_id" db:"address_id"`
+	CityAreaID        sql.NullInt32  `json:"city_area_id" db:"city_area_id"`
+	AreaName          sql.NullString `json:"area_name" db:"area_name"`
 	OrganisationID    sql.NullInt32  `json:"organisation_id" db:"organisation_id"`
 	BranchID          sql.NullInt32  `json:"branch_id" db:"branch_id"`
 	Position          sql.NullString `json:"position" db:"position"`
@@ -56,6 +58,10 @@ type SpecialistProfDTO struct {
 	// format: email
 	// example: kateryna.walls@example.com
 	Email string `json:"email"`
+
+	// District where the specialist is located.
+	// example: Печерський
+	District *string `json:"district"`
 
 	// Short biography or summary of the specialist.
 	// example: Experienced veterinarian specializing in small animal care.
@@ -163,17 +169,20 @@ type SpecialistProfUpdateReq struct {
 	// example: "+38 (096) 123-45-67"
 	Phone *string `json:"phone" validate:"omitempty,e123,min=13"`
 
+	// District where the specialist is located.
+	// example: Печерський район
+	District *string `json:"district" validate:"omitempty"`
+
 	// Years of professional experience.
 	// minimum: 0
 	// example: 7
-	Experience *int32 `json:"experience_years" validate:"omitempty,min=0"`
+	Experience *int32 `json:"experience" validate:"omitempty,min=0"`
 
 	// Short biography or summary of the specialist.
 	// maxLength: 1000
 	// example: Experienced veterinarian specializing in small animal care.
 	Bio *string `json:"bio" validate:"omitempty,max=1000"`
 }
-
 
 type SearchSpecialistParams struct {
 	Animal     	    int64          `form:"animal_id" json:"animal_id,omitempty" db:"animal_id"`

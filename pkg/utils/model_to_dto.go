@@ -23,6 +23,9 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 	if specialistModel.Bio.Valid {
 		dto.Bio = &specialistModel.Bio.String
 	}
+	if specialistModel.AreaName.Valid {
+		dto.District = &specialistModel.AreaName.String
+	}
 	if specialistModel.Avatar.Valid {
 		dto.AvatarURL = &specialistModel.Avatar.String
 	}

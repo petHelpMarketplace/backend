@@ -529,13 +529,20 @@ func (sh *SpecialistHandlerImpl) UpdateProfile(c *gin.Context) {
 				Message: "Specialist account not found",
 			})
 			return
+		} else if errors.Is(err, domain.ErrDistrictNotFound) {
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "District not found",
+			})
+			return
+		} else {
+			sh.logger.Error("failed to update specialist profile", zap.Int64("userID", userID), zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
 		}
-		sh.logger.Error("failed to update specialist profile", zap.Int64("userID", userID), zap.Error(err))
-		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
 	}
 
 	c.JSON(http.StatusOK, updateProfileSuccessResponse{

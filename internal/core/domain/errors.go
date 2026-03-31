@@ -13,6 +13,7 @@ var (
 	ErrTokenSignatureInvalid     = errors.New("token signature invalid")
 	ErrAuthFailed                = errors.New("authentication failed")
 	ErrAccountNotFound           = errors.New("account not found")
+	ErrDistrictNotFound          = errors.New("district not found")
 	ErrAccountAlreadyExists      = errors.New("account already exists")
 	ErrNoUppercase               = errors.New("password must contain at least one uppercase letter")
 	ErrNoLowercase               = errors.New("password must contain at least one lowercase letter")

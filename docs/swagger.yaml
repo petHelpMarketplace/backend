@@ -350,6 +350,11 @@ definitions:
           Detailed description of services offered or qualifications.
           example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
         type: string
+      district:
+        description: |-
+          District where the specialist is located.
+          example: Печерський
+        type: string
       email:
         description: |-
           Email address of the specialist.
@@ -416,7 +421,12 @@ definitions:
           example: Experienced veterinarian specializing in small animal care.
         maxLength: 1000
         type: string
-      experience_years:
+      district:
+        description: |-
+          District where the specialist is located.
+          example: Печерський район
+        type: string
+      experience:
         description: |-
           Years of professional experience.
           minimum: 0
