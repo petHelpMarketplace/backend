@@ -445,20 +445,26 @@ func (ss *SpecialistServiceImpl) DeleteExpiredAccounts(ctx context.Context) erro
 
 	return nil
 }
-func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfDTO, error) {
+func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Context, specialist domain.SearchSpecialistParams) ([]domain.SpecialistProfileSearchResponseDTO, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
 	defer cancel()
 
-	limit := 0
+    
+	const defaultLimit = 20
+	limit := defaultLimit
 	offset := 0
 
-	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset)
+	specialistModels, err := ss.specialistRepo.SearchSpecialistByServicePetArea(timeoutCtx, specialist, limit, offset) 
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return nil, err
 	}
 
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, domain.ErrNotFound) {
+	if errors.Is(err, domain.ErrInvalidParameter) {
+    	return nil, err
+    }
+	
+	if err != nil { 
+		if errors.Is(err, sql.ErrNoRows)  || errors.Is(err, domain.ErrNotFound){
 			ss.logger.Warn("specialist not found by search params",
 				zap.Int64("animal", specialist.Animal),
 				zap.Int64("animal_size", specialist.AnimalSize),
@@ -467,7 +473,7 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 				zap.Int("limit", limit),
 				zap.Int("offset", offset),
 				zap.Error(err))
-			return nil, domain.ErrSpecialistsNotFound
+			return nil, domain.ErrSpecialistsNotFound 
 		}
 		ss.logger.Error("failed to retrieve specialist by service/pet/area from database",
 			zap.Int64("animal", specialist.Animal),
@@ -481,14 +487,33 @@ func (ss *SpecialistServiceImpl) SearchSpecialistByServicePetArea(ctx context.Co
 	}
 
 	if len(specialistModels) == 0 {
-		return []domain.SpecialistProfDTO{}, nil
+		return []domain.SpecialistProfileSearchResponseDTO{}, nil
 	}
 
-	profiles := make([]domain.SpecialistProfDTO, 0, len(specialistModels))
+	return specialistModels, nil
+}
 
-	for _, specialistModel := range specialistModels {
-		profiles = append(profiles, utils.ToSpecialistProfileDTO(specialistModel))
+func (ss *SpecialistServiceImpl) GetSpecialistDetailsById(ctx context.Context, specialistId int64) (domain.SpecialistDetailsDTO, error) {
+	timeoutCtx, cancel := context.WithTimeout(ctx, ss.defaultTimeout)
+	defer cancel()
+
+	specialistDTO := domain.SpecialistDetailsDTO{}
+
+	specialistDetails, err := ss.specialistRepo.GetSpecialistDetailsById(timeoutCtx, specialistId)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			ss.logger.Warn("specialist not found by ID",
+				zap.Int64("id", specialistId),
+				zap.Error(err))
+			return specialistDTO, domain.ErrSpecialistsNotFound
+		}
+		ss.logger.Error("failed to retrieve specialist by ID",
+			zap.Int64("id", specialistId),
+			zap.Error(err))
+		return specialistDTO, domain.ErrInternalServer
 	}
 
-	return profiles, nil
+	specialistDTO = utils.ToSpecialistsDetailsDTO(specialistDetails)
+
+	return specialistDTO, nil
 }

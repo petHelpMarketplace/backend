@@ -38,7 +38,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Application is healthy",
                         "schema": {
-                            "$ref": "#/definitions/app.HealthCheckResponse"
+                            "$ref": "#/definitions/internal_app.HealthCheckResponse"
                         }
                     },
                     "503": {
@@ -79,19 +79,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Successfully authenticated and generated tokens",
                         "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.TokensPair"
                         }
                     },
                     "404": {
                         "description": "Account with this email not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error or failed to complete OAuth2.0 authentication",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -117,7 +117,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SaveUnauthAppointmentRequest"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SaveUnauthAppointmentRequest"
                         }
                     }
                 ],
@@ -125,25 +125,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Booking appointment succeeded",
                         "schema": {
-                            "$ref": "#/definitions/handlers.successSaveUnauthAppointment"
+                            "$ref": "#/definitions/internal_handlers.successSaveUnauthAppointment"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "409": {
                         "description": "Conflict, choosen time already booked",
                         "schema": {
-                            "$ref": "#/definitions/domain.ConflictError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ConflictError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -180,37 +180,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Avatar uploaded successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.successAvatarPayload"
+                            "$ref": "#/definitions/internal_handlers.successAvatarPayload"
                         }
                     },
                     "400": {
                         "description": "Bad Request: file is required, extension mismatch, or other validation errors",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "413": {
                         "description": "Payload Too Large: File size exceeds the 10MB limit",
                         "schema": {
-                            "$ref": "#/definitions/domain.PayloadTooLargeError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.PayloadTooLargeError"
                         }
                     },
                     "415": {
                         "description": "Unsupported Media Type: File type is not allowed",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnsupportedMediaTypeError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnsupportedMediaTypeError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -241,7 +241,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.ChangePassReq"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ChangePassReq"
                         }
                     }
                 ],
@@ -249,37 +249,37 @@ const docTemplate = `{
                     "200": {
                         "description": "Password updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized or invalid old password",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "409": {
                         "description": "Conflict: New password is the same as the old one",
                         "schema": {
-                            "$ref": "#/definitions/domain.ConflictError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ConflictError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -305,7 +305,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.LoginReq"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.LoginReq"
                         }
                     }
                 ],
@@ -313,31 +313,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Login succeeded",
                         "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.TokensPair"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -365,19 +365,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Logout successful",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "500": {
                         "description": "Internal server error during logout process",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -402,25 +402,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully retrieved specialist profile",
                         "schema": {
-                            "$ref": "#/definitions/domain.SpecialistProfDTO"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfDTO"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account associated with the token not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -443,25 +443,25 @@ const docTemplate = `{
                     "204": {
                         "description": "Deletion initiated successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessDelete"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SuccessDelete"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -505,31 +505,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile status updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid status parameter",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -566,37 +566,37 @@ const docTemplate = `{
                     "201": {
                         "description": "Portfolio files uploaded successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.successPortfolioPayload"
+                            "$ref": "#/definitions/internal_handlers.successPortfolioPayload"
                         }
                     },
                     "400": {
                         "description": "Bad Request: file is required, extension mismatch, or other validation errors",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "413": {
                         "description": "Payload Too Large: File size exceeds the 10MB limit",
                         "schema": {
-                            "$ref": "#/definitions/domain.PayloadTooLargeError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.PayloadTooLargeError"
                         }
                     },
                     "415": {
                         "description": "Unsupported Media Type: File type is not allowed",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnsupportedMediaTypeError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnsupportedMediaTypeError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -630,31 +630,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Image deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/domain.SuccessResponse"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request: file is required, extension mismatch, or other validation errors",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: User is not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Not Found: Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -685,7 +685,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.SpecialistProfUpdateReq"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfUpdateReq"
                         }
                     }
                 ],
@@ -693,31 +693,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/handlers.updateProfileSuccessResponse"
+                            "$ref": "#/definitions/internal_handlers.updateProfileSuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "404": {
                         "description": "Specialist account not found",
                         "schema": {
-                            "$ref": "#/definitions/domain.NotFoundError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -743,7 +743,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/domain.RegistrationRequest"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.RegistrationRequest"
                         }
                     }
                 ],
@@ -751,25 +751,143 @@ const docTemplate = `{
                     "201": {
                         "description": "Sign-up succeeded",
                         "schema": {
-                            "$ref": "#/definitions/handlers.successRegistration"
+                            "$ref": "#/definitions/internal_handlers.successRegistration"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload or validation failed",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "409": {
                         "description": "Account with this email already exists",
                         "schema": {
-                            "$ref": "#/definitions/domain.ConflictError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ConflictError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}": {
+            "get": {
+                "description": "Search specialists based on animal category, size, service, and location area.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Search specialists by Service, Pet, Area",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Animal category ID",
+                        "name": "animal_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Animal size ID",
+                        "name": "animal_size_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "service_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "District/Area ID",
+                        "name": "area_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search succeeded",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid path parameters",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "408": {
+                        "description": "Request timeout",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/specialist/{id}": {
+            "get": {
+                "description": "Get specialist details by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Specialist"
+                ],
+                "summary": "Get specialist by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Specialist ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Get specialist by ID succeeded",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid specialist ID format",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
+                        }
+                    },
+                    "404": {
+                        "description": "Specialist account not found",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.NotFoundError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -789,31 +907,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully generated new token pair",
                         "schema": {
-                            "$ref": "#/definitions/domain.TokensPair"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.TokensPair"
                         }
                     },
                     "400": {
                         "description": "Invalid request payload or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.BadRequestError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.BadRequestError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized: Invalid, expired, or malformed refresh token",
                         "schema": {
-                            "$ref": "#/definitions/domain.UnauthorizedError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError"
                         }
                     },
                     "403": {
                         "description": "Forbidden: Refresh token has been revoked or is otherwise not allowed",
                         "schema": {
-                            "$ref": "#/definitions/domain.ForbiddenError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.ForbiddenError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/domain.InternalServerError"
+                            "$ref": "#/definitions/pethelp-backend_internal_core_domain.InternalServerError"
                         }
                     }
                 }
@@ -821,7 +939,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "app.HealthCheckResponse": {
+        "internal_app.HealthCheckResponse": {
             "type": "object",
             "properties": {
                 "status": {
@@ -834,7 +952,81 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.BadRequestError": {
+        "internal_handlers.successAvatarPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Avatar file uploaded successfully"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
+                }
+            }
+        },
+        "internal_handlers.successPortfolioPayload": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Portfolio files uploaded successfully"
+                },
+                "urls_map": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "example": {
+                        "\"photo.jpg\"": "\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}",
+                        "{\"original_cv.webp\"": "\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\""
+                    }
+                }
+            }
+        },
+        "internal_handlers.successRegistration": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "message": {
+                    "type": "string",
+                    "default": "Registration successful"
+                }
+            }
+        },
+        "internal_handlers.successSaveUnauthAppointment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "message": {
+                    "type": "string",
+                    "default": "An appointment booked successfully"
+                }
+            }
+        },
+        "internal_handlers.updateProfileSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/pethelp-backend_internal_core_domain.SpecialistProfDTO"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Profile updated successfully."
+                }
+            }
+        },
+        "pethelp-backend_internal_core_domain.BadRequestError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -844,7 +1036,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -853,7 +1045,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ChangePassReq": {
+        "pethelp-backend_internal_core_domain.ChangePassReq": {
             "description": "Change password request payload",
             "type": "object",
             "required": [
@@ -874,7 +1066,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ConflictError": {
+        "pethelp-backend_internal_core_domain.ConflictError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -884,7 +1076,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -893,7 +1085,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.FieldError": {
+        "pethelp-backend_internal_core_domain.FieldError": {
             "type": "object",
             "properties": {
                 "field": {
@@ -906,7 +1098,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ForbiddenError": {
+        "pethelp-backend_internal_core_domain.ForbiddenError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -916,7 +1108,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -925,7 +1117,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.InternalServerError": {
+        "pethelp-backend_internal_core_domain.InternalServerError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -935,7 +1127,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -944,7 +1136,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.LoginReq": {
+        "pethelp-backend_internal_core_domain.LoginReq": {
             "description": "User login request payload",
             "type": "object",
             "required": [
@@ -964,7 +1156,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.NotFoundError": {
+        "pethelp-backend_internal_core_domain.NotFoundError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -974,7 +1166,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -983,7 +1175,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.PayloadTooLargeError": {
+        "pethelp-backend_internal_core_domain.PayloadTooLargeError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -993,7 +1185,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -1002,7 +1194,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.RegistrationRequest": {
+        "pethelp-backend_internal_core_domain.RegistrationRequest": {
             "description": "User registration request payload",
             "type": "object",
             "required": [
@@ -1045,7 +1237,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SaveUnauthAppointmentRequest": {
+        "pethelp-backend_internal_core_domain.SaveUnauthAppointmentRequest": {
             "description": "Anauthorized user' appointment request",
             "type": "object",
             "required": [
@@ -1134,7 +1326,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SpecialistProfDTO": {
+        "pethelp-backend_internal_core_domain.SpecialistProfDTO": {
             "description": "Specialist profile data returned to clients.",
             "type": "object",
             "properties": {
@@ -1199,7 +1391,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SpecialistProfUpdateReq": {
+        "pethelp-backend_internal_core_domain.SpecialistProfUpdateReq": {
             "description": "Specialist profile update request payload",
             "type": "object",
             "properties": {
@@ -1236,7 +1428,44 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SuccessDelete": {
+        "pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "description": "URL to the specialist's avatar image.\nformat: uri\nexample: https://your-cdn.com/avatars/kateryna_avatar.jpg",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Detailed description of services offered or qualifications.\nexample: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.",
+                    "type": "string"
+                },
+                "experience": {
+                    "description": "Years of professional experience.\nminimum: 0\nexample: 7",
+                    "type": "integer"
+                },
+                "family_name": {
+                    "description": "Family name (surname) of the specialist.\nexample: Walls",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Unique identifier of the specialist.\nexample: 123",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "Indicates if the specialist's profile is currently active.\nexample: true",
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "description": "Indicates if the specialist's credentials have been verified.\nexample: true",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Given name of the specialist.\nexample: Kateryna",
+                    "type": "string"
+                }
+            }
+        },
+        "pethelp-backend_internal_core_domain.SuccessDelete": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1250,7 +1479,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.SuccessResponse": {
+        "pethelp-backend_internal_core_domain.SuccessResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1264,7 +1493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.TokensPair": {
+        "pethelp-backend_internal_core_domain.TokensPair": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -1275,7 +1504,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.UnauthorizedError": {
+        "pethelp-backend_internal_core_domain.UnauthorizedError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1285,7 +1514,7 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
@@ -1294,7 +1523,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.UnsupportedMediaTypeError": {
+        "pethelp-backend_internal_core_domain.UnsupportedMediaTypeError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -1304,86 +1533,12 @@ const docTemplate = `{
                 "details": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FieldError"
+                        "$ref": "#/definitions/pethelp-backend_internal_core_domain.FieldError"
                     }
                 },
                 "message": {
                     "type": "string",
                     "example": "The provided media type is not supported"
-                }
-            }
-        },
-        "handlers.successAvatarPayload": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Avatar file uploaded successfully"
-                },
-                "url": {
-                    "type": "string",
-                    "example": "https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg"
-                }
-            }
-        },
-        "handlers.successPortfolioPayload": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Portfolio files uploaded successfully"
-                },
-                "urls_map": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "example": {
-                        "\"photo.jpg\"": "\"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg\"}",
-                        "{\"original_cv.webp\"": "\"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp\""
-                    }
-                }
-            }
-        },
-        "handlers.successRegistration": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 100
-                },
-                "message": {
-                    "type": "string",
-                    "default": "Registration successful"
-                }
-            }
-        },
-        "handlers.successSaveUnauthAppointment": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "message": {
-                    "type": "string",
-                    "default": "An appointment booked successfully"
-                }
-            }
-        },
-        "handlers.updateProfileSuccessResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/domain.SpecialistProfDTO"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Profile updated successfully."
                 }
             }
         }

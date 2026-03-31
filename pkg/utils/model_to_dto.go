@@ -50,3 +50,30 @@ func ToSpecialistProfileDTO(specialistModel domain.Specialist) domain.Specialist
 
 	return dto
 }
+
+func ToSpecialistsDetailsDTO(specialistDetails domain.SpecialistDetails) domain.SpecialistDetailsDTO {
+	
+	baseProfile := ToSpecialistProfileDTO(specialistDetails.Specialist)
+
+	dto := domain.SpecialistDetailsDTO{
+		SpecialistProfDTO: baseProfile,
+	}
+
+	// If there is at least one ServicePrice, map the first one to the DTO.
+	if len(specialistDetails.ServicePrices) > 0 {
+		dto.ServicePrices = make([]domain.ServicePriceDTO, 0, len(specialistDetails.ServicePrices))
+		for _, sp := range specialistDetails.ServicePrices {
+			serviceStr := ""
+			if sp.Service.Valid {
+				serviceStr = sp.Service.String
+			}
+			dto.ServicePrices = append(dto.ServicePrices, domain.ServicePriceDTO{
+				Service:      serviceStr,
+				PricePerHour: sp.PricePerHour,
+				PricePerDay:  sp.PricePerDay,
+			})
+		}
+	}
+
+	return dto
+}

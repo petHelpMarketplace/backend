@@ -674,25 +674,78 @@ func (sh *SpecialistHandlerImpl) DeleteAccount(c *gin.Context) {
 	})
 }
 
-func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Context) {
+// SearchSpecialistByServicePetArea godoc
+// @Summary      Search specialists by Service, Pet, Area
+// @Description  Search specialists based on animal category, size, service, and location area.
+// @Tags         Specialist
+// @Produce      json
+// @Param        animal_id       path      int  true  "Animal category ID"
+// @Param        animal_size_id  path      int  true  "Animal size ID"
+// @Param        service_id      path      int  true  "Service ID"
+// @Param        area_id         path      int  true  "District/Area ID"
+// @Success      200  {array}   domain.SpecialistProfileSearchResponseDTO "Search succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid path parameters"
+// @Failure      408  {object}  domain.BadRequestError "Request timeout"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id} [get]
+func (sh *SpecialistHandlerImpl) SearchSpecialistByServicePetArea(c *gin.Context) {
 
-	var req domain.SearchSpecialistParams
+	var uri domain.SearchSpecialistUriParams
+ 
+	if err := c.ShouldBindUri(&uri); err != nil {
+		var fieldErrors []domain.FieldError
+		message := "Invalid path parameters"
 
-	if err := c.ShouldBindQuery(&req); err != nil {
-		sh.logger.Error("bind query failed", zap.Error(err))
+		var jsonErr *json.UnmarshalTypeError
+
+		bindErr := fmt.Errorf("%s invalid search params: %w", operationSpHandler, err)
+
+		if errors.As(err, &jsonErr) {
+			message = "The request contains invalid data types."
+			fieldErrors = append(fieldErrors, domain.FieldError{
+				Field:   jsonErr.Field,
+				Message: fmt.Sprintf("Expected type '%s' for field.", jsonErr.Type),
+			})
+		} 
+
+		sh.logger.Error("bindUri failed", zap.Error(bindErr), zap.Any("details", fieldErrors))
 		c.JSON(http.StatusBadRequest, domain.BadRequestError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid query parameters",
+			Message: message,
+			Details: fieldErrors,
 		})
 		return
 	}
 
-	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), req)
+
+	// convert URI params to service params (marshal/unmarshal to copy matching fields)
+	var params domain.SearchSpecialistParams
+	{
+		b, err := json.Marshal(uri)
+		if err != nil {
+			sh.logger.Error("failed to marshal uri params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+		if err := json.Unmarshal(b, &params); err != nil {
+			sh.logger.Error("failed to convert uri params to service params", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
+	}
+
+	result, err := sh.specialistService.SearchSpecialistByServicePetArea(c.Request.Context(), params)
 	if err != nil {
-		// Distinguish context cancellations/timeouts if you like
+		// Distinguish context cancellations/timeouts 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			sh.logger.Warn("SearchSpecialists: request canceled/timeout", zap.Error(err))
-			c.JSON(http.StatusRequestTimeout, domain.InternalServerError{
+			c.JSON(http.StatusRequestTimeout, domain.BadRequestError{
 				Code:    http.StatusRequestTimeout,
 				Message: "Request timeout",
 			})
@@ -707,7 +760,63 @@ func (sh *SpecialistHandlerImpl) GetSpecialistsByAreaAnimalService(c *gin.Contex
 		return
 	}
 
-	// Return 200 with possibly empty list — that normal for searches
+
+	// Return 200 with possibly empty list — that’s normal for searches
 	c.JSON(http.StatusOK, result)
+
+}
+
+
+// GetSpecialistDetailsById godoc
+// @Summary      Get specialist by ID
+// @Description  Get specialist details by ID
+// @Tags         Specialist
+// @Produce      json
+// @Param        id   path      int  true  "Specialist ID"
+// @Success      200  {object}  domain.SpecialistProfileSearchResponseDTO "Get specialist by ID succeeded"
+// @Failure      400  {object}  domain.BadRequestError "Invalid specialist ID format"
+// @Failure      404  {object}  domain.NotFoundError "Specialist account not found"
+// @Failure      500  {object}  domain.InternalServerError "Internal server error"
+// @Router       /specialist/{id} [get]
+func (sh *SpecialistHandlerImpl) GetSpecialistDetailsById(c *gin.Context) {
+	idParam := c.Param("id")
+
+	specialistID, err := strconv.ParseInt(idParam, 10, 64)
+
+	if err != nil {
+		sh.logger.Warn("invalid specialist ID parameter", zap.String("idParam", idParam), zap.Error(err))
+		c.JSON(http.StatusBadRequest, domain.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid specialist ID format. Must be a number.",
+			Details: []domain.FieldError{
+				{
+					Field:   "id",
+					Message: "must be a numeric value",
+				},
+			},
+		})
+		return
+	}
+	
+
+	specialist, err := sh.specialistService.GetSpecialistDetailsById(c.Request.Context(), specialistID)
+	if err != nil {
+		if errors.Is(err, domain.ErrSpecialistsNotFound) {
+			sh.logger.Warn("specialist not found for ID", zap.Int64("specialistID", specialistID))
+			c.JSON(http.StatusNotFound, domain.NotFoundError{
+				Code:    http.StatusNotFound,
+				Message: "Specialist account not found",
+			})
+			return
+		}
+		sh.logger.Error("failed to get specialist by ID", zap.Int64("specialistID", specialistID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, domain.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, specialist)
 
 }

@@ -1,6 +1,6 @@
 basePath: /api/v1/
 definitions:
-  app.HealthCheckResponse:
+  internal_app.HealthCheckResponse:
     properties:
       status:
         example: healthy
@@ -9,20 +9,71 @@ definitions:
         example: "2023-10-27T10:00:00Z"
         type: string
     type: object
-  domain.BadRequestError:
+  internal_handlers.successAvatarPayload:
+    properties:
+      message:
+        example: Avatar file uploaded successfully
+        type: string
+      url:
+        example: https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg
+        type: string
+    type: object
+  internal_handlers.successPortfolioPayload:
+    properties:
+      message:
+        example: Portfolio files uploaded successfully
+        type: string
+      urls_map:
+        additionalProperties:
+          type: string
+        example:
+          '"photo.jpg"': '"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg"}'
+          '{"original_cv.webp"': '"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp"'
+        type: object
+    type: object
+  internal_handlers.successRegistration:
+    properties:
+      id:
+        example: 100
+        type: integer
+      message:
+        default: Registration successful
+        type: string
+    type: object
+  internal_handlers.successSaveUnauthAppointment:
+    properties:
+      id:
+        example: 1
+        type: integer
+      message:
+        default: An appointment booked successfully
+        type: string
+    type: object
+  internal_handlers.updateProfileSuccessResponse:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfDTO'
+      message:
+        example: Profile updated successfully.
+        type: string
+    type: object
+  pethelp-backend_internal_core_domain.BadRequestError:
     properties:
       code:
         example: 400
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: Input validation failed
         type: string
     type: object
-  domain.ChangePassReq:
+  pethelp-backend_internal_core_domain.ChangePassReq:
     description: Change password request payload
     properties:
       current_password:
@@ -49,20 +100,20 @@ definitions:
     - current_password
     - new_password
     type: object
-  domain.ConflictError:
+  pethelp-backend_internal_core_domain.ConflictError:
     properties:
       code:
         example: 409
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: A resource with this identifier already exists
         type: string
     type: object
-  domain.FieldError:
+  pethelp-backend_internal_core_domain.FieldError:
     properties:
       field:
         example: email
@@ -71,33 +122,33 @@ definitions:
         example: must be a valid email address
         type: string
     type: object
-  domain.ForbiddenError:
+  pethelp-backend_internal_core_domain.ForbiddenError:
     properties:
       code:
         example: 403
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: You do not have permission to access this resource
         type: string
     type: object
-  domain.InternalServerError:
+  pethelp-backend_internal_core_domain.InternalServerError:
     properties:
       code:
         example: 500
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: An unexpected error occurred on the server
         type: string
     type: object
-  domain.LoginReq:
+  pethelp-backend_internal_core_domain.LoginReq:
     description: User login request payload
     properties:
       email:
@@ -119,33 +170,33 @@ definitions:
     - email
     - password
     type: object
-  domain.NotFoundError:
+  pethelp-backend_internal_core_domain.NotFoundError:
     properties:
       code:
         example: 404
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: Specialist account not found
         type: string
     type: object
-  domain.PayloadTooLargeError:
+  pethelp-backend_internal_core_domain.PayloadTooLargeError:
     properties:
       code:
         example: 413
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: The request payload is too large
         type: string
     type: object
-  domain.RegistrationRequest:
+  pethelp-backend_internal_core_domain.RegistrationRequest:
     description: User registration request payload
     properties:
       email:
@@ -210,7 +261,7 @@ definitions:
     - password_confirmation
     - phone
     type: object
-  domain.SaveUnauthAppointmentRequest:
+  pethelp-backend_internal_core_domain.SaveUnauthAppointmentRequest:
     description: Anauthorized user' appointment request
     properties:
       amount:
@@ -280,7 +331,7 @@ definitions:
     - street
     - unit
     type: object
-  domain.SpecialistProfDTO:
+  pethelp-backend_internal_core_domain.SpecialistProfDTO:
     description: Specialist profile data returned to clients.
     properties:
       avatar_url:
@@ -360,7 +411,7 @@ definitions:
           example: Veterinarian
         type: string
     type: object
-  domain.SpecialistProfUpdateReq:
+  pethelp-backend_internal_core_domain.SpecialistProfUpdateReq:
     description: Specialist profile update request payload
     properties:
       bio:
@@ -414,7 +465,52 @@ definitions:
         minLength: 13
         type: string
     type: object
-  domain.SuccessDelete:
+  pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO:
+    properties:
+      avatar_url:
+        description: |-
+          URL to the specialist's avatar image.
+          format: uri
+          example: https://your-cdn.com/avatars/kateryna_avatar.jpg
+        type: string
+      description:
+        description: |-
+          Detailed description of services offered or qualifications.
+          example: Provides comprehensive veterinary services including diagnostics, surgery, and preventive medicine for cats and dogs.
+        type: string
+      experience:
+        description: |-
+          Years of professional experience.
+          minimum: 0
+          example: 7
+        type: integer
+      family_name:
+        description: |-
+          Family name (surname) of the specialist.
+          example: Walls
+        type: string
+      id:
+        description: |-
+          Unique identifier of the specialist.
+          example: 123
+        type: integer
+      is_active:
+        description: |-
+          Indicates if the specialist's profile is currently active.
+          example: true
+        type: boolean
+      is_verified:
+        description: |-
+          Indicates if the specialist's credentials have been verified.
+          example: true
+        type: boolean
+      name:
+        description: |-
+          Given name of the specialist.
+          example: Kateryna
+        type: string
+    type: object
+  pethelp-backend_internal_core_domain.SuccessDelete:
     properties:
       code:
         example: 204
@@ -424,7 +520,7 @@ definitions:
         example: Operation was successful
         type: string
     type: object
-  domain.SuccessResponse:
+  pethelp-backend_internal_core_domain.SuccessResponse:
     properties:
       code:
         example: 200
@@ -434,88 +530,37 @@ definitions:
         example: Operation was successful
         type: string
     type: object
-  domain.TokensPair:
+  pethelp-backend_internal_core_domain.TokensPair:
     properties:
       access_token:
         type: string
       refresh_token:
         type: string
     type: object
-  domain.UnauthorizedError:
+  pethelp-backend_internal_core_domain.UnauthorizedError:
     properties:
       code:
         example: 401
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: Bearer token is missing or invalid
         type: string
     type: object
-  domain.UnsupportedMediaTypeError:
+  pethelp-backend_internal_core_domain.UnsupportedMediaTypeError:
     properties:
       code:
         example: 415
         type: integer
       details:
         items:
-          $ref: '#/definitions/domain.FieldError'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.FieldError'
         type: array
       message:
         example: The provided media type is not supported
-        type: string
-    type: object
-  handlers.successAvatarPayload:
-    properties:
-      message:
-        example: Avatar file uploaded successfully
-        type: string
-      url:
-        example: https://s3.example.com/avatars/01H8XGJWBWBAQ9JDBQWEXXXXXX.jpg
-        type: string
-    type: object
-  handlers.successPortfolioPayload:
-    properties:
-      message:
-        example: Portfolio files uploaded successfully
-        type: string
-      urls_map:
-        additionalProperties:
-          type: string
-        example:
-          '"photo.jpg"': '"https://storage-provider.com/bucket/user-id/e5f6g7h8-thumbnail.jpg"}'
-          '{"original_cv.webp"': '"https://storage-provider.com/bucket/user-id/a1b2c3d4-cv.webp"'
-        type: object
-    type: object
-  handlers.successRegistration:
-    properties:
-      id:
-        example: 100
-        type: integer
-      message:
-        default: Registration successful
-        type: string
-    type: object
-  handlers.successSaveUnauthAppointment:
-    properties:
-      id:
-        example: 1
-        type: integer
-      message:
-        default: An appointment booked successfully
-        type: string
-    type: object
-  handlers.updateProfileSuccessResponse:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        $ref: '#/definitions/domain.SpecialistProfDTO'
-      message:
-        example: Profile updated successfully.
         type: string
     type: object
 externalDocs:
@@ -544,7 +589,7 @@ paths:
         "200":
           description: Application is healthy
           schema:
-            $ref: '#/definitions/app.HealthCheckResponse'
+            $ref: '#/definitions/internal_app.HealthCheckResponse'
         "503":
           description: Application is unhealthy or service unavailable
           schema:
@@ -571,15 +616,15 @@ paths:
         "201":
           description: Successfully authenticated and generated tokens
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.TokensPair'
         "404":
           description: Account with this email not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error or failed to complete OAuth2.0 authentication
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: OAuth2.0 Provider Callback
       tags:
       - OAuth
@@ -594,29 +639,60 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.SaveUnauthAppointmentRequest'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.SaveUnauthAppointmentRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Booking appointment succeeded
           schema:
-            $ref: '#/definitions/handlers.successSaveUnauthAppointment'
+            $ref: '#/definitions/internal_handlers.successSaveUnauthAppointment'
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "409":
           description: Conflict, choosen time already booked
           schema:
-            $ref: '#/definitions/domain.ConflictError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: Book un appointment
       tags:
       - SpecialistAppointment
+  /specialist/{id}:
+    get:
+      description: Get specialist details by ID
+      parameters:
+      - description: Specialist ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Get specialist by ID succeeded
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
+        "400":
+          description: Invalid specialist ID format
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "404":
+          description: Specialist account not found
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
+      summary: Get specialist by ID
+      tags:
+      - Specialist
   /specialist/avatar:
     post:
       consumes:
@@ -636,28 +712,28 @@ paths:
         "201":
           description: Avatar uploaded successfully
           schema:
-            $ref: '#/definitions/handlers.successAvatarPayload'
+            $ref: '#/definitions/internal_handlers.successAvatarPayload'
         "400":
           description: 'Bad Request: file is required, extension mismatch, or other
             validation errors'
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "413":
           description: 'Payload Too Large: File size exceeds the 10MB limit'
           schema:
-            $ref: '#/definitions/domain.PayloadTooLargeError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.PayloadTooLargeError'
         "415":
           description: 'Unsupported Media Type: File type is not allowed'
           schema:
-            $ref: '#/definitions/domain.UnsupportedMediaTypeError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnsupportedMediaTypeError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Upload specialist avatar
@@ -675,34 +751,34 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.ChangePassReq'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.ChangePassReq'
       produces:
       - application/json
       responses:
         "200":
           description: Password updated successfully
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SuccessResponse'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: Unauthorized or invalid old password
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "409":
           description: 'Conflict: New password is the same as the old one'
           schema:
-            $ref: '#/definitions/domain.ConflictError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Change specialist password
@@ -719,30 +795,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.LoginReq'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.LoginReq'
       produces:
       - application/json
       responses:
         "200":
           description: Login succeeded
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.TokensPair'
         "400":
           description: Invalid request payload
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: Invalid credentials
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Account not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: Login
       tags:
       - Specialist
@@ -758,15 +834,15 @@ paths:
         "200":
           description: Logout successful
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SuccessResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "500":
           description: Internal server error during logout process
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Logout specialist
@@ -782,19 +858,19 @@ paths:
         "204":
           description: Deletion initiated successfully
           schema:
-            $ref: '#/definitions/domain.SuccessDelete'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SuccessDelete'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Account not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Delete specialist account (Soft Delete)
@@ -809,19 +885,19 @@ paths:
         "200":
           description: Successfully retrieved specialist profile
           schema:
-            $ref: '#/definitions/domain.SpecialistProfDTO'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfDTO'
         "401":
           description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Specialist account associated with the token not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Get current specialist
@@ -849,23 +925,23 @@ paths:
         "200":
           description: Profile status updated successfully
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SuccessResponse'
         "400":
           description: Invalid status parameter
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Deactivate or activate specialist profile
@@ -890,28 +966,28 @@ paths:
         "201":
           description: Portfolio files uploaded successfully
           schema:
-            $ref: '#/definitions/handlers.successPortfolioPayload'
+            $ref: '#/definitions/internal_handlers.successPortfolioPayload'
         "400":
           description: 'Bad Request: file is required, extension mismatch, or other
             validation errors'
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "413":
           description: 'Payload Too Large: File size exceeds the 10MB limit'
           schema:
-            $ref: '#/definitions/domain.PayloadTooLargeError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.PayloadTooLargeError'
         "415":
           description: 'Unsupported Media Type: File type is not allowed'
           schema:
-            $ref: '#/definitions/domain.UnsupportedMediaTypeError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnsupportedMediaTypeError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Upload specialist portfolio images
@@ -933,24 +1009,24 @@ paths:
         "200":
           description: Image deleted successfully
           schema:
-            $ref: '#/definitions/domain.SuccessResponse'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.SuccessResponse'
         "400":
           description: 'Bad Request: file is required, extension mismatch, or other
             validation errors'
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: 'Unauthorized: User is not authenticated'
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: 'Not Found: Specialist account not found'
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Delete specialist portfolio image
@@ -968,30 +1044,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.SpecialistProfUpdateReq'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfUpdateReq'
       produces:
       - application/json
       responses:
         "200":
           description: Profile updated successfully
           schema:
-            $ref: '#/definitions/handlers.updateProfileSuccessResponse'
+            $ref: '#/definitions/internal_handlers.updateProfileSuccessResponse'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "404":
           description: Specialist account not found
           schema:
-            $ref: '#/definitions/domain.NotFoundError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.NotFoundError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       security:
       - BearerAuth: []
       summary: Update specialist profile
@@ -1008,27 +1084,76 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.RegistrationRequest'
+          $ref: '#/definitions/pethelp-backend_internal_core_domain.RegistrationRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Sign-up succeeded
           schema:
-            $ref: '#/definitions/handlers.successRegistration'
+            $ref: '#/definitions/internal_handlers.successRegistration'
         "400":
           description: Invalid request payload or validation failed
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "409":
           description: Account with this email already exists
           schema:
-            $ref: '#/definitions/domain.ConflictError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.ConflictError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: Registration
+      tags:
+      - Specialist
+  /specialist/search/{animal_id}/{animal_size_id}/{service_id}/{area_id}:
+    get:
+      description: Search specialists based on animal category, size, service, and
+        location area.
+      parameters:
+      - description: Animal category ID
+        in: path
+        name: animal_id
+        required: true
+        type: integer
+      - description: Animal size ID
+        in: path
+        name: animal_size_id
+        required: true
+        type: integer
+      - description: Service ID
+        in: path
+        name: service_id
+        required: true
+        type: integer
+      - description: District/Area ID
+        in: path
+        name: area_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search succeeded
+          schema:
+            items:
+              $ref: '#/definitions/pethelp-backend_internal_core_domain.SpecialistProfileSearchResponseDTO'
+            type: array
+        "400":
+          description: Invalid path parameters
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "408":
+          description: Request timeout
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
+      summary: Search specialists by Service, Pet, Area
       tags:
       - Specialist
   /token/refresh:
@@ -1042,24 +1167,24 @@ paths:
         "200":
           description: Successfully generated new token pair
           schema:
-            $ref: '#/definitions/domain.TokensPair'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.TokensPair'
         "400":
           description: Invalid request payload or malformed refresh token
           schema:
-            $ref: '#/definitions/domain.BadRequestError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.BadRequestError'
         "401":
           description: 'Unauthorized: Invalid, expired, or malformed refresh token'
           schema:
-            $ref: '#/definitions/domain.UnauthorizedError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.UnauthorizedError'
         "403":
           description: 'Forbidden: Refresh token has been revoked or is otherwise
             not allowed'
           schema:
-            $ref: '#/definitions/domain.ForbiddenError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.ForbiddenError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/domain.InternalServerError'
+            $ref: '#/definitions/pethelp-backend_internal_core_domain.InternalServerError'
       summary: Update access and refresh tokens
       tags:
       - Token

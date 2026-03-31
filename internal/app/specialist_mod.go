@@ -75,7 +75,8 @@ var SpecialistModule = fx.Module("specialist",
 
 			specRouterGroup.POST("/register", handler.Registration)
 			specRouterGroup.POST("/login", handler.Login)
-			specRouterGroup.GET("/specialists", handler.GetSpecialistsByAreaAnimalService)
+			specRouterGroup.GET("/search/:animal_id/:animal_size_id/:service_id/:area_id", handler.SearchSpecialistByServicePetArea)
+			specRouterGroup.GET("/:id", handler.GetSpecialistDetailsById)
 
 			protected := specRouterGroup.Use(mp.AuthMiddleware)
 			protected.GET("/me", handler.Me)
